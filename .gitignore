@@ -36,3 +36,8 @@ pnpm-debug.log*
 next-env.d.ts
 
 /generated/prisma
+
+!.env.example
+/work/
+/playwright-report/
+/test-results/

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Geist_Mono, Inter, Montserrat } from "next/font/google";
 
 import "./globals.css";
@@ -14,6 +15,12 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 });
 
+export const metadata: Metadata = {
+  title: "tua vitrine · Seu negócio mais perto",
+  description:
+    "Sua loja online, simples e do seu jeito. Catálogo de produtos e atendimento pelo WhatsApp.",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="pt-br"
+      lang="pt-BR"
       suppressHydrationWarning
       className={cn(
         "antialiased",
@@ -32,7 +39,7 @@ export default function RootLayout({
       )}
     >
       <body>
-        <ThemeProvider>
+        <ThemeProvider defaultTheme="light">
           <Toaster />
           {children}
         </ThemeProvider>

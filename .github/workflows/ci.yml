@@ -1,0 +1,37 @@
+name: Quality
+on:
+  push:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16.10-alpine
+        env:
+          POSTGRES_USER: tuavitrine
+          POSTGRES_PASSWORD: tuavitrine_local
+          POSTGRES_DB: tuavitrine
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tuavitrine -d tuavitrine"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      APP_ENV: test
+      APP_URL: http://localhost:3000
+      LOCAL_ONLY: "true"
+      DATABASE_URL: postgresql://tuavitrine:tuavitrine_local@localhost:55432/tuavitrine
+      STORAGE_DIR: ./work/storage
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - run: bun run db:generate
+      - run: bun run db:deploy
+      - run: bun run check
+      - run: bun run build
+      - run: bunx --bun playwright install --with-deps chromium
+      - run: bun run test:e2e
+      - run: docker build -t tua-vitrine:ci .

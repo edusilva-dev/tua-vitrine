@@ -1,13 +1,176 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output = "../generated/prisma"
 }
-
 datasource db {
   provider = "postgresql"
+}
+enum StoreStatus {
+ DRAFT
+ ACTIVE
+}
+model Store {
+ id String @id @default(uuid()) @db.Uuid
+ name String
+ slug String @unique
+ whatsapp String?
+ status StoreStatus @default(DRAFT)
+ primaryColor String @default("#2563eb")
+ template String @default("grid")
+ customization Json @default("{\"version\":1,\"tagline\":\"\"}")
+ logoAssetId String? @db.Uuid
+ onboardingCompletedAt DateTime?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ products Product[]
+ categories Category[]
+ assets Asset[]
+ events MetricEvent[]
+ likes ProductLike[]
+ idempotencies Idempotency[]
+}
+model Category {
+ slug String
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @db.Uuid
+ name String
+ store Store @relation(fields:[storeId], references:[id], onDelete:Cascade)
+ products Product[]
+ @@unique([storeId,id])
+ @@unique([storeId,name])
+ @@unique([storeId,slug])
+}
+model Product {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @db.Uuid
+ categoryId String? @db.Uuid
+ name String
+ description String
+ priceCents Int
+ available Boolean @default(true)
+ archivedAt DateTime?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ store Store @relation(fields:[storeId], references:[id], onDelete:Cascade)
+ category Category? @relation(fields:[storeId,categoryId], references:[storeId,id])
+ images ProductImage[]
+ variants ProductVariant[]
+ options ProductOption[]
+ idempotencies Idempotency[]
+ likes ProductLike[]
+ events MetricEvent[]
+ @@unique([storeId,id])
+ @@index([storeId,archivedAt,createdAt])
+}
+model ProductVariant {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @db.Uuid
+ productId String @db.Uuid
+ label String
+ combinationKey String
+ priceCents Int
+ available Boolean
+ product Product @relation(fields:[storeId,productId], references:[storeId,id], onDelete:Cascade)
+ values VariantOptionValue[]
+ @@unique([storeId,productId,id])
+ @@unique([productId,combinationKey])
+}
+model Asset {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @db.Uuid
+ storageKey String @unique
+ mime String
+ bytes Int
+ width Int
+ height Int
+ createdAt DateTime @default(now())
+ store Store @relation(fields:[storeId], references:[id], onDelete:Cascade)
+ images ProductImage[]
+ @@unique([storeId,id])
+}
+model ProductImage {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @db.Uuid
+ productId String @db.Uuid
+ assetId String @db.Uuid
+ position Int
+ product Product @relation(fields:[storeId,productId], references:[storeId,id], onDelete:Cascade)
+ asset Asset @relation(fields:[storeId,assetId], references:[storeId,id])
+ @@unique([productId,assetId])
+}
+model AnonymousSession {
+ id String @id @default(uuid()) @db.Uuid
+ tokenHash String @unique
+ createdAt DateTime @default(now())
+ expiresAt DateTime
+ events MetricEvent[]
+ likes ProductLike[]
+}
+model MetricEvent {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @db.Uuid
+ productId String? @db.Uuid
+ sessionId String @db.Uuid
+ type String
+ eventId String @db.Uuid
+ dedupeKey String @unique
+ occurredAt DateTime @default(now())
+ store Store @relation(fields:[storeId], references:[id], onDelete:Cascade)
+ product Product? @relation(fields:[storeId,productId], references:[storeId,id])
+ session AnonymousSession @relation(fields:[sessionId], references:[id], onDelete:Cascade)
+ @@unique([storeId,eventId])
+ @@index([storeId,type,occurredAt])
+}
+model ProductLike {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @db.Uuid
+ productId String @db.Uuid
+ sessionId String @db.Uuid
+ createdAt DateTime @default(now())
+ store Store @relation(fields:[storeId], references:[id], onDelete:Cascade)
+ product Product @relation(fields:[storeId,productId], references:[storeId,id])
+ session AnonymousSession @relation(fields:[sessionId], references:[id], onDelete:Cascade)
+ @@unique([storeId,productId,sessionId])
+}
+model Idempotency {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @db.Uuid
+ key String
+ requestHash String
+ productId String @db.Uuid
+ product Product @relation(fields:[storeId,productId], references:[storeId,id], onDelete:Cascade)
+ store Store @relation(fields:[storeId], references:[id], onDelete:Cascade)
+ @@unique([storeId,key])
+}
+
+model ProductOption {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @db.Uuid
+ productId String @db.Uuid
+ name String
+ product Product @relation(fields:[storeId,productId], references:[storeId,id], onDelete:Cascade)
+ values ProductOptionValue[]
+ @@unique([storeId,productId,id])
+ @@unique([productId,name])
+}
+model ProductOptionValue {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @db.Uuid
+ productId String @db.Uuid
+ optionId String @db.Uuid
+ value String
+ option ProductOption @relation(fields:[storeId,productId,optionId], references:[storeId,productId,id], onDelete:Cascade)
+ variants VariantOptionValue[]
+ @@unique([storeId,productId,optionId,id])
+ @@unique([optionId,value])
+}
+model VariantOptionValue {
+ storeId String @db.Uuid
+ productId String @db.Uuid
+ variantId String @db.Uuid
+ optionId String @db.Uuid
+ valueId String @db.Uuid
+ variant ProductVariant @relation(fields:[storeId,productId,variantId], references:[storeId,productId,id], onDelete:Cascade)
+ value ProductOptionValue @relation(fields:[storeId,productId,optionId,valueId], references:[storeId,productId,optionId,id], onDelete:Cascade)
+ @@id([variantId,optionId])
 }

@@ -1,15 +1,45 @@
+name: tua-vitrine-local
 services:
   db:
-    image: postgres:16-alpine
-    container_name: tua-vitrine-db
-    ports:
-      - "5432:5432"
+    image: postgres:16.10-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: tua-vitrine
+      POSTGRES_USER: tuavitrine
+      POSTGRES_PASSWORD: tuavitrine_local
+      POSTGRES_DB: tuavitrine
+    ports:
+      - "127.0.0.1:55432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
-
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tuavitrine -d tuavitrine"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  app:
+    profiles: ["app"]
+    build: .
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      APP_ENV: development
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      LOCAL_ONLY: "true"
+      DATABASE_URL: postgresql://tuavitrine:tuavitrine_local@db:5432/tuavitrine
+      STORAGE_DIR: /data/storage
+      HOSTNAME: 0.0.0.0
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/data/storage
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const r = await fetch('http://127.0.0.1:3000/api/health/ready'); process.exit(r.ok ? 0 : 1)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
 volumes:
   db-data:
+  uploads:
