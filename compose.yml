@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: tua-vitrine-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: tua-vitrine
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
