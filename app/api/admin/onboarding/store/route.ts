@@ -1,6 +1,7 @@
 import { assertLocalAdmin, getAdminContext, setAdminContext } from "@/lib/server/context";
 import { AppError, handle, jsonBody } from "@/lib/server/http";
 import { saveIdentity } from "@/modules/stores/server/service";
+
 export async function PUT(request: Request) {
   return handle(async () => {
     await assertLocalAdmin(true);

@@ -4,6 +4,7 @@ import { anonymousSession, assertSameOrigin, rateLimit } from "@/lib/server/sess
 import { likeSchema } from "@/modules/analytics/contracts";
 import { setLike } from "@/modules/analytics/server/service";
 import { getStoreBySlug } from "@/modules/stores/server/service";
+
 export async function PUT(
   request: Request,
   route: { params: Promise<{ slug: string; id: string }> }

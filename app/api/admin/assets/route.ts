@@ -1,7 +1,9 @@
 import { assertLocalAdmin, getAdminContext } from "@/lib/server/context";
 import { AppError, handle } from "@/lib/server/http";
 import { saveAsset } from "@/lib/server/storage";
+
 export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   return handle(async () => {
     await assertLocalAdmin(true);

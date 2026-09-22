@@ -18,6 +18,7 @@ import {
   type StoreSettingsInput,
   storeSettingsSchema,
 } from "@/modules/stores/contracts";
+
 export function StoreSettings({ store }: { store: StoreDTO }) {
   const router = useRouter();
   const [logo, setLogo] = useState<AssetDTO | null>(store.logo);

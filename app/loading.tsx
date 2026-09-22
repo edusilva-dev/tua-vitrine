@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
+
 export default function Loading() {
   return (
     <div role="status" aria-label="Carregando página" className="mx-auto max-w-7xl space-y-6 p-8">

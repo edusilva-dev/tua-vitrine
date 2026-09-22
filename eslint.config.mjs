@@ -30,11 +30,11 @@ export default [
         {
           blankLine: "always",
           prev: "*",
-          next: ["function", "if", "for", "while", "do", "switch", "try"],
+          next: ["export", "function", "if", "for", "while", "do", "switch", "try"],
         },
         {
           blankLine: "always",
-          prev: ["function", "if", "for", "while", "do", "switch", "try"],
+          prev: ["export", "function", "if", "for", "while", "do", "switch", "try"],
           next: "*",
         },
       ],

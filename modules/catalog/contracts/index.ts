@@ -9,6 +9,7 @@ export const variantInputSchema = z.object({
   priceCents: cents,
   available: z.boolean(),
 });
+
 export const productInputSchema = z
   .object({
     name: z.string().trim().min(2, "Informe pelo menos 2 caracteres.").max(120),
@@ -49,7 +50,9 @@ export const productInputSchema = z
       }
     }
   });
+
 export type ProductInput = z.infer<typeof productInputSchema>;
+
 export type VariantDTO = {
   id: string;
   label: string;
@@ -57,8 +60,11 @@ export type VariantDTO = {
   priceCents: number;
   available: boolean;
 };
+
 export type AssetDTO = { id: string; url: string; width: number; height: number };
+
 export type CategoryDTO = { id: string; name: string };
+
 export type ProductDTO = {
   id: string;
   storeId: string;
@@ -72,8 +78,10 @@ export type ProductDTO = {
   createdAt: string;
   updatedAt: string;
 };
+
 export type ProductListDTO = {
   data: ProductDTO[];
   pagination: { page: number; pageSize: number; total: number; totalPages: number };
 };
+
 export type ProductFilters = { q?: string; category?: string; available?: string; page?: number };

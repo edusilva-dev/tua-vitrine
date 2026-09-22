@@ -1,4 +1,5 @@
 import { db } from "@/lib/server/db";
+
 export async function GET() {
   try {
     await db.$queryRaw`SELECT 1`;

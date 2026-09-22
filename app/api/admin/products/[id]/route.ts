@@ -3,11 +3,13 @@ import { handle, jsonBody } from "@/lib/server/http";
 import { archiveProduct, getProduct, saveProduct } from "@/modules/catalog/server/service";
 
 type RouteContext = { params: Promise<{ id: string }> };
+
 export async function GET(_request: Request, route: RouteContext) {
   return handle(async () =>
     Response.json({ data: await getProduct(await getAdminContext(), (await route.params).id) })
   );
 }
+
 export async function PATCH(request: Request, route: RouteContext) {
   return handle(async () => {
     await assertLocalAdmin(true);
@@ -21,6 +23,7 @@ export async function PATCH(request: Request, route: RouteContext) {
     });
   });
 }
+
 export async function DELETE(_request: Request, route: RouteContext) {
   return handle(async () => {
     await assertLocalAdmin(true);

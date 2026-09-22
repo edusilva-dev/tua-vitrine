@@ -2,6 +2,7 @@ import "server-only";
 import { ZodError } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { logger } from "./logger";
+
 export class AppError extends Error {
   constructor(
     public status: number,
@@ -11,6 +12,7 @@ export class AppError extends Error {
     super(message);
   }
 }
+
 export async function jsonBody(request: Request): Promise<unknown> {
   try {
     return await request.json();
@@ -18,6 +20,7 @@ export async function jsonBody(request: Request): Promise<unknown> {
     throw new AppError(400, "INVALID_JSON", "O corpo da solicitação não é JSON válido.");
   }
 }
+
 export async function handle(action: () => Promise<Response>): Promise<Response> {
   try {
     return await action();

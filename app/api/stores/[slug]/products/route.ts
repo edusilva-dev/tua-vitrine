@@ -1,6 +1,7 @@
 import { AppError, handle } from "@/lib/server/http";
 import { listProducts, listProductsByIds } from "@/modules/catalog/server/service";
 import { getStoreBySlug } from "@/modules/stores/server/service";
+
 export async function GET(request: Request, route: { params: Promise<{ slug: string }> }) {
   return handle(async () => {
     const store = await getStoreBySlug((await route.params).slug);

@@ -1,5 +1,6 @@
 import { OnboardingFlow } from "@/modules/onboarding/components/onboarding-flow";
 import { getCurrentStore } from "@/modules/stores/server/service";
+
 export default async function OnboardingPage({
   searchParams,
 }: {

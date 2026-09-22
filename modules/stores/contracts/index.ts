@@ -13,6 +13,7 @@ export const reservedSlugs = [
   "robots",
   "sitemap",
 ];
+
 export function normalizeSlug(value: string) {
   return value
     .normalize("NFD")
@@ -21,6 +22,7 @@ export function normalizeSlug(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 }
+
 export const storeIdentitySchema = z.object({
   name: z.string().trim().min(2).max(100),
   slug: z
@@ -34,6 +36,7 @@ export const storeIdentitySchema = z.object({
         .refine((value) => !reservedSlugs.includes(value), "Este endereço é reservado.")
     ),
 });
+
 export const whatsappSchema = z.object({
   whatsapp: z
     .string()
@@ -44,10 +47,12 @@ export const whatsappSchema = z.object({
         .regex(/^\+[1-9]\d{9,14}$/, "Informe o DDI e o número, por exemplo +55 11 99999-9999.")
     ),
 });
+
 export const customizationSchema = z.object({
   version: z.literal(1),
   tagline: z.string().trim().max(160),
 });
+
 export const storeSettingsSchema = z.object({
   name: z.string().trim().min(2).max(100),
   whatsapp: whatsappSchema.shape.whatsapp,
@@ -56,6 +61,7 @@ export const storeSettingsSchema = z.object({
   logoAssetId: z.string().uuid().nullable(),
   customization: customizationSchema,
 });
+
 export type StoreDTO = {
   id: string;
   name: string;
@@ -69,4 +75,5 @@ export type StoreDTO = {
   onboardingStep: 1 | 2 | 3 | 4;
   url: string;
 };
+
 export type StoreSettingsInput = z.infer<typeof storeSettingsSchema>;

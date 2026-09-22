@@ -8,6 +8,7 @@ export class ApiError extends Error {
     this.name = "ApiError";
   }
 }
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { MetricsDTO } from "@/modules/analytics/contracts";
 import type { StoreDTO } from "@/modules/stores/contracts";
+
 export function MetricsOverview({
   metrics,
   store,

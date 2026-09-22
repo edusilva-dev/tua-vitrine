@@ -4,6 +4,7 @@ import type { StoreContext } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { AppError } from "@/lib/server/http";
 import { type MetricsDTO, metricEventSchema } from "../contracts";
+
 export async function recordEvent(
   context: StoreContext,
   sessionId: string,
@@ -45,6 +46,7 @@ export async function recordEvent(
     throw error;
   }
 }
+
 export async function setLike(
   context: StoreContext,
   sessionId: string,
@@ -72,6 +74,7 @@ export async function setLike(
     update: {},
   });
 }
+
 export async function getMetrics(context: StoreContext): Promise<MetricsDTO> {
   const storeId = context.storeId;
   const [impressions, totalLikes, productViews, productCount, viewed, liked] = await Promise.all([

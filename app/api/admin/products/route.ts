@@ -1,6 +1,7 @@
 import { assertLocalAdmin, getAdminContext } from "@/lib/server/context";
 import { handle, jsonBody } from "@/lib/server/http";
 import { listProducts, saveProduct } from "@/modules/catalog/server/service";
+
 export async function GET(request: Request) {
   return handle(async () => {
     const params = new URL(request.url).searchParams;
@@ -15,6 +16,7 @@ export async function GET(request: Request) {
     );
   });
 }
+
 export async function POST(request: Request) {
   return handle(async () => {
     await assertLocalAdmin(true);

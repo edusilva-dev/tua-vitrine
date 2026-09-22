@@ -3,6 +3,7 @@ import { StorefrontPage } from "@/modules/storefront/server-page";
 import { getCurrentStore } from "@/modules/stores/server/service";
 
 export const dynamic = "force-dynamic";
+
 export default async function PreviewPage({
   searchParams,
 }: {

@@ -3,7 +3,9 @@ import { cookies, headers } from "next/headers";
 import { z } from "zod";
 import { db } from "./db";
 import { AppError } from "./http";
+
 export type StoreContext = { storeId: string };
+
 export async function assertLocalAdmin(mutation = false): Promise<void> {
   const values = await headers();
   const host = values.get("host") ?? "";
@@ -35,6 +37,7 @@ export async function assertLocalAdmin(mutation = false): Promise<void> {
     throw new AppError(403, "ORIGIN", "Origem não permitida.");
   }
 }
+
 export async function getAdminContext(): Promise<StoreContext> {
   await assertLocalAdmin();
   const jar = await cookies();
@@ -52,6 +55,7 @@ export async function getAdminContext(): Promise<StoreContext> {
 
   return { storeId: first.id };
 }
+
 export async function setAdminContext(storeId: string): Promise<void> {
   await assertLocalAdmin(true);
   z.string().uuid().parse(storeId);

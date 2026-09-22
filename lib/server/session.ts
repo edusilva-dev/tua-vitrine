@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { db } from "./db";
 import { AppError } from "./http";
+
 export async function assertSameOrigin(): Promise<void> {
   const values = await headers();
   const origin = values.get("origin");
@@ -17,6 +18,7 @@ export async function assertSameOrigin(): Promise<void> {
     throw new AppError(403, "ORIGIN", "Origem não permitida.");
   }
 }
+
 export async function anonymousSession(): Promise<string> {
   const jar = await cookies();
   const token = jar.get("tv-visitor")?.value;
@@ -46,6 +48,7 @@ export async function anonymousSession(): Promise<string> {
 
   return session.id;
 }
+
 const requests = new Map<string, { count: number; until: number }>();
 
 export function rateLimit(key: string, maximum = 120): void {

@@ -423,6 +423,7 @@ export function ProductForm({
     </form>
   );
 }
+
 export function ProductManager({
   products,
   categories,

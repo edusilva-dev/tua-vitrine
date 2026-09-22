@@ -3,6 +3,7 @@ import { getAdminContext } from "@/lib/server/context";
 import { ProductManager } from "@/modules/catalog/components/product-manager";
 import { listCategories, listProducts } from "@/modules/catalog/server/service";
 import { getCurrentStore } from "@/modules/stores/server/service";
+
 export default async function ProductsPage({
   searchParams,
 }: {

@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { AppError, handle } from "@/lib/server/http";
 import { readAsset } from "@/lib/server/storage";
+
 export const runtime = "nodejs";
+
 export async function GET(_request: Request, route: { params: Promise<{ id: string }> }) {
   return handle(async () => {
     const id = z

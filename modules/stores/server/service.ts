@@ -1,8 +1,8 @@
-import "server-only";
 import type { Store } from "@/generated/prisma/client";
 import { assertLocalAdmin, getAdminContext, type StoreContext } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { AppError } from "@/lib/server/http";
+import "server-only";
 import {
   customizationSchema,
   type StoreDTO,
@@ -11,6 +11,7 @@ import {
   whatsappSchema,
 } from "../contracts";
 import { storeRepository } from "./repository";
+
 export async function toStoreDTO(store: Store): Promise<StoreDTO> {
   const logo = store.logoAssetId
     ? await db.asset.findFirst({ where: { id: store.logoAssetId, storeId: store.id } })
@@ -33,6 +34,7 @@ export async function toStoreDTO(store: Store): Promise<StoreDTO> {
     url: `${(process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "")}/${store.slug}`,
   };
 }
+
 export async function getCurrentStore(): Promise<StoreDTO | null> {
   try {
     const context = await getAdminContext();
@@ -45,21 +47,25 @@ export async function getCurrentStore(): Promise<StoreDTO | null> {
     throw error;
   }
 }
+
 export async function listLocalStores(): Promise<StoreDTO[]> {
   await assertLocalAdmin();
 
   return Promise.all((await storeRepository.list()).map(toStoreDTO));
 }
+
 export async function getStoreBySlug(slug: string): Promise<StoreDTO | null> {
   const store = await storeRepository.bySlug(slug);
 
   return store?.status === "ACTIVE" ? toStoreDTO(store) : null;
 }
+
 export async function createStore(input: unknown): Promise<StoreDTO> {
   const values = storeIdentitySchema.parse(input);
 
   return toStoreDTO(await db.store.create({ data: values }));
 }
+
 export async function saveIdentity(
   context: StoreContext | null,
   input: unknown
@@ -87,11 +93,13 @@ export async function saveIdentity(
 
   return toStoreDTO(await db.store.update({ where: { id: context.storeId }, data: values }));
 }
+
 export async function saveWhatsapp(context: StoreContext, input: unknown): Promise<StoreDTO> {
   return toStoreDTO(
     await db.store.update({ where: { id: context.storeId }, data: whatsappSchema.parse(input) })
   );
 }
+
 export async function saveSettings(context: StoreContext, input: unknown): Promise<StoreDTO> {
   const values = storeSettingsSchema.parse(input);
 

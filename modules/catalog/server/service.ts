@@ -14,6 +14,7 @@ import {
   productInputSchema,
 } from "../contracts";
 import { catalogRepository, type ProductRecord, productInclude } from "./repository";
+
 export function toProductDTO(product: ProductRecord): ProductDTO {
   return {
     id: product.id,
@@ -42,6 +43,7 @@ export function toProductDTO(product: ProductRecord): ProductDTO {
     updatedAt: product.updatedAt.toISOString(),
   };
 }
+
 export async function listProducts(
   context: StoreContext,
   filters: ProductFilters = {}
@@ -74,6 +76,7 @@ export async function listProducts(
     pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
   };
 }
+
 export async function listProductsByIds(
   context: StoreContext,
   ids: string[]
@@ -87,9 +90,11 @@ export async function listProductsByIds(
     })
   ).map(toProductDTO);
 }
+
 export function listCategories(context: StoreContext): Promise<CategoryDTO[]> {
   return catalogRepository.categories(context);
 }
+
 export async function getProduct(context: StoreContext, id: string): Promise<ProductDTO> {
   z.string().uuid().parse(id);
   const product = await catalogRepository.find(context, id);
@@ -98,6 +103,7 @@ export async function getProduct(context: StoreContext, id: string): Promise<Pro
 
   return toProductDTO(product);
 }
+
 export async function saveProduct(
   context: StoreContext,
   input: unknown,
@@ -291,6 +297,7 @@ export async function saveProduct(
     throw error;
   }
 }
+
 export async function archiveProduct(context: StoreContext, id: string): Promise<void> {
   await getProduct(context, id);
   await db.product.update({
