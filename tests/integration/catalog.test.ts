@@ -14,10 +14,7 @@ import { createStore, saveIdentity, saveWhatsapp } from "@/modules/stores/server
 
 const url = new URL(process.env.DATABASE_URL ?? "http://invalid");
 
-if (
-  !["localhost", "127.0.0.1", "db"].includes(url.hostname) ||
-  !["tuavitrine", "tuavitrine_test"].includes(url.pathname.slice(1))
-)
+if (!["localhost", "127.0.0.1", "db"].includes(url.hostname) || url.pathname !== "/tuavitrine_test")
   throw new Error("Testes de integração exigem banco local isolado tuavitrine.");
 
 const run = randomUUID().slice(0, 8);

@@ -6,13 +6,14 @@ RUN bun install --frozen-lockfile
 FROM dependencies AS builder
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
-ENV APP_ENV=development
-ENV LOCAL_ONLY=true
-ENV APP_URL=http://localhost:3000
-ENV STORAGE_DIR=/tmp/storage
-RUN bun run db:generate
-RUN bun run build
+RUN export DATABASE_URL=postgresql://build:build@localhost:5432/build \
+    APP_ENV=development \
+    LOCAL_ONLY=true \
+    AUTH_MODE=local \
+    APP_URL=http://localhost:3000 \
+    STORAGE_DIR=/tmp/storage && \
+    bun run db:generate && \
+    bun run build
 
 FROM oven/bun:1.3.14 AS runner
 WORKDIR /app
@@ -22,7 +23,7 @@ ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 COPY --from=builder --chown=bun:bun /app/.next/standalone ./
 COPY --from=builder --chown=bun:bun /app/.next/static ./.next/static
-RUN mkdir -p /data/storage && chown -R bun:bun /data
+RUN mkdir -p /data/storage /data/mail-outbox && chown -R bun:bun /data
 USER bun
 EXPOSE 3000
 CMD ["bun", "server.js"]

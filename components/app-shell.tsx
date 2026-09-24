@@ -13,6 +13,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { AuthAccountMenu } from "@/components/auth-account-menu";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -36,10 +37,12 @@ export function AppShell({
   store,
   stores,
   children,
+  authenticated,
 }: {
   store: StoreDTO;
   stores: StoreDTO[];
   children: React.ReactNode;
+  authenticated: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -128,9 +131,12 @@ export function AppShell({
             className="mt-3 w-full justify-start text-white/70 hover:bg-white/10 hover:text-white"
             onClick={createStore}
           >
-            {busy ? <Loader2 className="animate-spin" /> : <Plus />} Nova loja de teste
+            {busy ? <Loader2 className="animate-spin" /> : <Plus />}{" "}
+            {authenticated ? "Nova loja" : "Nova loja de teste"}
           </Button>
-          <p className="mt-3 text-[10px] text-white/35">AMBIENTE LOCAL · PROTÓTIPO</p>
+          {!authenticated && (
+            <p className="mt-3 text-[10px] text-white/35">AMBIENTE LOCAL · PROTÓTIPO</p>
+          )}
         </div>
       </aside>
       <div className="lg:pl-64">
@@ -140,12 +146,15 @@ export function AppShell({
             <span className="mx-3 text-border">/</span>
             <span className="text-sm font-medium">{store.name}</span>
           </div>
-          <Button asChild variant="outline" className="bg-white">
-            <Link href="/admin/preview">
-              Ver minha vitrine
-              <ArrowUpRight size={16} />
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            {authenticated && <AuthAccountMenu />}
+            <Button asChild variant="outline" className="bg-white">
+              <Link href="/admin/preview">
+                Ver minha vitrine
+                <ArrowUpRight size={16} />
+              </Link>
+            </Button>
+          </div>
         </header>
         <main className="mx-auto max-w-7xl px-5 py-8 lg:px-10 lg:py-10">
           {store.onboardingStep < 4 && pathname !== "/admin/onboarding" && (

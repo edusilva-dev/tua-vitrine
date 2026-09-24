@@ -12,6 +12,11 @@ export const reservedSlugs = [
   "favicon",
   "robots",
   "sitemap",
+  "entrar",
+  "cadastro",
+  "recuperar-senha",
+  "redefinir-senha",
+  "verificar-email",
 ];
 
 export function normalizeSlug(value: string) {

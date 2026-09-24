@@ -1,10 +1,16 @@
-import { assertLocalAdmin, getAdminContext, setAdminContext } from "@/lib/server/context";
+import {
+  assertAdminAccess,
+  getAdminContext,
+  getAdminIdentity,
+  setAdminContext,
+} from "@/lib/server/context";
 import { AppError, handle, jsonBody } from "@/lib/server/http";
 import { saveIdentity } from "@/modules/stores/server/service";
 
 export async function PUT(request: Request) {
   return handle(async () => {
-    await assertLocalAdmin(true);
+    await assertAdminAccess(true);
+    const { userId } = await getAdminIdentity();
     let context = null;
 
     try {
@@ -13,7 +19,7 @@ export async function PUT(request: Request) {
       if (!(error instanceof AppError && error.code === "NO_STORE")) throw error;
     }
 
-    const store = await saveIdentity(context, await jsonBody(request));
+    const store = await saveIdentity(context, await jsonBody(request), userId ?? undefined);
 
     await setAdminContext(store.id);
 

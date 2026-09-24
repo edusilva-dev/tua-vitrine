@@ -4,15 +4,22 @@
 
 | Variável | Local | Futuro staging/produção |
 | --- | --- | --- |
-| APP_ENV | development ou test | staging ou production, após auth |
+| APP_ENV | development ou test | staging ou production |
 | APP_URL | http://localhost:3000 | URL HTTPS canônica |
-| LOCAL_ONLY | true | remover modo inseguro somente após auth |
+| LOCAL_ONLY | true | false, com AUTH_MODE=session |
+| AUTH_MODE | local ou session | session obrigatório |
+| MAIL_TRANSPORT | file (caixa privada local) | smtp com TLS |
 | DATABASE_URL | PostgreSQL isolado 55432 | segredo do ambiente |
 | STORAGE_DIR | ./work/storage ou /data/storage | volume único; depois adapter S3 |
+| STORAGE_DRIVER | local | use `disabled` na Vercel até configurar storage persistente |
+| DATABASE_POOL_MAX | 10 | use `1` nas funções serverless da Vercel |
+| DATABASE_URL_UNPOOLED / DIRECT_URL | opcional | URL direta do Neon para migrações e Prisma |
 
 Nunca versionar arquivos .env com valores reais. .env.example contém apenas valores públicos locais. Validar configuração no servidor; nenhuma URL de banco chega ao cliente. Não montar diretório de upload dentro de .next ou public.
 
 ## Saúde e implantação
+
+A autenticação já foi implementada; consulte docs/authentication.md para ativação e atribuição das lojas existentes. A infraestrutura pública ainda não foi provisionada. O próximo marco operacional exige domínio/provedor definidos, SMTP validado, segredos privados, proxy confiável (sobrescrevendo cabeçalhos de IP), backups automáticos fora do host com restauração ensaiada, alertas e plano de rollback. Não basta mudar APP_ENV no Compose local.
 
 /api/health/live indica processo respondendo. /api/health/ready verifica dependências necessárias, incluindo banco. Compose espera pg_isready antes de iniciar o app; readiness não aplica migrações.
 

@@ -3,10 +3,19 @@ import { randomUUID } from "node:crypto";
 import sharp, { type OutputInfo } from "sharp";
 import { getAdminContext, type StoreContext } from "./context";
 import { db } from "./db";
+import { getEnv } from "./env";
 import { AppError } from "./http";
 import { localStorageAdapter } from "./storage-adapter";
 
 export async function saveAsset(context: StoreContext, file: File) {
+  if (getEnv().STORAGE_DRIVER === "disabled") {
+    throw new AppError(
+      503,
+      "STORAGE_UNAVAILABLE",
+      "O envio de imagens estará disponível após a configuração do storage."
+    );
+  }
+
   if (
     !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
     file.size === 0 ||
@@ -82,6 +91,8 @@ export async function saveAsset(context: StoreContext, file: File) {
 }
 
 export async function readAsset(id: string): Promise<{ data: Buffer; mime: string } | null> {
+  if (getEnv().STORAGE_DRIVER === "disabled") return null;
+
   const asset = await db.asset.findUnique({
     where: { id },
     include: { store: true, images: { where: { product: { archivedAt: null } }, take: 1 } },

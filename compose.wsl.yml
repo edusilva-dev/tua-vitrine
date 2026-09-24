@@ -1,0 +1,10 @@
+# Opt-in for switching between Bun in WSL and the app container against the same database.
+# Prepare work/storage as described in docs/storage.md before using existing Docker uploads.
+services:
+  app:
+    volumes:
+      - type: bind
+        source: ./work/storage
+        target: /data/storage
+        bind:
+          create_host_path: false

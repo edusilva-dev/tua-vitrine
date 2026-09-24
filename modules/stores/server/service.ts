@@ -1,5 +1,10 @@
 import type { Store } from "@/generated/prisma/client";
-import { assertLocalAdmin, getAdminContext, type StoreContext } from "@/lib/server/context";
+import {
+  assertAdminAccess,
+  getAdminContext,
+  getAdminIdentity,
+  type StoreContext,
+} from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { AppError } from "@/lib/server/http";
 import "server-only";
@@ -48,10 +53,11 @@ export async function getCurrentStore(): Promise<StoreDTO | null> {
   }
 }
 
-export async function listLocalStores(): Promise<StoreDTO[]> {
-  await assertLocalAdmin();
+export async function listAccessibleStores(): Promise<StoreDTO[]> {
+  await assertAdminAccess();
+  const { userId } = await getAdminIdentity();
 
-  return Promise.all((await storeRepository.list()).map(toStoreDTO));
+  return Promise.all((await storeRepository.list(userId)).map(toStoreDTO));
 }
 
 export async function getStoreBySlug(slug: string): Promise<StoreDTO | null> {
@@ -60,24 +66,40 @@ export async function getStoreBySlug(slug: string): Promise<StoreDTO | null> {
   return store?.status === "ACTIVE" ? toStoreDTO(store) : null;
 }
 
-export async function createStore(input: unknown): Promise<StoreDTO> {
+export async function createStore(input: unknown, ownerId?: string): Promise<StoreDTO> {
   const values = storeIdentitySchema.parse(input);
 
-  return toStoreDTO(await db.store.create({ data: values }));
+  return toStoreDTO(
+    await db.store.create({
+      data: {
+        ...values,
+        ...(ownerId ? { members: { create: { userId: ownerId, role: "OWNER" } } } : {}),
+      },
+    })
+  );
 }
 
 export async function saveIdentity(
   context: StoreContext | null,
-  input: unknown
+  input: unknown,
+  ownerId?: string
 ): Promise<StoreDTO> {
   const values = storeIdentitySchema.parse(input);
 
   if (!context) {
     const existing = await storeRepository.bySlug(values.slug);
 
-    if (existing?.status === "DRAFT" && existing.name === values.name) return toStoreDTO(existing);
+    if (existing?.status === "DRAFT" && existing.name === values.name) {
+      const member = ownerId
+        ? await db.storeMember.findUnique({
+            where: { storeId_userId: { storeId: existing.id, userId: ownerId } },
+          })
+        : null;
 
-    return createStore(values);
+      if (!ownerId || member?.role === "OWNER") return toStoreDTO(existing);
+    }
+
+    return createStore(values, ownerId);
   }
 
   const store = await storeRepository.find(context.storeId);

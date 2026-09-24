@@ -14,6 +14,7 @@
 # next.js
 /.next/
 /out/
+/.vercel/
 
 # production
 /build
@@ -38,6 +39,8 @@ next-env.d.ts
 /generated/prisma
 
 !.env.example
+!.env.vercel.example
 /work/
 /playwright-report/
 /test-results/
+.neon
