@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { Prisma } from "@/generated/prisma/client";
 import { db } from "./db";
 import { getEnv } from "./env";
-import { type AssetStorage, localStorageAdapter } from "./storage-adapter";
+import { type AssetStorage, getAssetStorage, isVercelBlobReference } from "./storage-adapter";
 
 type Candidate = { id: string; storeId: string; storageKey: string };
 type CleanupOptions = {
@@ -28,7 +28,7 @@ function isCandidate(value: unknown): value is Candidate {
     typeof candidate.storeId === "string" &&
     uuid.test(candidate.storeId) &&
     typeof candidate.storageKey === "string" &&
-    /^[a-f0-9-]+\.webp$/.test(candidate.storageKey)
+    (/^[a-f0-9-]+\.webp$/.test(candidate.storageKey) || isVercelBlobReference(candidate.storageKey))
   );
 }
 
@@ -46,7 +46,7 @@ export async function cleanupAssets(options: CleanupOptions = {}) {
   }
 
   const cutoff = new Date(Date.now() - graceHours * 3600000);
-  const storage = options.storage ?? localStorageAdapter;
+  const storage = options.storage ?? getAssetStorage();
   const directory = options.journalDirectory ?? join(getEnv().STORAGE_DIR, ".cleanup");
   const scope = options.storeId
     ? Prisma.sql`AND a."storeId" = ${options.storeId}::uuid`

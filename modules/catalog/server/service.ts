@@ -5,6 +5,7 @@ import { Prisma } from "@/generated/prisma/client";
 import type { StoreContext } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { AppError } from "@/lib/server/http";
+import { assetUrl } from "@/lib/server/storage-adapter";
 import { normalizeSlug } from "@/modules/stores/contracts";
 import {
   type CategoryDTO,
@@ -26,7 +27,7 @@ export function toProductDTO(product: ProductRecord): ProductDTO {
     category: product.category ? { id: product.category.id, name: product.category.name } : null,
     images: product.images.map(({ asset }) => ({
       id: asset.id,
-      url: `/api/assets/${asset.id}`,
+      url: assetUrl(asset),
       width: asset.width,
       height: asset.height,
     })),

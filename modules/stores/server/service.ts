@@ -8,6 +8,7 @@ import {
 import { db } from "@/lib/server/db";
 import { AppError } from "@/lib/server/http";
 import "server-only";
+import { assetUrl } from "@/lib/server/storage-adapter";
 import {
   customizationSchema,
   type StoreDTO,
@@ -32,7 +33,7 @@ export async function toStoreDTO(store: Store): Promise<StoreDTO> {
     primaryColor: store.primaryColor,
     template: store.template === "list" ? "list" : "grid",
     logo: logo
-      ? { id: logo.id, url: `/api/assets/${logo.id}`, width: logo.width, height: logo.height }
+      ? { id: logo.id, url: assetUrl(logo), width: logo.width, height: logo.height }
       : null,
     customization: customization.success ? customization.data : { version: 1, tagline: "" },
     onboardingStep: store.onboardingCompletedAt ? 4 : store.whatsapp ? 3 : 2,

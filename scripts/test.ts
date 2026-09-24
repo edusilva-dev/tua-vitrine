@@ -25,6 +25,8 @@ const result = spawn(
       LOCAL_ONLY: "true",
       APP_URL: "http://localhost:3000",
       STORAGE_DIR: "./work/test-storage",
+      BILLING_MODE: "disabled",
+      MAIL_TRANSPORT: "file",
     },
   }
 );

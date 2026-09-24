@@ -5,7 +5,7 @@ import { getAdminContext, type StoreContext } from "./context";
 import { db } from "./db";
 import { getEnv } from "./env";
 import { AppError } from "./http";
-import { localStorageAdapter } from "./storage-adapter";
+import { assetUrl, getAssetStorage } from "./storage-adapter";
 
 export async function saveAsset(context: StoreContext, file: File) {
   if (getEnv().STORAGE_DRIVER === "disabled") {
@@ -62,9 +62,10 @@ export async function saveAsset(context: StoreContext, file: File) {
     );
   }
 
-  const storageKey = `${randomUUID()}.webp`;
-
-  await localStorageAdapter.put(storageKey, result.data);
+  const storage = getAssetStorage();
+  const key = `stores/${context.storeId}/${randomUUID()}.webp`;
+  const uploadKey = getEnv().STORAGE_DRIVER === "local" ? key.slice(key.lastIndexOf("/") + 1) : key;
+  const storageKey = await storage.put(uploadKey, result.data);
 
   try {
     const asset = await db.asset.create({
@@ -80,12 +81,12 @@ export async function saveAsset(context: StoreContext, file: File) {
 
     return {
       id: asset.id,
-      url: `/api/assets/${asset.id}`,
+      url: assetUrl(asset),
       width: asset.width,
       height: asset.height,
     };
   } catch (error) {
-    await localStorageAdapter.remove(storageKey);
+    await storage.remove(storageKey);
     throw error;
   }
 }
@@ -113,7 +114,7 @@ export async function readAsset(id: string): Promise<{ data: Buffer; mime: strin
     }
   }
 
-  const data = await localStorageAdapter.get(asset.storageKey);
+  const data = await getAssetStorage().get(asset.storageKey);
 
   return data ? { data, mime: asset.mime } : null;
 }

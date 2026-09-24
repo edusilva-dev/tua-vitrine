@@ -1,6 +1,8 @@
 # Armazenamento e limpeza de uploads
 
-O adapter local guarda imagens fora de `public/`. Banco e diretório `STORAGE_DIR` formam um conjunto: app no WSL e app no Docker só podem compartilhar o banco se também enxergarem os mesmos arquivos. Faça backup e restauração de ambos juntos. Uma instância com volume persistente é o limite deste adapter; múltiplas réplicas exigem storage compartilhado ou um adapter de objetos.
+Em desenvolvimento, o adapter local guarda imagens fora de `public/`. Em produção na Vercel, use `STORAGE_DRIVER=vercel-blob`; a integração do projeto injeta `BLOB_READ_WRITE_TOKEN` e as imagens públicas são servidas diretamente pelo CDN.
+
+No adapter local, banco e diretório `STORAGE_DIR` formam um conjunto: app no WSL e app no Docker só podem compartilhar o banco se também enxergarem os mesmos arquivos. Faça backup e restauração de ambos juntos. Uma instância com volume persistente é o limite deste adapter; múltiplas réplicas exigem storage compartilhado ou um adapter de objetos.
 
 ## Paridade WSL e Docker
 
@@ -32,3 +34,14 @@ A seleção é revalidada no `DELETE` e as foreign keys protegem contra associa�
 Para recuperar falhas entre banco e filesystem, cada exclusão escreve primeiro um manifesto em `STORAGE_DIR/.cleanup`. Se a exclusão física falhar ou o processo parar, a próxima execução com `--apply` verifica que o registro já não existe e tenta remover o arquivo novamente. O diretório de manifestos deve permanecer no mesmo volume persistente das imagens. Erros resultam em código de saída 1 e logs estruturados; arquivos ausentes são tratados como exclusão já concluída pelo adapter.
 
 Limitações: essa rotina não varre arquivos sem registro no banco e sem manifesto (por exemplo, queda do processo durante o upload antes da criação do registro). Esses resíduos exigem reconciliação específica futura. Manifestos criados antes de uma exclusão recusada permanecem para a próxima execução; são inofensivos e nunca autorizam remoção de um arquivo ainda registrado. A garantia cobre interrupção do processo e falhas de I/O reportadas; recuperação de perda total do volume depende de backup. Não expor essa rotina como endpoint público.
+
+## Vercel Blob
+
+Crie um store com acesso público no projeto da Vercel e configure `STORAGE_DRIVER=vercel-blob`. Não
+versione nem exponha `BLOB_READ_WRITE_TOKEN`. Cada objeto recebe um caminho imprevisível e isolado
+por loja, e o banco guarda a URL opaca retornada pelo Blob. A aplicação aceita como URL direta apenas
+HTTPS sob `*.blob.vercel-storage.com`; referências locais continuam passando por `/api/assets/[id]`.
+
+A limpeza existente consegue chamar a exclusão do Blob, mas seu manifesto ainda usa filesystem. Não
+execute a rotina em uma função efêmera: rode-a num operador ou job com diretório persistente até a
+fila de exclusão ser movida para o PostgreSQL.

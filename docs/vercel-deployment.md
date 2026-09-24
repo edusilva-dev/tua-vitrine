@@ -4,6 +4,17 @@ Esta é a referência de deploy gerenciado. O Compose de produção continua út
 participa do deploy na Vercel. A Vercel instala com Bun a partir do `bun.lock`; as funções Next.js
 executam no runtime Node.js gerenciado da plataforma.
 
+## Cobrança
+
+Use `BILLING_MODE=disabled` enquanto as credenciais Stripe não estiverem completas. Nesse modo, o
+painel mostra a cobrança como indisponível e os endpoints de checkout, portal e webhook recusam a
+operação de forma controlada. Para ativar, configure `STRIPE_SECRET_KEY`,
+`STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_BASIC_MONTHLY` e `STRIPE_PRICE_PRO_MONTHLY`; depois altere
+`BILLING_MODE` para `stripe` e faça um novo deploy.
+
+Os segredos devem ser variáveis Sensitive na Vercel. Prefira uma chave restrita com somente as
+permissões necessárias para Customers, Checkout Sessions, Billing Portal e Subscriptions.
+
 ## 1. Preparar o Neon
 
 No painel do Neon, copie duas conexões do mesmo banco e branch:
@@ -39,24 +50,29 @@ Para produção:
 - `DATABASE_URL` pooled; a URL direta fica no ambiente que executa as migrações;
 - `DATABASE_POOL_MAX=1`;
 - `AUTH_MODE=session`, `LOCAL_ONLY=false` e um `BETTER_AUTH_SECRET` aleatório;
-- `STORAGE_DRIVER=disabled` enquanto não houver storage persistente.
+- `STORAGE_DRIVER=vercel-blob`; conecte um Blob store público e confirme `BLOB_READ_WRITE_TOKEN`.
 
 Para previews, use um branch Neon separado quando houver dados reais. Defina `APP_ENV=staging`,
 omita `APP_URL` para que o endereço do deployment seja usado e nunca conecte previews ao banco de
 produção.
 
-## 3. E-mail e imagens ainda pendentes
+## 3. E-mail e imagens
 
-O cadastro exige confirmação de e-mail e a recuperação de senha depende de entrega real. Por isso o
-ambiente público continua recusando inicialização sem SMTP válido. Antes do primeiro deploy utilizável,
-configure `MAIL_TRANSPORT=smtp`, remetente e credenciais. Não use valores fictícios: eles criariam
-contas que não conseguem confirmar o endereço.
+O cadastro exige confirmação de e-mail e a recuperação de senha depende de entrega real. Enquanto o
+provedor não estiver escolhido, use `MAIL_TRANSPORT=disabled`: login de contas existentes continua
+disponível, enquanto cadastro, reenvio de verificação e recuperação respondem `503` explicitamente.
+Para liberar essas operações, configure `MAIL_TRANSPORT=smtp`, remetente e credenciais válidas.
 
-O filesystem das funções da Vercel é efêmero. Com `STORAGE_DRIVER=disabled`, catálogo, onboarding e
-autenticação funcionam, mas o endpoint de upload responde `503` com uma mensagem controlada. Escolha
-um storage de objetos antes de habilitar fotos. Vercel Blob, S3 e serviços compatíveis com S3 são
-opções; a escolha deve resultar em um novo adapter, sem gravar em `/tmp` como persistência. Prefira
-upload direto do navegador com URL/token temporário para não depender do limite de corpo das funções.
+O filesystem das funções da Vercel é efêmero. Crie um **Blob store público** no mesmo projeto,
+defina `STORAGE_DRIVER=vercel-blob` e mantenha `BLOB_READ_WRITE_TOKEN` somente nos ambientes da
+Vercel. O app valida a imagem, converte para WebP e grava sob `stores/{storeId}/`; a URL retornada
+pelo Blob é persistida e entregue diretamente pelo CDN. A rota `/api/assets/[id]` permanece para
+arquivos locais e registros legados.
+
+O limite atual é 5 MB e o upload passa pela função para validar o conteúdo real com Sharp. Confirme o
+limite de corpo do plano antes do lançamento; se ele for menor, migre o fluxo para upload temporário
+direto e finalize a validação no servidor. URLs do store público continuam acessíveis para quem as
+conhece, comportamento adequado às fotos públicas da vitrine.
 
 ## 4. Domínio e validação
 

@@ -20,7 +20,9 @@ let storeId = "";
 let journalDirectory = "";
 const removed: string[] = [];
 const storage: AssetStorage = {
-  async put() {},
+  async put(key) {
+    return key;
+  },
   async get() {
     return null;
   },

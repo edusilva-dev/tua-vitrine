@@ -9,6 +9,20 @@ enum StoreStatus {
  DRAFT
  ACTIVE
 }
+enum BillingPlan {
+ BASIC
+ PRO
+}
+enum SubscriptionStatus {
+ INCOMPLETE
+ INCOMPLETE_EXPIRED
+ TRIALING
+ ACTIVE
+ PAST_DUE
+ CANCELED
+ UNPAID
+ PAUSED
+}
 model Store {
  id String @id @default(uuid()) @db.Uuid
  name String
@@ -29,6 +43,27 @@ model Store {
  likes ProductLike[]
  idempotencies Idempotency[]
  members StoreMember[]
+ subscription StoreSubscription?
+}
+model StoreSubscription {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @unique @db.Uuid
+ stripeCustomerId String @unique
+ stripeSubscriptionId String? @unique
+ plan BillingPlan?
+ status SubscriptionStatus?
+ currentPeriodEnd DateTime?
+ trialEnd DateTime?
+ trialUsedAt DateTime?
+ cancelAtPeriodEnd Boolean @default(false)
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+model StripeWebhookEvent {
+ id String @id
+ type String
+ processedAt DateTime @default(now())
 }
 model Category {
  slug String

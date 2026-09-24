@@ -3,10 +3,16 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { getEnv } from "./env";
 
 export async function sendAccountEmail(to: string, subject: string, url: string) {
   const env = getEnv();
+
+  if (env.MAIL_TRANSPORT === "disabled") {
+    throw new Error("O envio de e-mail ainda não está configurado.");
+  }
+
   const message = {
     from: env.MAIL_FROM,
     to,
@@ -22,6 +28,19 @@ export async function sendAccountEmail(to: string, subject: string, url: string)
       mode: 0o600,
       flag: "wx",
     });
+
+    return;
+  }
+
+  if (env.MAIL_TRANSPORT === "resend") {
+    const { error } = await new Resend(env.RESEND_API_KEY).emails.send({
+      from: env.MAIL_FROM,
+      to,
+      subject,
+      text: message.text,
+    });
+
+    if (error) throw new Error(`Falha no Resend: ${error.message}`);
 
     return;
   }
