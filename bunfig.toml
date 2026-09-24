@@ -1,0 +1,4 @@
+[test]
+root = "./tests"
+preload = ["./tests/setup/bun-test.ts"]
+pathIgnorePatterns = ["**/e2e/**", "**/auth-e2e/**", "**/setup/**"]
