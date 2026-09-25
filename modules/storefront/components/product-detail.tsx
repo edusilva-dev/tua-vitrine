@@ -60,7 +60,7 @@ export function ProductDetail({
     >
       <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-hidden p-0 sm:max-w-4xl">
         <div className="max-h-[calc(100dvh-1rem)] overflow-y-auto sm:grid sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:overflow-hidden">
-          <div>
+          <div className="bg-muted/25 p-5 sm:overflow-y-auto sm:p-6">
             <ProductImage
               image={product.images[imageIndex]}
               name={product.name}
@@ -82,59 +82,63 @@ export function ProductDetail({
               </div>
             ) : null}
           </div>
-          <div className="flex min-h-0 flex-col p-5 sm:max-h-[calc(100dvh-1rem)] sm:overflow-y-auto sm:p-6">
-            <DialogHeader className="text-left">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                {product.category?.name ?? "Catálogo"}
+          <div className="flex min-h-0 flex-col p-5 sm:max-h-[calc(100dvh-1rem)] sm:p-6">
+            <div className="min-h-0 flex-1 sm:overflow-y-auto sm:pr-2">
+              <DialogHeader className="text-left">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  {product.category?.name ?? "Catálogo"}
+                </p>
+                <DialogTitle className="font-heading text-2xl">{product.name}</DialogTitle>
+                <DialogDescription className="whitespace-pre-wrap leading-relaxed">
+                  {product.description || "Fale com a loja para saber mais sobre este produto."}
+                </DialogDescription>
+              </DialogHeader>
+              <p className="my-5 text-3xl font-semibold tracking-tight">
+                {product.variants.length && !variant ? (
+                  <span className="mr-1 text-sm font-normal text-muted-foreground">
+                    A partir de
+                  </span>
+                ) : null}
+                {money(
+                  product.variants.length && !variant
+                    ? Math.min(...product.variants.map((item) => item.priceCents))
+                    : price
+                )}
               </p>
-              <DialogTitle className="font-heading text-2xl">{product.name}</DialogTitle>
-              <DialogDescription className="whitespace-pre-wrap leading-relaxed">
-                {product.description || "Fale com a loja para saber mais sobre este produto."}
-              </DialogDescription>
-            </DialogHeader>
-            <p className="my-5 text-3xl font-semibold tracking-tight">
-              {product.variants.length && !variant ? (
-                <span className="mr-1 text-sm font-normal text-muted-foreground">A partir de</span>
+              {product.variants.length ? (
+                <div className="mb-4 space-y-2">
+                  <Label htmlFor="product-variant">Escolha uma opção</Label>
+                  <Select value={variantId} onValueChange={setVariantId}>
+                    <SelectTrigger id="product-variant" className="w-full">
+                      <SelectValue placeholder="Selecione cor, tamanho…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {product.variants.map((item) => (
+                        <SelectItem key={item.id} value={item.id} disabled={!item.available}>
+                          {item.label} · {money(item.priceCents)}
+                          {!item.available ? " · Indisponível" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               ) : null}
-              {money(
-                product.variants.length && !variant
-                  ? Math.min(...product.variants.map((item) => item.priceCents))
-                  : price
-              )}
-            </p>
-            {product.variants.length ? (
-              <div className="mb-4 space-y-2">
-                <Label htmlFor="product-variant">Escolha uma opção</Label>
-                <Select value={variantId} onValueChange={setVariantId}>
-                  <SelectTrigger id="product-variant" className="w-full">
-                    <SelectValue placeholder="Selecione cor, tamanho…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {product.variants.map((item) => (
-                      <SelectItem key={item.id} value={item.id} disabled={!item.available}>
-                        {item.label} · {money(item.priceCents)}
-                        {!item.available ? " · Indisponível" : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="mb-5 space-y-2">
+                <Label htmlFor="product-quantity">Quantidade</Label>
+                <Input
+                  id="product-quantity"
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={quantity}
+                  onChange={(event) =>
+                    setQuantity(Math.max(1, Math.min(99, Number(event.target.value) || 1)))
+                  }
+                  className="w-24"
+                />
               </div>
-            ) : null}
-            <div className="mb-5 space-y-2">
-              <Label htmlFor="product-quantity">Quantidade</Label>
-              <Input
-                id="product-quantity"
-                type="number"
-                min={1}
-                max={99}
-                value={quantity}
-                onChange={(event) =>
-                  setQuantity(Math.max(1, Math.min(99, Number(event.target.value) || 1)))
-                }
-                className="w-24"
-              />
             </div>
-            <div className="mt-auto grid gap-2 border-t bg-popover pt-4 sm:sticky sm:bottom-0">
+            <div className="grid shrink-0 gap-2 border-t bg-popover pt-4">
               <Button
                 size="lg"
                 disabled={!available || !ready}
