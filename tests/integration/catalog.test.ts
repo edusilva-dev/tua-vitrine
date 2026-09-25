@@ -6,6 +6,7 @@ import type { ProductInput } from "@/modules/catalog/contracts";
 import {
   archiveProduct,
   getProduct,
+  listProductOptionFilters,
   listProducts,
   listProductsByIds,
   saveProduct,
@@ -75,6 +76,20 @@ describe("Catálogo e isolamento real PostgreSQL", () => {
         (product) => product.id === created.id
       )
     ).toBe(true);
+    expect(
+      (await listProducts({ storeId }, { variants: { Cor: "Areia" } })).data.some(
+        (product) => product.id === created.id
+      )
+    ).toBe(true);
+    expect(
+      (await listProducts({ storeId }, { variants: { Cor: "Azul" } })).data.some(
+        (product) => product.id === created.id
+      )
+    ).toBe(false);
+    expect(await listProductOptionFilters({ storeId })).toContainEqual({
+      name: "Cor",
+      values: ["Areia"],
+    });
     await archiveProduct({ storeId }, created.id);
     expect(await listProductsByIds({ storeId }, [created.id])).toEqual([]);
     await expect(getProduct({ storeId }, created.id)).rejects.toThrow("Produto não encontrado.");

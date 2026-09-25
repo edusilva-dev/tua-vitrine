@@ -31,7 +31,9 @@ import type {
   ProductDTO,
   ProductFilters,
   ProductListDTO,
+  ProductOptionFilterDTO,
 } from "@/modules/catalog/contracts";
+import { encodeVariantFilter } from "@/modules/catalog/contracts";
 import type { PublicPromotionCampaignDTO } from "@/modules/promotions/contracts";
 import type { StoreDTO } from "@/modules/stores/contracts";
 import { type CartLine, lineKey } from "../selection";
@@ -41,10 +43,17 @@ import { CartSheet } from "./cart-sheet";
 import { ProductDetail } from "./product-detail";
 import { ProductImage } from "./product-image";
 
+function selectedVariantFilter(filters: ProductFilters, name: string): string {
+  const value = filters.variants?.[name];
+
+  return value ? encodeVariantFilter(name, value) : "all";
+}
+
 export function Storefront({
   store,
   catalog,
   categories,
+  optionFilters,
   filters,
   preview = false,
   showFreeBranding = false,
@@ -54,6 +63,7 @@ export function Storefront({
   store: StoreDTO;
   catalog: ProductListDTO;
   categories: CategoryDTO[];
+  optionFilters: ProductOptionFilterDTO[];
   filters: ProductFilters;
   preview?: boolean;
   showFreeBranding?: boolean;
@@ -191,6 +201,10 @@ export function Storefront({
     if (filters.category) params.set("category", filters.category);
 
     if (filters.available) params.set("available", filters.available);
+
+    for (const [name, value] of Object.entries(filters.variants ?? {})) {
+      params.append("variant", encodeVariantFilter(name, value));
+    }
 
     if (promotionActive) params.set("campaign", "1");
 
@@ -391,6 +405,28 @@ export function Storefront({
                   <SelectItem value="false">Indisponíveis</SelectItem>
                 </SelectContent>
               </Select>
+              {optionFilters.map((option) => (
+                <Select
+                  key={option.name}
+                  name="variant"
+                  defaultValue={selectedVariantFilter(filters, option.name)}
+                >
+                  <SelectTrigger
+                    className="h-10 min-w-32 bg-card"
+                    aria-label={`Filtrar por ${option.name}`}
+                  >
+                    <SelectValue placeholder={option.name} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{option.name}: todos</SelectItem>
+                    {option.values.map((value) => (
+                      <SelectItem key={value} value={encodeVariantFilter(option.name, value)}>
+                        {option.name}: {value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ))}
               <Button type="submit" variant="secondary" className="h-10">
                 Filtrar
               </Button>

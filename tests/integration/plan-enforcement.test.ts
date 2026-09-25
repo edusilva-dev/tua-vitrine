@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
+import type Stripe from "stripe";
 import { db } from "@/lib/server/db";
 import { getEntitlements } from "@/modules/billing/server/entitlements";
+import { processStripeEvent } from "@/modules/billing/server/service";
 import { listProducts, selectPublishedProducts } from "@/modules/catalog/server/service";
 import {
   getPublicPromotionCampaign,
@@ -65,16 +67,25 @@ test("Free exige seleção e a vitrine pública omite produtos despublicados", a
 });
 
 test("Free bloqueia cor e campanha, e Profissional libera campanha", async () => {
-  await expect(
-    saveSettings(context, {
-      name: "Plano teste",
-      whatsapp: "+5511999999999",
-      primaryColor: "#ff0000",
-      template: "grid",
-      logoAssetId: null,
-      customization: { version: 1, tagline: "" },
-    })
-  ).rejects.toThrow();
+  const freeSettings = await saveSettings(context, {
+    name: "Plano teste",
+    whatsapp: "+5511999999999",
+    primaryColor: "#ff0000",
+    template: "list",
+    logoAssetId: null,
+    customization: { version: 1, tagline: "Personalização antiga" },
+  });
+
+  expect(freeSettings).toMatchObject({
+    primaryColor: "#2563eb",
+    template: "grid",
+    customization: { version: 1, tagline: "" },
+  });
+  expect(await db.store.findUniqueOrThrow({ where: { id: storeId } })).toMatchObject({
+    primaryColor: "#2563eb",
+    template: "grid",
+    customization: { version: 1, tagline: "" },
+  });
   await expect(
     savePromotionCampaign(context, {
       title: "Oferta",
@@ -108,4 +119,40 @@ test("Free bloqueia cor e campanha, e Profissional libera campanha", async () =>
     title: "Oferta",
     productIds: [productIds[0]],
   });
+  await saveSettings(context, {
+    name: "Plano teste",
+    whatsapp: "+5511999999999",
+    primaryColor: "#ff0000",
+    template: "list",
+    logoAssetId: null,
+    customization: { version: 1, tagline: "Profissional" },
+  });
+  await processStripeEvent({
+    id: `evt_${randomUUID()}`,
+    type: "customer.subscription.updated",
+    data: {
+      object: {
+        id: `sub_${storeId}`,
+        customer: `cus_${storeId}`,
+        status: "active",
+        cancel_at_period_end: false,
+        trial_end: null,
+        items: {
+          data: [
+            {
+              current_period_end: Math.floor(Date.now() / 1000) + 86400,
+              price: { id: process.env.STRIPE_PRICE_BASIC_MONTHLY },
+            },
+          ],
+        },
+      },
+    },
+  } as unknown as Stripe.Event);
+
+  expect(await db.store.findUniqueOrThrow({ where: { id: storeId } })).toMatchObject({
+    primaryColor: "#ff0000",
+    template: "grid",
+    customization: { version: 1, tagline: "" },
+  });
+  expect(await getPublicPromotionCampaign(context)).toBeNull();
 });

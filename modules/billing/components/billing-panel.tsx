@@ -1,8 +1,18 @@
 "use client";
 
-import { Check, CreditCard, Loader2 } from "lucide-react";
+import { Check, CreditCard, Loader2, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/client/http";
 import type { BillingPlan, Entitlements, PaidBillingPlan } from "../contracts";
@@ -57,6 +67,7 @@ function formatDate(value: string | null) {
 
 export function BillingPanel({ status }: { status: BillingStatus }) {
   const [loading, setLoading] = useState<PaidBillingPlan | "PORTAL" | null>(null);
+  const [portalWarningOpen, setPortalWarningOpen] = useState(false);
   const isTrial = status.entitlements.source === "INTERNAL_TRIAL" || status.status === "TRIALING";
   const trialDays =
     status.entitlements.source === "INTERNAL_TRIAL"
@@ -98,7 +109,6 @@ export function BillingPanel({ status }: { status: BillingStatus }) {
           <CreditCard size={21} />
         </div>
       </div>
-
       <div className="p-6">
         {isTrial ? (
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
@@ -157,7 +167,7 @@ export function BillingPanel({ status }: { status: BillingStatus }) {
           {status.canManage && (
             <Button
               disabled={!status.enabled || loading !== null}
-              onClick={() => void open("/api/billing/portal")}
+              onClick={() => setPortalWarningOpen(true)}
             >
               {loading === "PORTAL" && <Loader2 className="animate-spin" />}
               Trocar, renovar ou cancelar
@@ -182,6 +192,45 @@ export function BillingPanel({ status }: { status: BillingStatus }) {
           </ul>
         ) : null}
       </div>
+      <AlertDialog open={portalWarningOpen} onOpenChange={setPortalWarningOpen}>
+        <AlertDialogContent className="max-w-[calc(100%-2rem)] sm:max-w-xl">
+          <AlertDialogHeader>
+            <div className="mb-3 grid size-12 place-items-center rounded-full bg-amber-100 text-amber-700">
+              <TriangleAlert className="size-6" />
+            </div>
+            <AlertDialogTitle className="text-xl">
+              Reduzir o plano altera sua vitrine
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed">
+              A Stripe mostrará as opções de troca, renovação e cancelamento. Se você confirmar um
+              downgrade, os recursos que não pertencem ao novo plano serão removidos quando a
+              mudança entrar em vigor.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+            <p>
+              <strong>Profissional para Essencial:</strong> modelo da vitrine, frase personalizada e
+              campanha promocional serão resetados.
+            </p>
+            <p>
+              <strong>Essencial ou Profissional para Free:</strong> a cor também volta ao padrão e
+              somente 10 produtos poderão permanecer publicados.
+            </p>
+            <p>
+              Um cancelamento agendado mantém os recursos atuais até o final do período já pago.
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter meu plano</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => void open("/api/billing/portal")}
+              disabled={loading !== null}
+            >
+              Entendi, abrir gerenciamento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

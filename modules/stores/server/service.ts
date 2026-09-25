@@ -8,6 +8,7 @@ import {
 } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { AppError } from "@/lib/server/http";
+import type { Entitlements } from "@/modules/billing/contracts";
 import { getEntitlements } from "@/modules/billing/server/entitlements";
 import "server-only";
 import { assetUrl } from "@/lib/server/storage-adapter";
@@ -20,11 +21,33 @@ import {
 } from "../contracts";
 import { storeRepository } from "./repository";
 
-export async function toStoreDTO(store: Store): Promise<StoreDTO> {
-  const logo = store.logoAssetId
-    ? await db.asset.findFirst({ where: { id: store.logoAssetId, storeId: store.id } })
-    : null;
+const DEFAULT_PRIMARY_COLOR = "#2563eb";
+const DEFAULT_CUSTOMIZATION = { version: 1 as const, tagline: "" };
+
+export function effectiveStoreAppearance(store: Store, entitlements: Entitlements) {
   const customization = customizationSchema.safeParse(store.customization);
+
+  return {
+    primaryColor: entitlements.canCustomizeColors ? store.primaryColor : DEFAULT_PRIMARY_COLOR,
+    template:
+      entitlements.canUseFullCustomization && store.template === "list"
+        ? ("list" as const)
+        : ("grid" as const),
+    customization:
+      entitlements.canUseFullCustomization && customization.success
+        ? customization.data
+        : DEFAULT_CUSTOMIZATION,
+  };
+}
+
+export async function toStoreDTO(store: Store): Promise<StoreDTO> {
+  const [logo, entitlements] = await Promise.all([
+    store.logoAssetId
+      ? db.asset.findFirst({ where: { id: store.logoAssetId, storeId: store.id } })
+      : null,
+    getEntitlements({ storeId: store.id }),
+  ]);
+  const appearance = effectiveStoreAppearance(store, entitlements);
 
   return {
     id: store.id,
@@ -32,12 +55,10 @@ export async function toStoreDTO(store: Store): Promise<StoreDTO> {
     slug: store.slug,
     whatsapp: store.whatsapp,
     status: store.status,
-    primaryColor: store.primaryColor,
-    template: store.template === "list" ? "list" : "grid",
+    ...appearance,
     logo: logo
       ? { id: logo.id, url: assetUrl(logo), width: logo.width, height: logo.height }
       : null,
-    customization: customization.success ? customization.data : { version: 1, tagline: "" },
     onboardingStep: store.onboardingCompletedAt ? 4 : store.whatsapp ? 3 : 2,
     url: `${(process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "")}/${store.slug}`,
   };
@@ -133,30 +154,22 @@ export async function saveWhatsapp(context: StoreContext, input: unknown): Promi
 
 export async function saveSettings(context: StoreContext, input: unknown): Promise<StoreDTO> {
   const values = storeSettingsSchema.parse(input);
-  const [entitlements, current] = await Promise.all([
-    getEntitlements(context),
-    db.store.findUniqueOrThrow({ where: { id: context.storeId } }),
-  ]);
+  const entitlements = await getEntitlements(context);
 
-  if (!entitlements.canCustomizeColors && values.primaryColor !== current.primaryColor)
-    throw new AppError(403, "PLAN_REQUIRED", "As cores estão disponíveis no plano Essencial.");
-
-  if (
-    !entitlements.canUseFullCustomization &&
-    (values.template !== current.template ||
-      JSON.stringify(values.customization) !== JSON.stringify(current.customization))
-  )
-    throw new AppError(
-      403,
-      "PLAN_REQUIRED",
-      "Temas e textos personalizados estão disponíveis no plano Profissional."
-    );
+  const settings = {
+    ...values,
+    primaryColor: entitlements.canCustomizeColors ? values.primaryColor : DEFAULT_PRIMARY_COLOR,
+    template: entitlements.canUseFullCustomization ? values.template : "grid",
+    customization: entitlements.canUseFullCustomization
+      ? values.customization
+      : DEFAULT_CUSTOMIZATION,
+  };
 
   if (
-    values.logoAssetId &&
-    !(await db.asset.findFirst({ where: { id: values.logoAssetId, storeId: context.storeId } }))
+    settings.logoAssetId &&
+    !(await db.asset.findFirst({ where: { id: settings.logoAssetId, storeId: context.storeId } }))
   )
     throw new AppError(422, "ASSET", "Logotipo inválido.");
 
-  return toStoreDTO(await db.store.update({ where: { id: context.storeId }, data: values }));
+  return toStoreDTO(await db.store.update({ where: { id: context.storeId }, data: settings }));
 }

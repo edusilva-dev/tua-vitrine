@@ -1,4 +1,5 @@
 import { AppError, handle } from "@/lib/server/http";
+import { parseVariantFilters } from "@/modules/catalog/contracts";
 import { listProducts, listProductsByIds } from "@/modules/catalog/server/service";
 import { getStoreBySlug } from "@/modules/stores/server/service";
 
@@ -27,6 +28,7 @@ export async function GET(request: Request, route: { params: Promise<{ slug: str
           q: params.get("q") ?? "",
           category: params.get("category") ?? "",
           available: params.get("available") ?? "",
+          variants: parseVariantFilters(params.getAll("variant")),
           page: Number(params.get("page") ?? 1),
         },
         { publishedOnly: true }

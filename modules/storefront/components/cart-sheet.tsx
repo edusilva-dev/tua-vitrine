@@ -16,6 +16,7 @@ import type { ProductDTO } from "@/modules/catalog/contracts";
 import type { StoreDTO } from "@/modules/stores/contracts";
 import { type CartLine, lineKey, resolveCart } from "../selection";
 import { cartMessage, whatsappLink } from "../whatsapp";
+import { ProductImage } from "./product-image";
 
 export function CartSheet({
   open,
@@ -170,69 +171,81 @@ export function CartSheet({
           ) : null}
           {lines.map((line) => (
             <div key={lineKey(line)} className="border-b py-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold">{line.label}</h3>
-                  {!loading && !failed && !line.available ? (
-                    <p className="mt-1 text-xs text-destructive">
-                      Indisponível. Remova este item ou escolha outra opção.
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {money(line.priceCents)} cada
-                    </p>
-                  )}
+              <div className="flex items-start gap-3">
+                <ProductImage
+                  image={line.product?.images[0]}
+                  name={line.name}
+                  className="size-20 shrink-0 rounded-xl border"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold">{line.label}</h3>
+                      {!loading && !failed && !line.available ? (
+                        <p className="mt-1 text-xs text-destructive">
+                          Indisponível. Remova este item ou escolha outra opção.
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {money(line.priceCents)} cada
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="shrink-0"
+                      aria-label={`Remover ${line.name}`}
+                      onClick={() =>
+                        setCart(cart.filter((item) => lineKey(item) !== lineKey(line)))
+                      }
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        aria-label={`Diminuir quantidade de ${line.name}`}
+                        disabled={line.quantity <= 1}
+                        onClick={() =>
+                          setCart(
+                            cart.map((item) =>
+                              lineKey(item) === lineKey(line)
+                                ? { ...item, quantity: item.quantity - 1 }
+                                : item
+                            )
+                          )
+                        }
+                      >
+                        <Minus />
+                      </Button>
+                      <span className="text-sm tabular-nums">{line.quantity}</span>
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        aria-label={`Aumentar quantidade de ${line.name}`}
+                        disabled={line.quantity >= 99}
+                        onClick={() =>
+                          setCart(
+                            cart.map((item) =>
+                              lineKey(item) === lineKey(line)
+                                ? { ...item, quantity: item.quantity + 1 }
+                                : item
+                            )
+                          )
+                        }
+                      >
+                        <Plus />
+                      </Button>
+                    </div>
+                    <span className="text-sm font-medium">
+                      {line.available ? money(line.priceCents * line.quantity) : "—"}
+                    </span>
+                  </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Remover ${line.name}`}
-                  onClick={() => setCart(cart.filter((item) => lineKey(item) !== lineKey(line)))}
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </div>
-              <div className="mt-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    aria-label={`Diminuir quantidade de ${line.name}`}
-                    disabled={line.quantity <= 1}
-                    onClick={() =>
-                      setCart(
-                        cart.map((item) =>
-                          lineKey(item) === lineKey(line)
-                            ? { ...item, quantity: item.quantity - 1 }
-                            : item
-                        )
-                      )
-                    }
-                  >
-                    <Minus />
-                  </Button>
-                  <span className="text-sm tabular-nums">{line.quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    aria-label={`Aumentar quantidade de ${line.name}`}
-                    disabled={line.quantity >= 99}
-                    onClick={() =>
-                      setCart(
-                        cart.map((item) =>
-                          lineKey(item) === lineKey(line)
-                            ? { ...item, quantity: item.quantity + 1 }
-                            : item
-                        )
-                      )
-                    }
-                  >
-                    <Plus />
-                  </Button>
-                </div>
-                <span className="text-sm font-medium">
-                  {line.available ? money(line.priceCents * line.quantity) : "—"}
-                </span>
               </div>
             </div>
           ))}

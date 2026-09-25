@@ -95,4 +95,34 @@ export type ProductListDTO = {
   pagination: { page: number; pageSize: number; total: number; totalPages: number };
 };
 
-export type ProductFilters = { q?: string; category?: string; available?: string; page?: number };
+export type ProductOptionFilterDTO = { name: string; values: string[] };
+
+export type ProductFilters = {
+  q?: string;
+  category?: string;
+  available?: string;
+  variants?: Record<string, string>;
+  page?: number;
+};
+
+export function encodeVariantFilter(name: string, value: string): string {
+  return JSON.stringify([name, value]);
+}
+
+export function parseVariantFilters(values: string | string[] | undefined): Record<string, string> {
+  const result: Record<string, string> = {};
+
+  for (const raw of typeof values === "string" ? [values] : (values ?? [])) {
+    try {
+      const parsed = z
+        .tuple([z.string().min(1).max(40), z.string().min(1).max(60)])
+        .parse(JSON.parse(raw));
+
+      result[parsed[0]] = parsed[1];
+    } catch {
+      // Invalid filters are ignored so a malformed URL cannot break the storefront.
+    }
+  }
+
+  return result;
+}

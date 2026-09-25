@@ -13,6 +13,7 @@ import {
   type ProductDTO,
   type ProductFilters,
   type ProductListDTO,
+  type ProductOptionFilterDTO,
   productInputSchema,
   variantLabel,
 } from "../contracts";
@@ -70,6 +71,19 @@ export async function listProducts(
   if (filters.available === "true" || filters.available === "false")
     where.available = filters.available === "true";
 
+  const variantFilters = Object.entries(filters.variants ?? {});
+
+  if (variantFilters.length) {
+    where.variants = {
+      some: {
+        available: true,
+        AND: variantFilters.map(([name, value]) => ({
+          values: { some: { value: { value, option: { name } } } },
+        })),
+      },
+    };
+  }
+
   const [products, total] = await Promise.all([
     db.product.findMany({
       where,
@@ -85,6 +99,39 @@ export async function listProducts(
     data: products.map(toProductDTO),
     pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
   };
+}
+
+export async function listProductOptionFilters(
+  context: StoreContext
+): Promise<ProductOptionFilterDTO[]> {
+  const options = await db.productOption.findMany({
+    where: {
+      storeId: context.storeId,
+      product: { archivedAt: null, published: true, available: true },
+    },
+    select: {
+      name: true,
+      values: {
+        where: { variants: { some: { variant: { available: true } } } },
+        select: { value: true },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+  const grouped = new Map<string, Set<string>>();
+
+  for (const option of options) {
+    const values = grouped.get(option.name) ?? new Set<string>();
+
+    for (const entry of option.values) values.add(entry.value);
+
+    grouped.set(option.name, values);
+  }
+
+  return [...grouped.entries()].map(([name, values]) => ({
+    name,
+    values: [...values].sort((first, second) => first.localeCompare(second, "pt-BR")),
+  }));
 }
 
 export async function listProductsByIds(

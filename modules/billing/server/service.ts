@@ -194,10 +194,34 @@ export async function processStripeEvent(event: Stripe.Event) {
 
       if (!subscription) return;
 
+      const stripeCustomerId = customerId(subscription.customer);
+      const nextSubscription = subscriptionData(subscription);
+
       await tx.storeSubscription.updateMany({
-        where: { stripeCustomerId: customerId(subscription.customer) },
-        data: subscriptionData(subscription),
+        where: { stripeCustomerId },
+        data: nextSubscription,
       });
+
+      const billing = await tx.storeSubscription.findUnique({
+        where: { stripeCustomerId },
+        select: { storeId: true },
+      });
+      const resetProfessionalFeatures =
+        nextSubscription.plan === "ESSENTIAL" &&
+        (nextSubscription.status === "ACTIVE" || nextSubscription.status === "TRIALING");
+      const resetToFree = ["CANCELED", "INCOMPLETE_EXPIRED"].includes(nextSubscription.status);
+
+      if (billing && (resetProfessionalFeatures || resetToFree)) {
+        await tx.store.update({
+          where: { id: billing.storeId },
+          data: {
+            template: "grid",
+            customization: { version: 1, tagline: "" },
+            ...(resetToFree ? { primaryColor: "#2563eb" } : {}),
+          },
+        });
+        await tx.promotionCampaign.deleteMany({ where: { storeId: billing.storeId } });
+      }
 
       if (subscription.status === "trialing" || subscription.status === "active") {
         await tx.storeSubscription.updateMany({
