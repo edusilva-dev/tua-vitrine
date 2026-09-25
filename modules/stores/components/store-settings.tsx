@@ -106,8 +106,8 @@ export function StoreSettings({
           Os detalhes que fazem sua marca ser lembrada.
         </p>
       </div>
-      <div className="grid items-start gap-6 xl:grid-cols-[1fr_300px]">
-        <form className="space-y-6" onSubmit={form.handleSubmit(save)}>
+      <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <form className="min-w-0 space-y-6" onSubmit={form.handleSubmit(save)}>
           <section className="rounded-xl border bg-card p-6">
             <h2 className="mb-6 font-semibold">Identidade da loja</h2>
             <div className="mb-6 flex items-center gap-4">
@@ -213,7 +213,7 @@ export function StoreSettings({
                 onChange={(event) =>
                   form.setValue("primaryColor", event.target.value, { shouldDirty: true })
                 }
-                className="h-11 w-16 p-1"
+                className="size-11 shrink-0 cursor-pointer overflow-hidden rounded-full border-0 p-0 [&::-moz-color-swatch]:rounded-full [&::-moz-color-swatch]:border-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-full [&::-webkit-color-swatch]:border-0"
                 disabled={!entitlements.canCustomizeColors}
               />
               <Input
@@ -234,7 +234,7 @@ export function StoreSettings({
             {form.formState.errors.primaryColor && (
               <p className="field-error">Use uma cor hexadecimal, como #245c60.</p>
             )}
-            <fieldset aria-label="Modelo da vitrine" className="mt-6 grid grid-cols-2 gap-3">
+            <fieldset aria-label="Modelo da vitrine" className="mt-6 grid gap-3 sm:grid-cols-2">
               {[
                 {
                   value: "grid" as const,
@@ -256,7 +256,7 @@ export function StoreSettings({
                   aria-pressed={template === value}
                   onClick={() => form.setValue("template", value, { shouldDirty: true })}
                   className={cn(
-                    "rounded-xl border p-4 text-left transition-colors",
+                    "min-w-0 rounded-xl border p-4 text-left transition-colors",
                     template === value
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
                       : "hover:bg-muted"
@@ -281,7 +281,7 @@ export function StoreSettings({
             alterações
           </Button>
         </form>
-        <aside className="space-y-5">
+        <aside className="min-w-0 space-y-5">
           <section className="rounded-xl border bg-card p-6">
             <span className="mb-4 inline-flex rounded-lg bg-[#e8eee2] p-2 text-primary">
               <LinkIcon size={20} />

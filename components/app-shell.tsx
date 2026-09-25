@@ -112,29 +112,31 @@ export function AppShell({
           )}
         </div>
       </aside>
-      <div className="lg:pl-64">
-        <header className="flex min-h-20 items-center justify-between gap-3 border-b border-black/5 bg-white/60 px-5 lg:px-10">
-          <div>
-            <span className="text-sm text-muted-foreground">Painel do lojista</span>
-            <span className="mx-3 text-border">/</span>
-            <span className="text-sm font-medium">{store.name}</span>
+      <div className="min-w-0 lg:pl-64">
+        <header className="flex min-h-20 min-w-0 items-center justify-between gap-2 border-b border-black/5 bg-white/60 px-5 lg:px-10">
+          <div className="flex min-w-0 flex-1 items-center">
+            <span className="hidden text-sm text-muted-foreground sm:inline">
+              Painel do lojista
+            </span>
+            <span className="mx-3 hidden text-border sm:inline">/</span>
+            <span className="truncate text-sm font-medium">{store.name}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             {authenticated && <AuthAccountMenu />}
-            <Button asChild variant="outline" className="bg-white">
+            <Button asChild variant="outline" className="size-9 bg-white px-0 sm:w-auto sm:px-4">
               <Link
                 href="/admin/preview"
                 onClick={() => {
                   if (pathname !== "/admin/preview") setPendingPath("/admin/preview");
                 }}
               >
-                Ver minha vitrine
+                <span className="sr-only sm:not-sr-only">Ver minha vitrine</span>
                 <ArrowUpRight size={16} />
               </Link>
             </Button>
           </div>
         </header>
-        <main className="mx-auto max-w-7xl px-5 py-8 lg:px-10 lg:py-10">
+        <main className="mx-auto min-w-0 max-w-7xl overflow-x-hidden px-5 py-8 lg:px-10 lg:py-10">
           {store.onboardingStep < 4 && pathname !== "/admin/onboarding" && (
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
               <p>Sua vitrine está quase pronta. Termine a configuração para publicar.</p>

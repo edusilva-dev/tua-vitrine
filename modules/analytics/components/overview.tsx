@@ -41,7 +41,7 @@ export function MetricsOverview({
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="min-w-0 space-y-8">
       <div>
         <p className="eyebrow">{detailed ? "OLHE MAIS DE PERTO" : "SEU NEGÓCIO EM MOVIMENTO"}</p>
         <h1 className="page-title">
@@ -85,9 +85,9 @@ export function MetricsOverview({
       )}
       <section aria-label="Métricas da loja" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map(({ label, value, icon: Icon, detail }) => (
-          <article key={label} className="rounded-xl border bg-card p-5">
+          <article key={label} className="min-w-0 overflow-hidden rounded-xl border bg-card p-5">
             <div className="mb-6 flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground">{label}</p>
+              <p className="min-w-0 text-xs font-medium text-muted-foreground">{label}</p>
               <span className="rounded-lg bg-[#eef1e9] p-2 text-[#446255]">
                 <Icon size={17} />
               </span>
@@ -112,7 +112,7 @@ export function MetricsOverview({
             icon: Heart,
           },
         ].map(({ title, subtitle, items, icon: Icon }) => (
-          <section key={title} className="rounded-xl border bg-card p-6">
+          <section key={title} className="min-w-0 overflow-hidden rounded-xl border bg-card p-6">
             <div className="flex justify-between gap-3">
               <div>
                 <h2 className="font-semibold">{title}</h2>
@@ -123,12 +123,12 @@ export function MetricsOverview({
             {items.length ? (
               <ol className="mt-5 divide-y">
                 {items.map((item, index) => (
-                  <li key={item.id} className="flex items-center gap-3 py-4 text-sm">
-                    <span className="grid size-8 place-items-center rounded-lg bg-muted text-xs text-muted-foreground">
+                  <li key={item.id} className="flex min-w-0 items-center gap-3 py-4 text-sm">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-xs text-muted-foreground">
                       {index + 1}
                     </span>
                     <span className="min-w-0 flex-1 truncate">{item.name}</span>
-                    <strong>{item.count}</strong>
+                    <strong className="shrink-0">{item.count}</strong>
                   </li>
                 ))}
               </ol>

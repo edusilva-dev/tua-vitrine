@@ -32,9 +32,15 @@ export function AuthAccountMenu() {
 
   return (
     <div>
-      <Button variant="ghost" onClick={signOut} disabled={pending}>
+      <Button
+        variant="ghost"
+        className="size-9 px-0 sm:w-auto sm:px-4"
+        onClick={signOut}
+        disabled={pending}
+        aria-label={pending ? "Saindo da conta" : "Sair da conta"}
+      >
         <LogOut aria-hidden="true" />
-        {pending ? "Saindo…" : "Sair da conta"}
+        <span className="hidden sm:inline">{pending ? "Saindo…" : "Sair da conta"}</span>
       </Button>
       {failed && (
         <p role="alert" className="text-sm text-destructive">
