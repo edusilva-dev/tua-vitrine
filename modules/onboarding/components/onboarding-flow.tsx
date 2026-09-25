@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, ArrowRight, Check, Loader2, Store } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
   storeIdentitySchema,
   whatsappSchema,
 } from "@/modules/stores/contracts";
+import { formatWhatsapp } from "@/modules/stores/phone";
 
 export function OnboardingFlow({
   store,
@@ -30,6 +31,7 @@ export function OnboardingFlow({
   const [current, setCurrent] = useState<StoreDTO | null>(newStore ? null : store);
   const [step, setStep] = useState(newStore ? 1 : Math.min(store?.onboardingStep ?? 1, 3));
   const [error, setError] = useState("");
+  const slugEdited = useRef(Boolean(store?.slug));
   const identity = useForm<{ name: string; slug: string }>({
     resolver: zodResolver(storeIdentitySchema),
     defaultValues: {
@@ -39,8 +41,11 @@ export function OnboardingFlow({
   });
   const contact = useForm<{ whatsapp: string }>({
     resolver: zodResolver(whatsappSchema),
-    defaultValues: { whatsapp: newStore ? "+55 " : (store?.whatsapp ?? "+55 ") },
+    defaultValues: { whatsapp: formatWhatsapp(newStore ? "+55" : (store?.whatsapp ?? "+55")) },
   });
+  const nameField = identity.register("name");
+  const slugField = identity.register("slug");
+  const whatsappField = contact.register("whatsapp");
 
   async function saveIdentity(values: { name: string; slug: string }) {
     setError("");
@@ -124,7 +129,17 @@ export function OnboardingFlow({
                 id="store-name"
                 className="mt-2"
                 placeholder="Ex.: Ateliê da Clara"
-                {...identity.register("name")}
+                {...nameField}
+                onChange={(event) => {
+                  void nameField.onChange(event);
+
+                  if (!slugEdited.current) {
+                    identity.setValue("slug", normalizeSlug(event.target.value), {
+                      shouldDirty: true,
+                      shouldValidate: identity.formState.isSubmitted,
+                    });
+                  }
+                }}
               />
               {identity.formState.errors.name && (
                 <p className="field-error">Informe um nome de 2 a 100 caracteres.</p>
@@ -140,8 +155,14 @@ export function OnboardingFlow({
                   id="store-slug"
                   className="border-0 bg-transparent shadow-none"
                   placeholder="atelie-da-clara"
-                  {...identity.register("slug")}
-                  onBlur={(event) => identity.setValue("slug", normalizeSlug(event.target.value))}
+                  {...slugField}
+                  onChange={(event) => {
+                    slugEdited.current = true;
+                    identity.setValue("slug", normalizeSlug(event.target.value), {
+                      shouldDirty: true,
+                      shouldValidate: identity.formState.isSubmitted,
+                    });
+                  }}
                 />
               </div>
               {identity.formState.errors.slug && (
@@ -173,7 +194,13 @@ export function OnboardingFlow({
                 className="mt-2"
                 type="tel"
                 placeholder="+55 11 99999-9999"
-                {...contact.register("whatsapp")}
+                {...whatsappField}
+                onChange={(event) =>
+                  contact.setValue("whatsapp", formatWhatsapp(event.target.value), {
+                    shouldDirty: true,
+                    shouldValidate: contact.formState.isSubmitted,
+                  })
+                }
               />
               {contact.formState.errors.whatsapp && (
                 <p className="field-error">{contact.formState.errors.whatsapp.message}</p>

@@ -193,3 +193,15 @@
     line-height: 1.5;
   }
 }
+
+/* Numeric values use application formatting and should not expose browser steppers. */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}

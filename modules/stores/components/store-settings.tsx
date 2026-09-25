@@ -19,6 +19,7 @@ import {
   type StoreSettingsInput,
   storeSettingsSchema,
 } from "@/modules/stores/contracts";
+import { formatWhatsapp } from "@/modules/stores/phone";
 
 export function StoreSettings({
   store,
@@ -36,7 +37,7 @@ export function StoreSettings({
     resolver: zodResolver(storeSettingsSchema),
     defaultValues: {
       name: store.name,
-      whatsapp: store.whatsapp ?? "+55 ",
+      whatsapp: formatWhatsapp(store.whatsapp ?? "+55"),
       primaryColor: store.primaryColor,
       template: store.template,
       logoAssetId: store.logo?.id ?? null,
@@ -45,6 +46,7 @@ export function StoreSettings({
   });
   const template = form.watch("template");
   const color = form.watch("primaryColor");
+  const whatsappField = form.register("whatsapp");
 
   async function save(values: StoreSettingsInput) {
     setError("");
@@ -183,7 +185,13 @@ export function StoreSettings({
                   id="settings-whatsapp"
                   type="tel"
                   className="mt-2"
-                  {...form.register("whatsapp")}
+                  {...whatsappField}
+                  onChange={(event) =>
+                    form.setValue("whatsapp", formatWhatsapp(event.target.value), {
+                      shouldDirty: true,
+                      shouldValidate: form.formState.isSubmitted,
+                    })
+                  }
                 />
                 {form.formState.errors.whatsapp && (
                   <p className="field-error">{form.formState.errors.whatsapp.message}</p>

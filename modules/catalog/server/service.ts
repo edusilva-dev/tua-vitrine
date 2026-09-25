@@ -14,6 +14,7 @@ import {
   type ProductFilters,
   type ProductListDTO,
   productInputSchema,
+  variantLabel,
 } from "../contracts";
 import { catalogRepository, type ProductRecord, productInclude } from "./repository";
 
@@ -270,7 +271,7 @@ export async function saveProduct(
             id: variantId,
             storeId: context.storeId,
             productId: product.id,
-            label: variant.label,
+            label: variantLabel(variant.options),
             combinationKey: JSON.stringify(
               Object.entries(variant.options).sort(([a], [b]) => a.localeCompare(b))
             ),

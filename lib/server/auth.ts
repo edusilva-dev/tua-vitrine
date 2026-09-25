@@ -22,7 +22,7 @@ function createAuth() {
     database: prismaAdapter(db, { provider: "postgresql", transaction: true }),
     emailAndPassword: {
       enabled: true,
-      minPasswordLength: 12,
+      minPasswordLength: 6,
       maxPasswordLength: 128,
       requireEmailVerification: true,
       revokeSessionsOnPasswordReset: true,

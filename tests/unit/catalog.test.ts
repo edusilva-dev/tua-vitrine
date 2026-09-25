@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { productInputSchema } from "@/modules/catalog/contracts";
+import { productInputSchema, variantLabel } from "@/modules/catalog/contracts";
 import { cartSchema, resolveCart, selectionKeys } from "@/modules/storefront/selection";
 import { cartMessage, whatsappLink } from "@/modules/storefront/whatsapp";
 import { normalizeSlug, storeIdentitySchema, whatsappSchema } from "@/modules/stores/contracts";
+import { formatWhatsapp } from "@/modules/stores/phone";
 
 const input = {
   name: "Caneca artesanal",
@@ -20,6 +21,8 @@ describe("contratos", () => {
     expect(storeIdentitySchema.safeParse({ name: "Teste", slug: "admin" }).success).toBe(false);
   });
   test("WhatsApp requer DDI e normaliza máscara", () => {
+    expect(formatWhatsapp("5511999999999")).toBe("+55 (11) 99999-9999");
+    expect(formatWhatsapp("+1 202 555 0123")).toBe("+12025550123");
     expect(whatsappSchema.parse({ whatsapp: "+55 (11) 99999-9999" }).whatsapp).toBe(
       "+5511999999999"
     );
@@ -38,6 +41,9 @@ describe("contratos", () => {
         variants: [variant, { ...variant, options: { Tamanho: "P" } }],
       }).success
     ).toBe(false);
+  });
+  test("nome exibido da variante é derivado da combinação", () => {
+    expect(variantLabel({ Tamanho: "M", Cor: "Azul" })).toBe("Azul / M");
   });
 });
 describe("seleções e WhatsApp", () => {

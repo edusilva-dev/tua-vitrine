@@ -2,7 +2,7 @@
 
 ## Fluxo
 
-Better Auth 1.7.5 gerencia credenciais, confirmação de e-mail, sessões persistidas no PostgreSQL e recuperação. Cadastro exige senha de 12–128 caracteres. A conta só acessa o painel depois de confirmar o e-mail. Recuperação usa link temporário e revoga sessões existentes ao trocar a senha. A resposta da solicitação de recuperação é genérica.
+Better Auth 1.7.5 gerencia credenciais, confirmação de e-mail, sessões persistidas no PostgreSQL e recuperação. Cadastro exige senha de 6–128 caracteres. A conta só acessa o painel depois de confirmar o e-mail. Recuperação usa link temporário e revoga sessões existentes ao trocar a senha. A resposta da solicitação de recuperação é genérica.
 
 As telas são `/cadastro`, `/entrar`, `/verificar-email`, `/recuperar-senha` e `/redefinir-senha`. Clientes das vitrines continuam anônimos e não precisam criar conta.
 

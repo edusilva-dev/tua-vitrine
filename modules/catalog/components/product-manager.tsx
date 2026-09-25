@@ -45,6 +45,7 @@ import {
   type ProductInput,
   type ProductListDTO,
   productInputSchema,
+  variantLabel,
 } from "@/modules/catalog/contracts";
 import { ProductImportDialog } from "./product-import-dialog";
 import { ProductPublicationDialog } from "./product-publication-dialog";
@@ -58,6 +59,39 @@ const emptyProduct: ProductInput = {
   assetIds: [],
   variants: [],
 };
+
+function centsFromCurrencyInput(value: string): number {
+  const digits = value.replace(/\D/g, "");
+
+  if (!digits) return 0;
+
+  return Math.min(Number(digits), 999999999);
+}
+
+function CurrencyInput({
+  id,
+  value,
+  onChange,
+  invalid,
+}: {
+  id: string;
+  value: number;
+  onChange: (value: number) => void;
+  invalid?: boolean;
+}) {
+  return (
+    <Input
+      id={id}
+      type="text"
+      inputMode="numeric"
+      autoComplete="off"
+      className="mt-2"
+      value={money(value)}
+      onChange={(event) => onChange(centsFromCurrencyInput(event.target.value))}
+      aria-invalid={invalid}
+    />
+  );
+}
 
 export function ProductForm({
   product,
@@ -169,7 +203,7 @@ export function ProductForm({
         <Label htmlFor="product-description">Descrição</Label>
         <Textarea
           id="product-description"
-          className="mt-2 min-h-24"
+          className="mt-2 h-32 min-h-32 max-h-32 resize-none overflow-y-auto field-sizing-fixed"
           placeholder="Conte os detalhes que tornam esse produto especial."
           {...form.register("description")}
         />
@@ -178,19 +212,20 @@ export function ProductForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="product-price">Preço (R$)</Label>
-          <Input
-            id="product-price"
-            type="number"
-            step="0.01"
-            min="0"
-            className="mt-2"
-            defaultValue={(product?.priceCents ?? 0) / 100}
-            onChange={(event) =>
-              form.setValue("priceCents", Math.round(Number(event.target.value) * 100), {
-                shouldDirty: true,
-                shouldValidate: true,
-              })
-            }
+          <Controller
+            control={form.control}
+            name="priceCents"
+            render={({ field }) => (
+              <CurrencyInput
+                id="product-price"
+                value={field.value}
+                invalid={!!errors.priceCents}
+                onChange={(value) => {
+                  field.onChange(value);
+                  onDirtyChange?.(true);
+                }}
+              />
+            )}
           />
           {errors.priceCents && <p className="field-error">Informe um preço válido.</p>}
         </div>
@@ -278,7 +313,6 @@ export function ProductForm({
             onClick={() => {
               onDirtyChange?.(true);
               append({
-                label: "",
                 options: { Opção: "" },
                 priceCents: form.getValues("priceCents"),
                 available: true,
@@ -309,55 +343,55 @@ export function ProductForm({
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label htmlFor={`variant-label-${index}`}>Nome</Label>
+                <Label htmlFor={`variant-options-${index}`}>Combinação</Label>
                 <Input
-                  id={`variant-label-${index}`}
-                  placeholder="Azul / M"
-                  {...form.register(`variants.${index}.label`)}
+                  id={`variant-options-${index}`}
+                  className="mt-2"
+                  placeholder="Cor: Azul, Tamanho: M"
+                  defaultValue={Object.entries(field.options)
+                    .filter(([, value]) => value)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(", ")}
+                  onChange={(event) => {
+                    const options: Record<string, string> = {};
+
+                    for (const entry of event.target.value.split(",")) {
+                      const [key, ...parts] = entry.split(":");
+
+                      if (key?.trim() && parts.join(":").trim())
+                        options[key.trim()] = parts.join(":").trim();
+                    }
+
+                    form.setValue(`variants.${index}.options`, options, { shouldDirty: true });
+                  }}
                 />
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Use nome e valor. Ex.: Cor: Azul, Tamanho: M.
+                  {variantLabel(form.watch(`variants.${index}.options`))
+                    ? ` Será exibida como “${variantLabel(form.watch(`variants.${index}.options`))}”.`
+                    : ""}
+                </p>
               </div>
               <div>
-                <Label htmlFor={`variant-price-${index}`}>Preço (R$)</Label>
-                <Input
-                  id={`variant-price-${index}`}
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  defaultValue={field.priceCents / 100}
-                  onChange={(event) =>
-                    form.setValue(
-                      `variants.${index}.priceCents`,
-                      Math.round(Number(event.target.value) * 100),
-                      { shouldDirty: true }
-                    )
-                  }
+                <Label htmlFor={`variant-price-${index}`}>Preço final (R$)</Label>
+                <Controller
+                  control={form.control}
+                  name={`variants.${index}.priceCents`}
+                  render={({ field: priceField }) => (
+                    <CurrencyInput
+                      id={`variant-price-${index}`}
+                      value={priceField.value}
+                      onChange={(value) => {
+                        priceField.onChange(value);
+                        onDirtyChange?.(true);
+                      }}
+                    />
+                  )}
                 />
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Valor cobrado quando o cliente escolher esta combinação.
+                </p>
               </div>
-            </div>
-            <div>
-              <Label htmlFor={`variant-options-${index}`}>
-                Opções (nome: valor, separadas por vírgula)
-              </Label>
-              <Input
-                id={`variant-options-${index}`}
-                placeholder="Cor: Azul, Tamanho: M"
-                defaultValue={Object.entries(field.options)
-                  .filter(([, value]) => value)
-                  .map(([key, value]) => `${key}: ${value}`)
-                  .join(", ")}
-                onChange={(event) => {
-                  const options: Record<string, string> = {};
-
-                  for (const entry of event.target.value.split(",")) {
-                    const [key, ...parts] = entry.split(":");
-
-                    if (key?.trim() && parts.join(":").trim())
-                      options[key.trim()] = parts.join(":").trim();
-                  }
-
-                  form.setValue(`variants.${index}.options`, options, { shouldDirty: true });
-                }}
-              />
             </div>
             <label
               htmlFor={`variant-available-${index}`}

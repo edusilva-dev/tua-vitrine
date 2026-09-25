@@ -1,7 +1,18 @@
 "use client";
-import { ArrowUpRight, BarChart3, LayoutDashboard, Package, Paintbrush, Store } from "lucide-react";
+import {
+  ArrowUpRight,
+  BarChart3,
+  CreditCard,
+  LayoutDashboard,
+  Loader2,
+  Megaphone,
+  Package,
+  Paintbrush,
+  Store,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { AuthAccountMenu } from "@/components/auth-account-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,6 +22,8 @@ const links = [
   { href: "/admin", label: "Visão geral", icon: LayoutDashboard },
   { href: "/admin/products", label: "Meus produtos", icon: Package },
   { href: "/admin/metrics", label: "Estatísticas", icon: BarChart3 },
+  { href: "/admin/promotions", label: "Campanhas", icon: Megaphone },
+  { href: "/admin/billing", label: "Assinatura", icon: CreditCard },
   { href: "/admin/settings", label: "Minha vitrine", icon: Paintbrush },
 ];
 
@@ -24,11 +37,23 @@ export function AppShell({
   authenticated: boolean;
 }) {
   const pathname = usePathname();
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+
+  const isNavigating = pendingPath !== null && pendingPath !== pathname;
 
   if (pathname === "/admin/preview") return <>{children}</>;
 
   return (
-    <div className="admin-surface min-h-screen">
+    <div className="admin-surface min-h-screen" aria-busy={isNavigating}>
+      {isNavigating ? (
+        <div
+          role="status"
+          aria-label="Carregando página"
+          className="fixed inset-x-0 top-0 z-[100] h-1 overflow-hidden bg-primary/20"
+        >
+          <div className="h-full w-1/3 animate-pulse rounded-full bg-primary" />
+        </div>
+      ) : null}
       <aside className="admin-sidebar lg:fixed lg:inset-y-0 lg:w-64">
         <Link
           href="/admin"
@@ -56,6 +81,9 @@ export function AppShell({
               key={href}
               href={href}
               aria-current={pathname === href ? "page" : undefined}
+              onClick={() => {
+                if (pathname !== href) setPendingPath(href);
+              }}
               className={cn(
                 "flex shrink-0 items-center gap-3 rounded-lg px-4 py-3 text-sm transition-colors",
                 pathname === href
@@ -63,7 +91,11 @@ export function AppShell({
                   : "text-white/60 hover:bg-white/5 hover:text-white"
               )}
             >
-              <Icon size={19} />
+              {isNavigating && pendingPath === href ? (
+                <Loader2 size={19} className="animate-spin" />
+              ) : (
+                <Icon size={19} />
+              )}
               {label}
             </Link>
           ))}
@@ -90,7 +122,12 @@ export function AppShell({
           <div className="flex items-center gap-2">
             {authenticated && <AuthAccountMenu />}
             <Button asChild variant="outline" className="bg-white">
-              <Link href="/admin/preview">
+              <Link
+                href="/admin/preview"
+                onClick={() => {
+                  if (pathname !== "/admin/preview") setPendingPath("/admin/preview");
+                }}
+              >
                 Ver minha vitrine
                 <ArrowUpRight size={16} />
               </Link>

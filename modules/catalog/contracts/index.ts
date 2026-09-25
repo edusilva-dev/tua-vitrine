@@ -4,11 +4,21 @@ const cents = z.number().int().min(0).max(999999999);
 
 export const variantInputSchema = z.object({
   id: z.string().uuid().optional(),
-  label: z.string().trim().min(1).max(120),
+  // Kept optional for backwards compatibility with clients that still send it.
+  // The server derives the persisted label from the selected option values.
+  label: z.string().trim().max(120).optional(),
   options: z.record(z.string().min(1).max(40), z.string().min(1).max(60)),
   priceCents: cents,
   available: z.boolean(),
 });
+
+export function variantLabel(options: Record<string, string>): string {
+  return Object.entries(options)
+    .sort(([first], [second]) => first.localeCompare(second))
+    .map(([, value]) => value.trim())
+    .filter(Boolean)
+    .join(" / ");
+}
 
 export const productInputSchema = z
   .object({

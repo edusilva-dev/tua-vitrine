@@ -42,7 +42,7 @@ function errorMessage(code: string | undefined): string {
       return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
     case "PASSWORD_TOO_SHORT":
     case "PASSWORD_TOO_LONG":
-      return "Use uma senha com 12 a 128 caracteres.";
+      return "Use uma senha com 6 a 128 caracteres.";
     case "USER_ALREADY_EXISTS":
     case "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL":
       return "Não foi possível criar esta conta. Tente entrar ou recuperar sua senha.";
@@ -236,14 +236,14 @@ export function AuthForm({
                   {...register("password", {
                     required: "Informe sua senha.",
                     minLength: {
-                      value: newPassword ? 12 : 1,
-                      message: "Use pelo menos 12 caracteres.",
+                      value: newPassword ? 6 : 1,
+                      message: "Use pelo menos 6 caracteres.",
                     },
                     maxLength: { value: 128, message: "Use até 128 caracteres." },
                   })}
                 />
                 <p id="password-help" className="text-xs text-muted-foreground">
-                  {newPassword ? "Use de 12 a 128 caracteres." : "Use a senha da sua conta."}
+                  {newPassword ? "Use de 6 a 128 caracteres." : "Use a senha da sua conta."}
                 </p>
                 <p id="password-error" className="text-sm text-destructive">
                   {errors.password?.message}

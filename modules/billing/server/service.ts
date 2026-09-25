@@ -100,7 +100,7 @@ export async function createCheckout(context: StoreContext, input: unknown) {
     mode: "subscription",
     customer: billing.stripeCustomerId,
     line_items: [{ price: getStripePriceIds()[plan], quantity: 1 }],
-    success_url: `${appUrl}/admin/settings?billing=success`,
+    success_url: `${appUrl}/admin/billing?billing=success`,
     cancel_url: `${appUrl}/#planos`,
     integration_identifier: `tua_vitrine_${randomBytes(4).toString("hex")}`,
   });
@@ -124,7 +124,7 @@ export async function createPortal(context: StoreContext) {
 
   const session = await getStripe().billingPortal.sessions.create({
     customer: billing.stripeCustomerId,
-    return_url: `${getEnv().APP_URL}/admin/settings`,
+    return_url: `${getEnv().APP_URL}/admin/billing`,
   });
 
   return { url: session.url };
