@@ -5,6 +5,7 @@ import {
   ArrowRight,
   Check,
   Heart,
+  ListFilter,
   MessageCircle,
   Search,
   ShoppingBag,
@@ -13,11 +14,14 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -70,6 +74,7 @@ export function Storefront({
   promotion?: PublicPromotionCampaignDTO | null;
   promotionActive?: boolean;
 }) {
+  const router = useRouter();
   const selection = useSelections(store.id, store.slug, preview);
   const [selected, setSelected] = useState<ProductDTO | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -77,10 +82,47 @@ export function Storefront({
   const [favoriteProducts, setFavoriteProducts] = useState<ProductDTO[]>([]);
   const [favoritesLoading, setFavoritesLoading] = useState(false);
   const [favoritesFailed, setFavoritesFailed] = useState(false);
+  const [search, setSearch] = useState(filters.q ?? "");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const impression = useRef<string | null>(null);
   const favoriteIds = selection.likes.join(",");
   const favoriteIdList = useMemo(() => (favoriteIds ? favoriteIds.split(",") : []), [favoriteIds]);
   const basePath = preview ? "/admin/preview" : `/${store.slug}`;
+  const activeFilterCount =
+    Number(Boolean(filters.category)) +
+    Number(Boolean(filters.available)) +
+    Object.keys(filters.variants ?? {}).length;
+
+  useEffect(() => {
+    setSearch(filters.q ?? "");
+  }, [filters.q]);
+
+  useEffect(() => {
+    if (search === (filters.q ?? "")) return;
+
+    const timeout = window.setTimeout(() => {
+      const params = new URLSearchParams();
+      const normalizedSearch = search.trim();
+
+      if (normalizedSearch) params.set("q", normalizedSearch);
+
+      if (filters.category) params.set("category", filters.category);
+
+      if (filters.available) params.set("available", filters.available);
+
+      for (const [name, value] of Object.entries(filters.variants ?? {})) {
+        params.append("variant", encodeVariantFilter(name, value));
+      }
+
+      if (promotionActive) params.set("campaign", "1");
+
+      const query = params.toString();
+
+      router.replace(query ? `${basePath}?${query}` : basePath, { scroll: false });
+    }, 400);
+
+    return () => window.clearTimeout(timeout);
+  }, [basePath, filters, promotionActive, router, search]);
 
   async function track(
     type: "STORE_VIEW" | "PRODUCT_VIEW",
@@ -371,66 +413,123 @@ export function Storefront({
             </h2>
           </div>
           {!favoritesOnly ? (
-            <form action={basePath} className="flex flex-wrap gap-2">
-              <div className="relative min-w-40 flex-1">
+            <div className="flex w-full items-center gap-2 md:w-auto">
+              <div className="relative min-w-0 flex-1 md:w-72">
                 <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
                 <Input
-                  name="q"
-                  defaultValue={filters.q ?? ""}
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
                   placeholder="Buscar produtos"
                   aria-label="Buscar produtos"
                   className="h-10 bg-card pl-9"
                 />
               </div>
-              <Select name="category" defaultValue={filters.category || "all"}>
-                <SelectTrigger className="h-10 min-w-36 bg-card" aria-label="Categoria">
-                  <SelectValue placeholder="Categorias" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as categorias</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select name="available" defaultValue={filters.available || "all"}>
-                <SelectTrigger className="h-10 min-w-32 bg-card" aria-label="Disponibilidade">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="true">Disponíveis</SelectItem>
-                  <SelectItem value="false">Indisponíveis</SelectItem>
-                </SelectContent>
-              </Select>
-              {optionFilters.map((option) => (
-                <Select
-                  key={option.name}
-                  name="variant"
-                  defaultValue={selectedVariantFilter(filters, option.name)}
-                >
-                  <SelectTrigger
-                    className="h-10 min-w-32 bg-card"
-                    aria-label={`Filtrar por ${option.name}`}
+              <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="relative size-10 shrink-0 bg-card"
+                    aria-label={
+                      activeFilterCount
+                        ? `Abrir filtros, ${activeFilterCount} ativos`
+                        : "Abrir filtros"
+                    }
                   >
-                    <SelectValue placeholder={option.name} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{option.name}: todos</SelectItem>
-                    {option.values.map((value) => (
-                      <SelectItem key={value} value={encodeVariantFilter(option.name, value)}>
-                        {option.name}: {value}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ))}
-              <Button type="submit" variant="secondary" className="h-10">
-                Filtrar
-              </Button>
-            </form>
+                    <ListFilter />
+                    {activeFilterCount ? (
+                      <span className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                        {activeFilterCount}
+                      </span>
+                    ) : null}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2.5rem))] p-0">
+                  <div className="border-b px-4 py-3">
+                    <p className="font-heading font-semibold">Filtrar produtos</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Refine a seleção por categoria, disponibilidade e variações.
+                    </p>
+                  </div>
+                  <form action={basePath} className="grid gap-4 p-4">
+                    {search.trim() ? <input type="hidden" name="q" value={search.trim()} /> : null}
+                    {promotionActive ? <input type="hidden" name="campaign" value="1" /> : null}
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="storefront-category" className="text-xs">
+                        Categoria
+                      </Label>
+                      <Select name="category" defaultValue={filters.category || "all"}>
+                        <SelectTrigger id="storefront-category" className="w-full bg-card">
+                          <SelectValue placeholder="Categorias" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas as categorias</SelectItem>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="storefront-availability" className="text-xs">
+                        Disponibilidade
+                      </Label>
+                      <Select name="available" defaultValue={filters.available || "all"}>
+                        <SelectTrigger id="storefront-availability" className="w-full bg-card">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          <SelectItem value="true">Disponíveis</SelectItem>
+                          <SelectItem value="false">Indisponíveis</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {optionFilters.map((option) => {
+                      const id = `storefront-option-${option.name}`;
+
+                      return (
+                        <div key={option.name} className="grid gap-1.5">
+                          <Label htmlFor={id} className="text-xs">
+                            {option.name}
+                          </Label>
+                          <Select
+                            name="variant"
+                            defaultValue={selectedVariantFilter(filters, option.name)}
+                          >
+                            <SelectTrigger id={id} className="w-full bg-card">
+                              <SelectValue placeholder={option.name} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Todos</SelectItem>
+                              {option.values.map((value) => (
+                                <SelectItem
+                                  key={value}
+                                  value={encodeVariantFilter(option.name, value)}
+                                >
+                                  {value}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      );
+                    })}
+                    <div className="flex items-center justify-between gap-3 border-t pt-4">
+                      <Button variant="ghost" asChild>
+                        <Link href={promotionActive ? `${basePath}?campaign=1` : basePath}>
+                          Limpar filtros
+                        </Link>
+                      </Button>
+                      <Button type="submit">Aplicar filtros</Button>
+                    </div>
+                  </form>
+                </PopoverContent>
+              </Popover>
+            </div>
           ) : (
             <Button variant="outline" onClick={() => setFavoritesOnly(false)}>
               <X />
