@@ -41,31 +41,49 @@ const benefits = [
 
 const plans = [
   {
-    name: "Essencial",
-    price: "19",
-    description: "Para começar a vender online com simplicidade.",
+    name: "Free",
+    slug: "free",
+    price: "0",
+    description: "Para conhecer a Tua Vitrine e colocar seus primeiros produtos no ar.",
     features: [
       "1 vitrine online",
-      "Até 50 produtos",
+      "Até 10 produtos",
       "Pedidos pelo WhatsApp",
-      "Personalização de cores",
-      "Estatísticas da vitrine",
+      "Logo da sua marca",
+      "Estatísticas dos últimos 7 dias",
     ],
     popular: false,
   },
   {
-    name: "Profissional",
-    price: "39",
-    description: "Para quem quer crescer com mais liberdade.",
+    name: "Essencial",
+    slug: "essencial",
+    price: "19",
+    description: "Para ganhar tempo e acompanhar o interesse dos clientes.",
     features: [
-      "Até 3 vitrines online",
-      "Produtos ilimitados",
+      "1 vitrine online",
+      "Até 50 produtos",
+      "Importação de produtos por Excel",
       "Pedidos pelo WhatsApp",
-      "Personalização completa",
-      "Estatísticas da vitrine",
-      "Atendimento prioritário",
+      "Logo e cores da sua marca",
+      "Histórico completo de estatísticas",
     ],
     popular: true,
+  },
+  {
+    name: "Profissional",
+    slug: "profissional",
+    price: "39",
+    description: "Para catálogos maiores e campanhas que destacam seus produtos.",
+    features: [
+      "1 vitrine online",
+      "Produtos ilimitados*",
+      "Importação de produtos por Excel",
+      "Pedidos pelo WhatsApp",
+      "Personalização completa",
+      "Histórico completo de estatísticas",
+      "Banner para campanha promocional",
+    ],
+    popular: false,
   },
 ] as const;
 
@@ -275,7 +293,7 @@ export default function Home() {
                 Teste todos os recursos por 14 dias. Escolha seu plano depois.
               </p>
             </div>
-            <div className="mt-12 grid gap-5 md:grid-cols-2">
+            <div className="mt-12 grid gap-5 md:grid-cols-3">
               {plans.map((plan) => (
                 <Card
                   key={plan.name}
@@ -348,8 +366,8 @@ export default function Home() {
                           : "bg-[#183c3d] hover:bg-[#245c60]"
                       )}
                     >
-                      <Link href={`/cadastro?plano=${plan.name.toLowerCase()}`}>
-                        Testar grátis por 14 dias
+                      <Link href={`/cadastro?plano=${plan.slug}`}>
+                        {plan.name === "Free" ? "Começar grátis" : "Testar por 14 dias"}
                         <ArrowRight />
                       </Link>
                     </Button>
@@ -359,7 +377,7 @@ export default function Home() {
             </div>
             <div className="mt-6 flex items-center justify-center gap-2 text-xs text-[#687a72]">
               <ShieldCheck size={15} />
-              Pagamento seguro. Cancele quando quiser.
+              Sem cartão para começar. *Limite técnico de uso justo de 1.000 produtos.
             </div>
           </div>
         </section>

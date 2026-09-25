@@ -32,6 +32,7 @@ import type {
   ProductFilters,
   ProductListDTO,
 } from "@/modules/catalog/contracts";
+import type { PublicPromotionCampaignDTO } from "@/modules/promotions/contracts";
 import type { StoreDTO } from "@/modules/stores/contracts";
 import { type CartLine, lineKey } from "../selection";
 import { useSelections } from "../use-selections";
@@ -46,12 +47,18 @@ export function Storefront({
   categories,
   filters,
   preview = false,
+  showFreeBranding = false,
+  promotion = null,
+  promotionActive = false,
 }: {
   store: StoreDTO;
   catalog: ProductListDTO;
   categories: CategoryDTO[];
   filters: ProductFilters;
   preview?: boolean;
+  showFreeBranding?: boolean;
+  promotion?: PublicPromotionCampaignDTO | null;
+  promotionActive?: boolean;
 }) {
   const selection = useSelections(store.id, store.slug, preview);
   const [selected, setSelected] = useState<ProductDTO | null>(null);
@@ -185,6 +192,8 @@ export function Storefront({
 
     if (filters.available) params.set("available", filters.available);
 
+    if (promotionActive) params.set("campaign", "1");
+
     params.set("page", String(page));
 
     return `${basePath}?${params}`;
@@ -292,6 +301,40 @@ export function Storefront({
             </Button>
           ) : null}
         </section>
+        {promotion ? (
+          <section className="mb-7 overflow-hidden rounded-3xl border bg-primary text-primary-foreground sm:mb-9">
+            <div className="grid items-center gap-6 p-7 sm:p-9 md:grid-cols-[1fr_auto]">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] opacity-75">
+                  Campanha em destaque
+                </p>
+                <h2 className="mt-2 font-heading text-2xl font-semibold">{promotion.title}</h2>
+                {promotion.description ? (
+                  <p className="mt-2 max-w-2xl text-sm opacity-85">{promotion.description}</p>
+                ) : null}
+                <Button
+                  className="mt-5 bg-background text-foreground hover:bg-background/90"
+                  asChild
+                >
+                  <Link href={promotionActive ? basePath : `${basePath}?campaign=1`}>
+                    {promotionActive ? "Ver todos os produtos" : promotion.ctaLabel}
+                    <ArrowRight />
+                  </Link>
+                </Button>
+              </div>
+              {promotion.bannerUrl ? (
+                <Image
+                  src={promotion.bannerUrl}
+                  alt=""
+                  width={360}
+                  height={180}
+                  unoptimized
+                  className="h-36 w-full rounded-2xl object-cover md:w-72"
+                />
+              ) : null}
+            </div>
+          </section>
+        ) : null}
         {selection.storageFailed ? (
           <p
             className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
@@ -539,12 +582,14 @@ export function Storefront({
             <Check className="size-3" />
             Atendimento direto com {store.name}
           </span>
-          <span>
-            Feito com{" "}
-            <span className="font-semibold text-foreground">
-              tua<span className="text-primary">vitrine</span>
+          {showFreeBranding ? (
+            <span>
+              Criado com{" "}
+              <span className="font-semibold text-foreground">
+                Tua <span className="text-primary">Vitrine</span>
+              </span>
             </span>
-          </span>
+          ) : null}
         </footer>
       </main>
       {selected ? (

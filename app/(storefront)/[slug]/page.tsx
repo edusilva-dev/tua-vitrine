@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getEntitlements } from "@/modules/billing/server/entitlements";
 import { StorefrontPage } from "@/modules/storefront/server-page";
 import { getStoreBySlug } from "@/modules/stores/server/service";
 
@@ -16,5 +17,13 @@ export default async function PublicStorePage({
 
   if (store?.status !== "ACTIVE") notFound();
 
-  return <StorefrontPage store={store} searchParams={searchParams} />;
+  const entitlements = await getEntitlements({ storeId: store.id });
+
+  return (
+    <StorefrontPage
+      store={store}
+      searchParams={searchParams}
+      showFreeBranding={entitlements.plan === "FREE"}
+    />
+  );
 }

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/client/http";
 import { cn } from "@/lib/utils";
+import type { Entitlements } from "@/modules/billing/contracts";
 import type { AssetDTO } from "@/modules/catalog/contracts";
 import {
   type StoreDTO,
@@ -19,7 +20,13 @@ import {
   storeSettingsSchema,
 } from "@/modules/stores/contracts";
 
-export function StoreSettings({ store }: { store: StoreDTO }) {
+export function StoreSettings({
+  store,
+  entitlements,
+}: {
+  store: StoreDTO;
+  entitlements: Entitlements;
+}) {
   const router = useRouter();
   const [logo, setLogo] = useState<AssetDTO | null>(store.logo);
   const [uploading, setUploading] = useState(false);
@@ -163,6 +170,7 @@ export function StoreSettings({ store }: { store: StoreDTO }) {
                   id="settings-tagline"
                   className="mt-2"
                   placeholder="Feito com carinho, escolhido para você."
+                  disabled={!entitlements.canUseFullCustomization}
                   {...form.register("customization.tagline")}
                 />
                 {form.formState.errors.customization?.tagline && (
@@ -198,6 +206,7 @@ export function StoreSettings({ store }: { store: StoreDTO }) {
                   form.setValue("primaryColor", event.target.value, { shouldDirty: true })
                 }
                 className="h-11 w-16 p-1"
+                disabled={!entitlements.canCustomizeColors}
               />
               <Input
                 aria-label="Código hexadecimal da cor"
@@ -206,8 +215,14 @@ export function StoreSettings({ store }: { store: StoreDTO }) {
                   form.setValue("primaryColor", event.target.value, { shouldDirty: true })
                 }
                 className="max-w-36 font-mono"
+                disabled={!entitlements.canCustomizeColors}
               />
             </div>
+            {!entitlements.canCustomizeColors ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Cores estão disponíveis a partir do plano Essencial.
+              </p>
+            ) : null}
             {form.formState.errors.primaryColor && (
               <p className="field-error">Use uma cor hexadecimal, como #245c60.</p>
             )}
@@ -229,6 +244,7 @@ export function StoreSettings({ store }: { store: StoreDTO }) {
                 <button
                   key={value}
                   type="button"
+                  disabled={!entitlements.canUseFullCustomization}
                   aria-pressed={template === value}
                   onClick={() => form.setValue("template", value, { shouldDirty: true })}
                   className={cn(

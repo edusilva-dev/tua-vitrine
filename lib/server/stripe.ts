@@ -44,7 +44,7 @@ export function getStripeWebhookSecret(): string {
 
 export function getStripePriceIds() {
   return {
-    BASIC: required("STRIPE_PRICE_BASIC_MONTHLY"),
-    PRO: required("STRIPE_PRICE_PRO_MONTHLY"),
+    ESSENTIAL: required("STRIPE_PRICE_BASIC_MONTHLY"),
+    PROFESSIONAL: required("STRIPE_PRICE_PRO_MONTHLY"),
   } as const;
 }

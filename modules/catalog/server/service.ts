@@ -6,6 +6,7 @@ import type { StoreContext } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { AppError } from "@/lib/server/http";
 import { assetUrl } from "@/lib/server/storage-adapter";
+import { getEntitlements } from "@/modules/billing/server/entitlements";
 import { normalizeSlug } from "@/modules/stores/contracts";
 import {
   type CategoryDTO,
@@ -24,6 +25,7 @@ export function toProductDTO(product: ProductRecord): ProductDTO {
     description: product.description,
     priceCents: product.priceCents,
     available: product.available,
+    published: product.published,
     category: product.category ? { id: product.category.id, name: product.category.name } : null,
     images: product.images.map(({ asset }) => ({
       id: asset.id,
@@ -47,11 +49,17 @@ export function toProductDTO(product: ProductRecord): ProductDTO {
 
 export async function listProducts(
   context: StoreContext,
-  filters: ProductFilters = {}
+  filters: ProductFilters = {},
+  options: { publishedOnly?: boolean; productIds?: string[] } = {}
 ): Promise<ProductListDTO> {
   const page = Number.isFinite(filters.page) ? Math.max(1, Math.floor(filters.page ?? 1)) : 1;
   const pageSize = 24;
-  const where: Prisma.ProductWhereInput = { storeId: context.storeId, archivedAt: null };
+  const where: Prisma.ProductWhereInput = {
+    storeId: context.storeId,
+    archivedAt: null,
+    ...(options.publishedOnly ? { published: true } : {}),
+    ...(options.productIds ? { id: { in: options.productIds } } : {}),
+  };
 
   if (filters.q) where.name = { contains: filters.q.slice(0, 120), mode: "insensitive" };
 
@@ -80,13 +88,19 @@ export async function listProducts(
 
 export async function listProductsByIds(
   context: StoreContext,
-  ids: string[]
+  ids: string[],
+  options: { publishedOnly?: boolean } = {}
 ): Promise<ProductDTO[]> {
   z.array(z.string().uuid()).max(100).parse(ids);
 
   return (
     await db.product.findMany({
-      where: { storeId: context.storeId, id: { in: ids }, archivedAt: null },
+      where: {
+        storeId: context.storeId,
+        id: { in: ids },
+        archivedAt: null,
+        ...(options.publishedOnly ? { published: true } : {}),
+      },
       include: productInclude,
     })
   ).map(toProductDTO);
@@ -112,6 +126,7 @@ export async function saveProduct(
   idempotencyKey?: string
 ): Promise<ProductDTO> {
   const values = productInputSchema.parse(input);
+  const entitlements = id ? null : await getEntitlements(context);
 
   if (id) z.string().uuid().parse(id);
 
@@ -139,6 +154,19 @@ export async function saveProduct(
       const store = await tx.store.findUnique({ where: { id: context.storeId } });
 
       if (!store) throw new AppError(404, "NOT_FOUND", "Loja não encontrada.");
+
+      if (
+        !id &&
+        entitlements &&
+        (await tx.product.count({
+          where: { storeId: context.storeId, archivedAt: null },
+        })) >= entitlements.productLimit
+      )
+        throw new AppError(
+          403,
+          "PRODUCT_LIMIT",
+          `Seu plano permite até ${entitlements.productLimit} produtos publicados.`
+        );
 
       if (!store.whatsapp)
         throw new AppError(422, "ONBOARDING", "Cadastre o WhatsApp antes do primeiro produto.");
@@ -304,5 +332,52 @@ export async function archiveProduct(context: StoreContext, id: string): Promise
   await db.product.update({
     where: { storeId_id: { storeId: context.storeId, id } },
     data: { archivedAt: new Date(), available: false },
+  });
+}
+
+export async function selectPublishedProducts(
+  context: StoreContext,
+  productIds: string[]
+): Promise<void> {
+  const ids = z
+    .array(z.string().uuid())
+    .max(1000)
+    .parse([...new Set(productIds)]);
+  const entitlements = await getEntitlements(context);
+
+  if (ids.length > entitlements.productLimit)
+    throw new AppError(
+      422,
+      "PRODUCT_LIMIT",
+      `Selecione no máximo ${entitlements.productLimit} produtos para publicar.`
+    );
+
+  const count = await db.product.count({
+    where: { storeId: context.storeId, id: { in: ids }, archivedAt: null },
+  });
+
+  if (count !== ids.length)
+    throw new AppError(404, "NOT_FOUND", "Um ou mais produtos não foram encontrados.");
+
+  await db.$transaction([
+    db.product.updateMany({
+      where: { storeId: context.storeId, archivedAt: null, published: true },
+      data: { published: false },
+    }),
+    db.product.updateMany({
+      where: { storeId: context.storeId, id: { in: ids }, archivedAt: null },
+      data: { published: true },
+    }),
+  ]);
+}
+
+export async function listPublicationChoices(
+  context: StoreContext
+): Promise<{ id: string; name: string; published: boolean }[]> {
+  return db.product.findMany({
+    where: { storeId: context.storeId, archivedAt: null },
+    select: { id: true, name: true, published: true },
+    orderBy: [{ published: "desc" }, { createdAt: "desc" }],
+    take: 1000,
   });
 }

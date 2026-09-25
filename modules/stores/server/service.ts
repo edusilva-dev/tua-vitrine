@@ -7,6 +7,7 @@ import {
 } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { AppError } from "@/lib/server/http";
+import { getEntitlements } from "@/modules/billing/server/entitlements";
 import "server-only";
 import { assetUrl } from "@/lib/server/storage-adapter";
 import {
@@ -70,6 +71,9 @@ export async function getStoreBySlug(slug: string): Promise<StoreDTO | null> {
 export async function createStore(input: unknown, ownerId?: string): Promise<StoreDTO> {
   const values = storeIdentitySchema.parse(input);
 
+  if (ownerId && (await db.storeMember.findFirst({ where: { userId: ownerId } })))
+    throw new AppError(409, "STORE_LIMIT", "Sua conta já possui uma vitrine.");
+
   return toStoreDTO(
     await db.store.create({
       data: {
@@ -100,6 +104,9 @@ export async function saveIdentity(
       if (!ownerId || member?.role === "OWNER") return toStoreDTO(existing);
     }
 
+    if (ownerId && (await db.storeMember.findFirst({ where: { userId: ownerId } })))
+      throw new AppError(409, "STORE_LIMIT", "Sua conta já possui uma vitrine.");
+
     return createStore(values, ownerId);
   }
 
@@ -125,6 +132,24 @@ export async function saveWhatsapp(context: StoreContext, input: unknown): Promi
 
 export async function saveSettings(context: StoreContext, input: unknown): Promise<StoreDTO> {
   const values = storeSettingsSchema.parse(input);
+  const [entitlements, current] = await Promise.all([
+    getEntitlements(context),
+    db.store.findUniqueOrThrow({ where: { id: context.storeId } }),
+  ]);
+
+  if (!entitlements.canCustomizeColors && values.primaryColor !== current.primaryColor)
+    throw new AppError(403, "PLAN_REQUIRED", "As cores estão disponíveis no plano Essencial.");
+
+  if (
+    !entitlements.canUseFullCustomization &&
+    (values.template !== current.template ||
+      JSON.stringify(values.customization) !== JSON.stringify(current.customization))
+  )
+    throw new AppError(
+      403,
+      "PLAN_REQUIRED",
+      "Temas e textos personalizados estão disponíveis no plano Profissional."
+    );
 
   if (
     values.logoAssetId &&

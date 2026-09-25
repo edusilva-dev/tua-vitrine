@@ -46,6 +46,8 @@ import {
   type ProductListDTO,
   productInputSchema,
 } from "@/modules/catalog/contracts";
+import { ProductImportDialog } from "./product-import-dialog";
+import { ProductPublicationDialog } from "./product-publication-dialog";
 
 const emptyProduct: ProductInput = {
   name: "",
@@ -427,11 +429,17 @@ export function ProductForm({
 export function ProductManager({
   products,
   categories,
+  canImportProducts = false,
+  productLimit,
+  needsProductSelection = false,
   initialQuery = "",
   initialCategory = "",
 }: {
   products: ProductListDTO;
   categories: CategoryDTO[];
+  canImportProducts?: boolean;
+  productLimit: number;
+  needsProductSelection?: boolean;
   initialQuery?: string;
   initialCategory?: string;
 }) {
@@ -475,6 +483,7 @@ export function ProductManager({
 
   return (
     <div className="space-y-7">
+      <ProductPublicationDialog required={needsProductSelection} limit={productLimit} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">O QUE SUA LOJA TEM DE MELHOR</p>
@@ -488,15 +497,18 @@ export function ProductManager({
             Um catálogo cheio de possibilidades para seus clientes.
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setDirty(false);
-          }}
-        >
-          <Plus size={17} />
-          Adicionar produto
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <ProductImportDialog enabled={canImportProducts} />
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setDirty(false);
+            }}
+          >
+            <Plus size={17} />
+            Adicionar produto
+          </Button>
+        </div>
       </div>
       <div className="flex flex-wrap gap-3">
         <form

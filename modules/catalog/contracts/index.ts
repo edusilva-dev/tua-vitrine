@@ -72,6 +72,7 @@ export type ProductDTO = {
   description: string;
   priceCents: number;
   available: boolean;
+  published: boolean;
   category: CategoryDTO | null;
   images: AssetDTO[];
   variants: VariantDTO[];

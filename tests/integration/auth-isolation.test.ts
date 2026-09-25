@@ -102,20 +102,21 @@ test("store and ownership are created atomically, and a missing user rolls back 
   ).toMatchObject({ role: "OWNER" });
 });
 
-test("unsupported roles are rejected and revoked membership immediately denies tenant resolution", async () => {
-  const store = await createStore({ name: "Revocation", slug: `revoked-${prefix}` }, firstUserId);
+test("a conta não cria uma segunda loja e a revogação remove o acesso imediatamente", async () => {
+  const slug = `second-${prefix}`;
 
-  stores.push(store.id);
+  await expect(createStore({ name: "Second", slug }, firstUserId)).rejects.toThrow();
+  expect(await db.store.findUnique({ where: { slug } })).toBeNull();
   await expect(
     Promise.resolve(
       db.storeMember.update({
-        where: { storeId_userId: { storeId: store.id, userId: firstUserId } },
+        where: { storeId_userId: { storeId: ownedStoreId, userId: firstUserId } },
         data: { role: "VIEWER" },
       })
     )
   ).rejects.toThrow();
   await db.storeMember.delete({
-    where: { storeId_userId: { storeId: store.id, userId: firstUserId } },
+    where: { storeId_userId: { storeId: ownedStoreId, userId: firstUserId } },
   });
-  await expect(resolveMemberStore(firstUserId, store.id)).rejects.toThrow();
+  await expect(resolveMemberStore(firstUserId, ownedStoreId)).rejects.toThrow();
 });

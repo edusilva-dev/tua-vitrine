@@ -3,6 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import type { StoreContext } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { AppError } from "@/lib/server/http";
+import { getEntitlements } from "@/modules/billing/server/entitlements";
 import { type MetricsDTO, metricEventSchema } from "../contracts";
 
 export async function recordEvent(
@@ -77,10 +78,16 @@ export async function setLike(
 
 export async function getMetrics(context: StoreContext): Promise<MetricsDTO> {
   const storeId = context.storeId;
+  const entitlements = await getEntitlements(context);
+  const since = entitlements.metricsHistoryDays
+    ? new Date(Date.now() - entitlements.metricsHistoryDays * 24 * 60 * 60 * 1000)
+    : null;
+  const eventPeriod = since ? { occurredAt: { gte: since } } : {};
+  const likePeriod = since ? { createdAt: { gte: since } } : {};
   const [impressions, totalLikes, productViews, productCount, viewed, liked] = await Promise.all([
-    db.metricEvent.count({ where: { storeId, type: "STORE_VIEW" } }),
-    db.productLike.count({ where: { storeId, product: { archivedAt: null } } }),
-    db.metricEvent.count({ where: { storeId, type: "PRODUCT_VIEW" } }),
+    db.metricEvent.count({ where: { storeId, type: "STORE_VIEW", ...eventPeriod } }),
+    db.productLike.count({ where: { storeId, product: { archivedAt: null }, ...likePeriod } }),
+    db.metricEvent.count({ where: { storeId, type: "PRODUCT_VIEW", ...eventPeriod } }),
     db.product.count({ where: { storeId, archivedAt: null } }),
     db.metricEvent.groupBy({
       by: ["productId"],
@@ -89,6 +96,7 @@ export async function getMetrics(context: StoreContext): Promise<MetricsDTO> {
         type: "PRODUCT_VIEW",
         productId: { not: null },
         product: { archivedAt: null },
+        ...eventPeriod,
       },
       _count: { _all: true },
       orderBy: { _count: { productId: "desc" } },
@@ -96,7 +104,7 @@ export async function getMetrics(context: StoreContext): Promise<MetricsDTO> {
     }),
     db.productLike.groupBy({
       by: ["productId"],
-      where: { storeId, product: { archivedAt: null } },
+      where: { storeId, product: { archivedAt: null }, ...likePeriod },
       _count: { _all: true },
       orderBy: { _count: { productId: "desc" } },
       take: 5,

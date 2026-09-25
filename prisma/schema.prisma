@@ -10,8 +10,9 @@ enum StoreStatus {
  ACTIVE
 }
 enum BillingPlan {
- BASIC
- PRO
+ FREE
+ ESSENTIAL
+ PROFESSIONAL
 }
 enum SubscriptionStatus {
  INCOMPLETE
@@ -44,6 +45,7 @@ model Store {
  idempotencies Idempotency[]
  members StoreMember[]
  subscription StoreSubscription?
+ promotionCampaign PromotionCampaign?
 }
 model StoreSubscription {
  id String @id @default(uuid()) @db.Uuid
@@ -84,6 +86,7 @@ model Product {
  description String
  priceCents Int
  available Boolean @default(true)
+ published Boolean @default(true)
  archivedAt DateTime?
  createdAt DateTime @default(now())
  updatedAt DateTime @updatedAt
@@ -95,6 +98,7 @@ model Product {
  idempotencies Idempotency[]
  likes ProductLike[]
  events MetricEvent[]
+ campaignSelections PromotionCampaignProduct[]
  @@unique([storeId,id])
  @@index([storeId,archivedAt,createdAt])
 }
@@ -122,6 +126,7 @@ model Asset {
  createdAt DateTime @default(now())
  store Store @relation(fields:[storeId], references:[id], onDelete:Cascade)
  images ProductImage[]
+ promotionBanners PromotionCampaign[]
  @@unique([storeId,id])
 }
 model ProductImage {
@@ -281,5 +286,32 @@ model StoreMember {
  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
  @@id([storeId, userId])
- @@index([userId, createdAt])
+ @@unique([userId])
+}
+
+model PromotionCampaign {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @unique @db.Uuid
+ title String
+ description String
+ ctaLabel String
+ active Boolean @default(false)
+ bannerAssetId String? @db.Uuid
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+ bannerAsset Asset? @relation(fields: [storeId, bannerAssetId], references: [storeId, id])
+ products PromotionCampaignProduct[]
+ @@unique([storeId, id])
+}
+
+model PromotionCampaignProduct {
+ storeId String @db.Uuid
+ campaignId String @db.Uuid
+ productId String @db.Uuid
+ position Int @default(0)
+ campaign PromotionCampaign @relation(fields: [storeId, campaignId], references: [storeId, id], onDelete: Cascade)
+ product Product @relation(fields: [storeId, productId], references: [storeId, id], onDelete: Cascade)
+ @@id([campaignId, productId])
+ @@index([storeId, position])
 }

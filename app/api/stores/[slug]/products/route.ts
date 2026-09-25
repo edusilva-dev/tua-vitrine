@@ -15,17 +15,22 @@ export async function GET(request: Request, route: { params: Promise<{ slug: str
       return Response.json({
         data: await listProductsByIds(
           context,
-          (params.get("ids") ?? "").split(",").filter(Boolean)
+          (params.get("ids") ?? "").split(",").filter(Boolean),
+          { publishedOnly: true }
         ),
       });
 
     return Response.json(
-      await listProducts(context, {
-        q: params.get("q") ?? "",
-        category: params.get("category") ?? "",
-        available: params.get("available") ?? "",
-        page: Number(params.get("page") ?? 1),
-      })
+      await listProducts(
+        context,
+        {
+          q: params.get("q") ?? "",
+          category: params.get("category") ?? "",
+          available: params.get("available") ?? "",
+          page: Number(params.get("page") ?? 1),
+        },
+        { publishedOnly: true }
+      )
     );
   });
 }

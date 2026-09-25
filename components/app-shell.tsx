@@ -1,28 +1,9 @@
 "use client";
-import {
-  ArrowUpRight,
-  BarChart3,
-  LayoutDashboard,
-  Loader2,
-  Package,
-  Paintbrush,
-  Plus,
-  Store,
-} from "lucide-react";
+import { ArrowUpRight, BarChart3, LayoutDashboard, Package, Paintbrush, Store } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
+import { usePathname } from "next/navigation";
 import { AuthAccountMenu } from "@/components/auth-account-menu";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { api } from "@/lib/client/http";
 import { cn } from "@/lib/utils";
 import type { StoreDTO } from "@/modules/stores/contracts";
 
@@ -35,36 +16,14 @@ const links = [
 
 export function AppShell({
   store,
-  stores,
   children,
   authenticated,
 }: {
   store: StoreDTO;
-  stores: StoreDTO[];
   children: React.ReactNode;
   authenticated: boolean;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-
-  async function changeStore(storeId: string) {
-    setBusy(true);
-
-    try {
-      await api("/api/admin/context", { method: "PUT", body: JSON.stringify({ storeId }) });
-      router.push("/admin");
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível trocar de loja.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function createStore() {
-    router.push("/admin/onboarding?new=1");
-  }
 
   if (pathname === "/admin/preview") return <>{children}</>;
 
@@ -84,18 +43,9 @@ export function AppShell({
           <p className="mb-2 text-[10px] font-semibold tracking-[.18em] text-white/45">
             SEU NEGÓCIO
           </p>
-          <Select value={store.id} onValueChange={changeStore} disabled={busy}>
-            <SelectTrigger className="w-full border-white/15 bg-white/5 text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {stores.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
-                  {item.name || "Nova loja"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-sm font-medium text-white">
+            {store.name}
+          </div>
         </div>
         <nav
           aria-label="Menu principal"
@@ -125,15 +75,6 @@ export function AppShell({
               Uma vitrine bonita. Uma conversa. Uma nova venda.
             </p>
           </div>
-          <Button
-            disabled={busy}
-            variant="ghost"
-            className="mt-3 w-full justify-start text-white/70 hover:bg-white/10 hover:text-white"
-            onClick={createStore}
-          >
-            {busy ? <Loader2 className="animate-spin" /> : <Plus />}{" "}
-            {authenticated ? "Nova loja" : "Nova loja de teste"}
-          </Button>
           {!authenticated && (
             <p className="mt-3 text-[10px] text-white/35">AMBIENTE LOCAL · PROTÓTIPO</p>
           )}

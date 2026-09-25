@@ -78,10 +78,11 @@ export async function resolveMemberStore(userId: string, selected?: string): Pro
 export async function getAdminContext(): Promise<StoreContext> {
   await assertAdminAccess();
   const identity = await getAdminIdentity();
-  const jar = await cookies();
-  const selected = jar.get(identity.userId ? "tv-store" : "tv-local-store")?.value;
 
-  if (identity.userId) return resolveMemberStore(identity.userId, selected);
+  if (identity.userId) return resolveMemberStore(identity.userId);
+
+  const jar = await cookies();
+  const selected = jar.get("tv-local-store")?.value;
 
   if (selected && z.string().uuid().safeParse(selected).success) {
     const store = await db.store.findUnique({ where: { id: selected }, select: { id: true } });

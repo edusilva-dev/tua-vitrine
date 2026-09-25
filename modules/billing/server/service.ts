@@ -7,7 +7,8 @@ import { db } from "@/lib/server/db";
 import { getEnv } from "@/lib/server/env";
 import { AppError } from "@/lib/server/http";
 import { assertBillingEnabled, getStripe, getStripePriceIds } from "@/lib/server/stripe";
-import { type BillingPlan, billingPlanSchema } from "../contracts";
+import { type PaidBillingPlan, paidBillingPlanSchema } from "../contracts";
+import { getEntitlements } from "./entitlements";
 
 const ACTIVE_STATUSES = new Set(["ACTIVE", "TRIALING", "PAST_DUE", "UNPAID", "PAUSED"]);
 
@@ -19,14 +20,14 @@ function customerId(customer: string | Stripe.Customer | Stripe.DeletedCustomer)
   return typeof customer === "string" ? customer : customer.id;
 }
 
-function planFromPrice(priceId: string | undefined): BillingPlan | null {
+function planFromPrice(priceId: string | undefined): PaidBillingPlan | null {
   if (!priceId) return null;
 
   const prices = getStripePriceIds();
 
-  if (priceId === prices.BASIC) return "BASIC";
+  if (priceId === prices.ESSENTIAL) return "ESSENTIAL";
 
-  if (priceId === prices.PRO) return "PRO";
+  if (priceId === prices.PROFESSIONAL) return "PROFESSIONAL";
 
   return null;
 }
@@ -82,7 +83,7 @@ async function ensureCustomer(context: StoreContext) {
 
 export async function createCheckout(context: StoreContext, input: unknown) {
   assertBillingEnabled();
-  const plan = billingPlanSchema.parse(input);
+  const plan = paidBillingPlanSchema.parse(input);
   const billing = await ensureCustomer(context);
 
   if (billing.status && ACTIVE_STATUSES.has(billing.status)) {
@@ -99,7 +100,6 @@ export async function createCheckout(context: StoreContext, input: unknown) {
     mode: "subscription",
     customer: billing.stripeCustomerId,
     line_items: [{ price: getStripePriceIds()[plan], quantity: 1 }],
-    ...(billing.trialUsedAt ? {} : { subscription_data: { trial_period_days: 14 } }),
     success_url: `${appUrl}/admin/settings?billing=success`,
     cancel_url: `${appUrl}/#planos`,
     integration_identifier: `tua_vitrine_${randomBytes(4).toString("hex")}`,
@@ -143,7 +143,10 @@ export async function getBillingStatus(context: StoreContext) {
     },
   });
 
+  const entitlements = await getEntitlements(context);
+
   return {
+    entitlements,
     enabled: getEnv().BILLING_MODE === "stripe",
     plan: billing?.plan ?? null,
     status: billing?.status ?? null,

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/server/context";
+import { getEntitlements } from "@/modules/billing/server/entitlements";
 import { ProductManager } from "@/modules/catalog/components/product-manager";
 import { listCategories, listProducts } from "@/modules/catalog/server/service";
 import { getCurrentStore } from "@/modules/stores/server/service";
@@ -14,19 +15,23 @@ export default async function ProductsPage({
   const params = await searchParams;
   const context = await getAdminContext();
   const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
-  const [products, categories] = await Promise.all([
+  const [products, categories, entitlements] = await Promise.all([
     listProducts(context, {
       ...(params.q ? { q: params.q } : {}),
       ...(params.category ? { category: params.category } : {}),
       page,
     }),
     listCategories(context),
+    getEntitlements(context),
   ]);
 
   return (
     <ProductManager
       products={products}
       categories={categories}
+      canImportProducts={entitlements.canImportProducts}
+      productLimit={entitlements.productLimit}
+      needsProductSelection={entitlements.needsProductSelection}
       initialQuery={params.q ?? ""}
       initialCategory={params.category ?? ""}
     />
