@@ -1,6 +1,7 @@
 "use client";
 
-import { ImagePlus, Loader2 } from "lucide-react";
+import { ArrowRight, ImagePlus, Loader2 } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ export function PromotionSettings({
   );
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [bannerUrl, setBannerUrl] = useState(campaign?.banner?.url ?? null);
 
   if (!enabled)
     return (
@@ -73,6 +75,7 @@ export function PromotionSettings({
       const asset = await api<AssetDTO>("/api/admin/assets", { method: "POST", body });
 
       setValue((current) => ({ ...current, bannerAssetId: asset.id }));
+      setBannerUrl(asset.url);
       toast.success("Imagem da campanha enviada.");
     } catch (cause) {
       toast.error(cause instanceof Error ? cause.message : "Não foi possível enviar a imagem.");
@@ -171,6 +174,53 @@ export function PromotionSettings({
             onChange={(event) => void upload(event.target.files?.[0])}
           />
         </label>
+      </div>
+      <div className="mt-6">
+        <p className="text-sm font-medium">Prévia do banner</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Assim a campanha aparecerá na sua vitrine.
+        </p>
+        <div className="mt-3 overflow-hidden rounded-3xl border bg-primary text-primary-foreground">
+          <div className="grid items-center gap-6 p-6 sm:p-8 md:grid-cols-[1fr_auto]">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] opacity-75">
+                Campanha em destaque
+              </p>
+              <h3 className="mt-2 break-words font-heading text-2xl font-semibold">
+                {value.title.trim() || "Título da sua campanha"}
+              </h3>
+              <p className="mt-2 max-w-2xl break-words text-sm opacity-85">
+                {value.description.trim() || "Conte aos clientes o que torna esta oferta especial."}
+              </p>
+              <Button
+                asChild
+                className="mt-5 max-w-full bg-background text-foreground hover:bg-background/90"
+              >
+                <span aria-hidden="true">
+                  <span className="truncate">{value.ctaLabel.trim() || "Ver produtos"}</span>
+                  <ArrowRight className="shrink-0" />
+                </span>
+              </Button>
+            </div>
+            {bannerUrl ? (
+              <Image
+                src={bannerUrl}
+                alt="Prévia da imagem da campanha"
+                width={360}
+                height={180}
+                unoptimized
+                className="h-36 w-full rounded-2xl object-cover md:w-72"
+              />
+            ) : (
+              <div className="flex h-36 w-full items-center justify-center rounded-2xl border border-dashed border-current/30 bg-background/10 md:w-72">
+                <div className="text-center text-xs opacity-75">
+                  <ImagePlus className="mx-auto mb-2 size-5" />
+                  Sua imagem aparecerá aqui
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       <fieldset className="mt-5">
         <legend className="text-sm font-medium">Produtos da campanha</legend>
