@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CreditCard, Loader2, TriangleAlert } from "lucide-react";
+import { Check, CreditCard, Info, Loader2, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -266,18 +266,28 @@ export function BillingPanel({ status }: { status: BillingStatus }) {
         </div>
 
         {status.canManage ? (
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t pt-5">
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Cobrança, notas e forma de pagamento ficam no portal seguro da Stripe.
-            </p>
-            <Button
-              variant="ghost"
-              disabled={!status.enabled || loading !== null}
-              onClick={() => void open("/api/billing/portal")}
-            >
-              {loading === "PORTAL" ? <Loader2 className="animate-spin" /> : null}
-              Gerenciar cobrança
-            </Button>
+          <div className="mt-5 space-y-4 border-t pt-5">
+            <div className="flex gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-relaxed text-blue-950">
+              <Info className="mt-0.5 size-4 shrink-0 text-blue-700" />
+              <p>
+                <strong>Por que o Free não aparece na Stripe?</strong> Como ele não possui cobrança,
+                não é exibido entre as assinaturas pagas. Para mudar para o Free, use o card acima;
+                sua cobrança será cancelada e o acesso pago continuará até o fim do período atual.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Faturas e forma de pagamento ficam no portal seguro da Stripe.
+              </p>
+              <Button
+                variant="ghost"
+                disabled={!status.enabled || loading !== null}
+                onClick={() => void open("/api/billing/portal")}
+              >
+                {loading === "PORTAL" ? <Loader2 className="animate-spin" /> : null}
+                Faturas e forma de pagamento
+              </Button>
+            </div>
           </div>
         ) : null}
       </div>
