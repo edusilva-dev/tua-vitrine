@@ -6,6 +6,7 @@ import { getAuth } from "./auth";
 import { db } from "./db";
 import { getEnv } from "./env";
 import { AppError } from "./http";
+import { isAllowedAdminRequest } from "./request-origin";
 
 export type StoreContext = { storeId: string };
 
@@ -44,15 +45,19 @@ export async function getAdminIdentity(): Promise<{ userId: string | null }> {
 
 export async function assertAdminAccess(mutation = false): Promise<void> {
   await getAdminIdentity();
-  const values = await headers();
-
-  if (values.get("sec-fetch-site") === "cross-site") {
-    throw new AppError(403, "ORIGIN", "Origem não permitida.");
-  }
 
   if (!mutation) return;
 
-  if (values.get("origin") !== new URL(getEnv().APP_URL).origin) {
+  const values = await headers();
+
+  if (
+    !isAllowedAdminRequest({
+      mutation,
+      secFetchSite: values.get("sec-fetch-site"),
+      origin: values.get("origin"),
+      appUrl: getEnv().APP_URL,
+    })
+  ) {
     throw new AppError(403, "ORIGIN", "Origem não permitida.");
   }
 }
