@@ -58,8 +58,8 @@ export function ProductDetail({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-3xl">
-        <div className="grid gap-6 sm:grid-cols-2">
+      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-hidden p-0 sm:max-w-4xl">
+        <div className="max-h-[calc(100dvh-1rem)] overflow-y-auto sm:grid sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:overflow-hidden">
           <div>
             <ProductImage
               image={product.images[imageIndex]}
@@ -82,7 +82,7 @@ export function ProductDetail({
               </div>
             ) : null}
           </div>
-          <div className="flex flex-col">
+          <div className="flex min-h-0 flex-col p-5 sm:max-h-[calc(100dvh-1rem)] sm:overflow-y-auto sm:p-6">
             <DialogHeader className="text-left">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 {product.category?.name ?? "Catálogo"}
@@ -134,7 +134,7 @@ export function ProductDetail({
                 className="w-24"
               />
             </div>
-            <div className="mt-auto grid gap-2">
+            <div className="mt-auto grid gap-2 border-t bg-popover pt-4 sm:sticky sm:bottom-0">
               <Button
                 size="lg"
                 disabled={!available || !ready}

@@ -442,7 +442,7 @@ export function Storefront({
             return (
               <article
                 key={product.id}
-                className={`group relative overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-md ${list ? "flex" : ""}`}
+                className={`group relative flex overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-md ${list ? "flex-row" : "flex-col"}`}
               >
                 <button
                   type="button"
