@@ -101,7 +101,7 @@ export function BillingPanel({ status }: { status: BillingStatus }) {
     try {
       const result = await api<{ url: string | null }>(path, {
         method: "POST",
-        ...(plan ? { body: JSON.stringify({ plan }) } : {}),
+        body: JSON.stringify(plan ? { plan } : {}),
       });
 
       if (result.url) {
@@ -148,7 +148,10 @@ export function BillingPanel({ status }: { status: BillingStatus }) {
             <h2 className="text-2xl font-semibold">{planNames[status.entitlements.plan]}</h2>
             {status.status ? (
               <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                {statusNames[status.status] ?? status.status.toLowerCase().replaceAll("_", " ")}
+                {status.cancelAtPeriodEnd
+                  ? "Cancelamento agendado"
+                  : (statusNames[status.status] ??
+                    status.status.toLowerCase().replaceAll("_", " "))}
               </span>
             ) : null}
           </div>
@@ -167,18 +170,30 @@ export function BillingPanel({ status }: { status: BillingStatus }) {
                 : `${trialDays ?? 14} ${trialDays === 1 ? "dia restante" : "dias restantes"}.`}
             </p>
           </div>
+        ) : status.status === "CANCELED" || status.status === "INCOMPLETE_EXPIRED" ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+            <p className="font-medium">Plano pago encerrado</p>
+            <p className="mt-1 text-amber-800">
+              {periodEnd
+                ? `A assinatura foi encerrada em ${periodEnd}. Sua loja agora usa o plano Free.`
+                : "A assinatura foi encerrada. Sua loja agora usa o plano Free."}
+            </p>
+          </div>
+        ) : status.cancelAtPeriodEnd && periodEnd ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+            <p className="font-medium">Cancelamento agendado</p>
+            <p className="mt-1 text-amber-800">
+              Seu plano atual permanece vigente somente até {periodEnd}. Depois dessa data, sua loja
+              passa para o plano Free.
+            </p>
+            <p className="mt-2 text-xs text-amber-700">
+              Você pode reativar a assinatura pelo portal antes dessa data.
+            </p>
+          </div>
         ) : periodEnd ? (
           <div className="rounded-lg border bg-muted/30 p-4 text-sm">
-            <p className="font-medium">
-              {status.cancelAtPeriodEnd ? "Acesso disponível até" : "Próxima renovação"}
-            </p>
+            <p className="font-medium">Próxima renovação</p>
             <p className="mt-1 text-muted-foreground">{periodEnd}</p>
-            {status.cancelAtPeriodEnd ? (
-              <p className="mt-2 text-amber-700">
-                O cancelamento está agendado. Você pode reativar a assinatura pelo portal antes
-                dessa data.
-              </p>
-            ) : null}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">

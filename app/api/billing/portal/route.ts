@@ -5,7 +5,7 @@ import { createPortal } from "@/modules/billing/server/service";
 export async function POST(request: Request) {
   return handle(async () => {
     await assertAdminAccess(true);
-    const body = await jsonBody(request);
+    const body = request.body ? await jsonBody(request) : {};
     const plan =
       typeof body === "object" && body !== null && "plan" in body ? body.plan : undefined;
 

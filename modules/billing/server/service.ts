@@ -137,9 +137,7 @@ async function portalConfiguration(stripe: Stripe) {
     product,
     prices: productIds,
   }));
-  const configuration =
-    configurations.data.find((item) => item.metadata?.tuaVitrine === "true") ??
-    configurations.data.find((item) => item.is_default);
+  const configuration = configurations.data.find((item) => item.metadata?.tuaVitrine === "true");
   const features: Stripe.BillingPortal.ConfigurationCreateParams.Features = {
     payment_method_update: { enabled: true },
     invoice_history: { enabled: true },
@@ -156,7 +154,6 @@ async function portalConfiguration(stripe: Stripe) {
       default_allowed_updates: ["price"],
       proration_behavior: "always_invoice",
       products,
-      schedule_at_period_end: { conditions: [{ type: "decreasing_item_amount" }] },
     },
   };
 
@@ -189,11 +186,13 @@ export async function createPortal(context: StoreContext, input?: unknown) {
     );
 
   const stripe = getStripe();
-  const configuration = await portalConfiguration(stripe);
   const returnUrl = `${getEnv().APP_URL}/admin/billing?billing=updated`;
   let flowData: Stripe.BillingPortal.SessionCreateParams.FlowData | undefined;
+  let configurationId: string | undefined;
 
   if (targetPlan) {
+    configurationId = (await portalConfiguration(stripe)).id;
+
     if (!billing.stripeSubscriptionId)
       throw new AppError(
         409,
@@ -235,7 +234,7 @@ export async function createPortal(context: StoreContext, input?: unknown) {
 
   const session = await stripe.billingPortal.sessions.create({
     customer: billing.stripeCustomerId,
-    configuration: configuration.id,
+    ...(configurationId ? { configuration: configurationId } : {}),
     return_url: `${getEnv().APP_URL}/admin/billing`,
     ...(flowData ? { flow_data: flowData } : {}),
   });
@@ -290,7 +289,7 @@ export async function changePlan(context: StoreContext, input: unknown) {
 }
 
 export async function getBillingStatus(context: StoreContext) {
-  const billing = await db.storeSubscription.findUnique({
+  let billing = await db.storeSubscription.findUnique({
     where: { storeId: context.storeId },
     select: {
       plan: true,
@@ -301,12 +300,30 @@ export async function getBillingStatus(context: StoreContext) {
       stripeSubscriptionId: true,
     },
   });
+  const billingEnabled = getEnv().BILLING_MODE === "stripe";
+
+  if (billingEnabled && billing?.stripeSubscriptionId) {
+    try {
+      const liveSubscription = await getStripe().subscriptions.retrieve(
+        billing.stripeSubscriptionId
+      );
+      const liveData = subscriptionData(liveSubscription);
+
+      await db.storeSubscription.update({
+        where: { storeId: context.storeId },
+        data: liveData,
+      });
+      billing = { ...billing, ...liveData };
+    } catch {
+      // Webhooks remain the source of truth if Stripe is temporarily unavailable.
+    }
+  }
 
   const entitlements = await getEntitlements(context);
 
   return {
     entitlements,
-    enabled: getEnv().BILLING_MODE === "stripe",
+    enabled: billingEnabled,
     plan: billing?.plan ?? null,
     status: billing?.status ?? null,
     currentPeriodEnd: billing?.currentPeriodEnd?.toISOString() ?? null,
