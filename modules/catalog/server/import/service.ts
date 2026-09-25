@@ -108,7 +108,7 @@ export async function importProducts(
           description: row.description,
           priceCents: row.priceCents,
           available: row.available,
-          published: false,
+          published: true,
         }));
         const firstProduct = products[0];
 

@@ -439,11 +439,11 @@ export function ProductForm({
                 onDirtyChange?.(true);
               }}
               id="product-available"
-              aria-label="Produto disponível na vitrine"
+              aria-label="Produto disponível para venda"
             />
           )}
         />
-        <span>Produto disponível na vitrine</span>
+        <span>Produto disponível para venda</span>
       </label>
       {error && (
         <p role="alert" className="field-error rounded-lg bg-destructive/5 p-3">
@@ -517,7 +517,6 @@ export function ProductManager({
 
   return (
     <div className="space-y-7">
-      <ProductPublicationDialog required={needsProductSelection} limit={productLimit} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">O QUE SUA LOJA TEM DE MELHOR</p>
@@ -532,6 +531,7 @@ export function ProductManager({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ProductPublicationDialog required={needsProductSelection} limit={productLimit} />
           <ProductImportDialog enabled={canImportProducts} />
           <Button
             onClick={() => {
@@ -602,9 +602,13 @@ export function ProductManager({
                 )}
                 <Badge
                   variant="secondary"
-                  className="absolute left-3 top-3 bg-white/90 text-[#345044]"
+                  className={`absolute left-3 top-3 bg-white/90 ${product.published ? "text-[#345044]" : "text-amber-700"}`}
                 >
-                  {product.available ? "Disponível" : "Indisponível"}
+                  {!product.published
+                    ? "Rascunho"
+                    : product.available
+                      ? "Publicado"
+                      : "Publicado · indisponível"}
                 </Badge>
               </div>
               <div className="p-5">

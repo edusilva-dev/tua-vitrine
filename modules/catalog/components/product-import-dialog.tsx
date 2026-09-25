@@ -91,7 +91,7 @@ export function ProductImportDialog({ enabled }: { enabled: boolean }) {
       toast.success(
         result.alreadyImported
           ? "Esta planilha já havia sido importada."
-          : `${result.importedCount} produto(s) importado(s) como rascunho.`
+          : `${result.importedCount} produto(s) importado(s) e publicado(s) na vitrine.`
       );
       setOpen(false);
       setPreview(null);
@@ -131,8 +131,8 @@ export function ProductImportDialog({ enabled }: { enabled: boolean }) {
         <DialogHeader>
           <DialogTitle>Importar produtos por Excel</DialogTitle>
           <DialogDescription>
-            Use o modelo oficial. Os produtos válidos serão criados como rascunho, sem imagens ou
-            variações.
+            Use o modelo oficial. Os produtos válidos serão publicados sem imagens ou variações e
+            podem ser ajustados depois.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-wrap items-center gap-3">

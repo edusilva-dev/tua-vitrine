@@ -45,7 +45,7 @@ const rows = [
 ];
 
 describe("confirmação da importação de produtos", () => {
-  test("cria rascunhos em transação e trata retry como idempotente", async () => {
+  test("cria produtos publicados em transação e trata retry como idempotente", async () => {
     const key = randomUUID();
     const first = await importProducts({ storeId }, { rows }, key, {
       enabled: true,
@@ -63,7 +63,7 @@ describe("confirmação da importação de produtos", () => {
     expect(first).toEqual({ importedCount: 2, alreadyImported: false });
     expect(retry).toEqual({ importedCount: 2, alreadyImported: true });
     expect(saved).toHaveLength(2);
-    expect(saved.every((product) => product.published === false)).toBe(true);
+    expect(saved.every((product) => product.published)).toBe(true);
     expect(await db.category.count({ where: { storeId, name: "Importados" } })).toBe(1);
   });
 

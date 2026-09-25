@@ -17,7 +17,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
       ...init?.headers,
     },
   });
-  const body = await response.json();
+  const text = await response.text();
+  const body = text ? JSON.parse(text) : {};
 
   if (!response.ok) {
     throw new ApiError(

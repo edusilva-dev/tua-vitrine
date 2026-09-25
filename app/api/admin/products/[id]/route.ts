@@ -29,6 +29,6 @@ export async function DELETE(_request: Request, route: RouteContext) {
     await assertAdminAccess(true);
     await archiveProduct(await getAdminContext(), (await route.params).id);
 
-    return new Response(null, { status: 204 });
+    return Response.json({ data: { archived: true } });
   });
 }
