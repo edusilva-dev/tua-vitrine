@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, CreditCard, Loader2, TriangleAlert } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/client/http";
-import type { BillingPlan, Entitlements, PaidBillingPlan } from "../contracts";
+import { type BillingPlan, billingPlans, type Entitlements } from "../contracts";
 
 type BillingStatus = {
   entitlements: Entitlements;
@@ -34,6 +35,23 @@ const planNames: Record<BillingPlan, string> = {
   ESSENTIAL: "Essencial",
   PROFESSIONAL: "Profissional",
 };
+
+const planDetails: Record<BillingPlan, { description: string; features: string[] }> = {
+  FREE: {
+    description: "Para conhecer a plataforma e manter uma vitrine enxuta.",
+    features: ["Até 10 produtos", "Logo da loja", "Métricas dos últimos 7 dias"],
+  },
+  ESSENTIAL: {
+    description: "Para lojas que precisam ganhar tempo e acompanhar resultados.",
+    features: ["Até 50 produtos", "Importação por planilha", "Cores, logo e métricas completas"],
+  },
+  PROFESSIONAL: {
+    description: "Para catálogos maiores e campanhas promocionais.",
+    features: ["Até 1.000 produtos", "Personalização completa", "Campanhas promocionais"],
+  },
+};
+
+const planRank: Record<BillingPlan, number> = { FREE: 0, ESSENTIAL: 1, PROFESSIONAL: 2 };
 
 const statusNames: Record<string, string> = {
   ACTIVE: "Ativa",
@@ -66,8 +84,10 @@ function formatDate(value: string | null) {
 }
 
 export function BillingPanel({ status }: { status: BillingStatus }) {
-  const [loading, setLoading] = useState<PaidBillingPlan | "PORTAL" | null>(null);
+  const router = useRouter();
+  const [loading, setLoading] = useState<BillingPlan | "PORTAL" | null>(null);
   const [portalWarningOpen, setPortalWarningOpen] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<BillingPlan | null>(null);
   const isTrial = status.entitlements.source === "INTERNAL_TRIAL" || status.status === "TRIALING";
   const trialDays =
     status.entitlements.source === "INTERNAL_TRIAL"
@@ -75,20 +95,48 @@ export function BillingPanel({ status }: { status: BillingStatus }) {
       : trialDaysRemaining(status.trialEnd);
   const periodEnd = formatDate(status.currentPeriodEnd);
 
-  async function open(path: string, plan?: PaidBillingPlan) {
+  async function open(path: string, plan?: BillingPlan) {
     setLoading(plan ?? "PORTAL");
 
     try {
-      const result = await api<{ url: string }>(path, {
+      const result = await api<{ url: string | null }>(path, {
         method: "POST",
         ...(plan ? { body: JSON.stringify({ plan }) } : {}),
       });
 
-      window.location.assign(result.url);
+      if (result.url) {
+        window.location.assign(result.url);
+
+        return;
+      }
+
+      toast.success("Plano Free ativado.");
+      setLoading(null);
+      setPortalWarningOpen(false);
+      router.refresh();
     } catch (cause) {
       toast.error(cause instanceof Error ? cause.message : "Não foi possível abrir a cobrança.");
       setLoading(null);
     }
+  }
+
+  function choosePlan(plan: BillingPlan) {
+    if (plan === status.entitlements.plan && !status.cancelAtPeriodEnd) return;
+
+    if (plan === status.entitlements.plan && status.cancelAtPeriodEnd) {
+      void open("/api/billing/portal");
+
+      return;
+    }
+
+    if (planRank[plan] < planRank[status.entitlements.plan]) {
+      setPendingPlan(plan);
+      setPortalWarningOpen(true);
+
+      return;
+    }
+
+    void open("/api/billing/change-plan", plan);
   }
 
   return (
@@ -144,52 +192,78 @@ export function BillingPanel({ status }: { status: BillingStatus }) {
           </p>
         )}
 
-        <div className="mt-5 flex flex-wrap gap-3">
-          {status.canSubscribe && (
-            <>
-              <Button
-                disabled={!status.enabled || loading !== null}
-                onClick={() => void open("/api/billing/checkout", "ESSENTIAL")}
+        <div className="mt-6 grid gap-4 lg:grid-cols-3">
+          {(Object.keys(planDetails) as BillingPlan[]).map((plan) => {
+            const current = plan === status.entitlements.plan;
+            const price = billingPlans[plan].amountCents;
+
+            return (
+              <article
+                key={plan}
+                className={`flex flex-col rounded-xl border p-5 ${current ? "border-primary bg-primary/[0.03] ring-1 ring-primary" : "bg-background"}`}
               >
-                {loading === "ESSENTIAL" && <Loader2 className="animate-spin" />}
-                Assinar Essencial
-              </Button>
-              <Button
-                variant="outline"
-                disabled={!status.enabled || loading !== null}
-                onClick={() => void open("/api/billing/checkout", "PROFESSIONAL")}
-              >
-                {loading === "PROFESSIONAL" && <Loader2 className="animate-spin" />}
-                Assinar Profissional
-              </Button>
-            </>
-          )}
-          {status.canManage && (
-            <Button
-              disabled={!status.enabled || loading !== null}
-              onClick={() => setPortalWarningOpen(true)}
-            >
-              {loading === "PORTAL" && <Loader2 className="animate-spin" />}
-              Trocar, renovar ou cancelar
-            </Button>
-          )}
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-heading text-lg font-semibold">{planNames[plan]}</h3>
+                    <p className="mt-1 text-2xl font-semibold">
+                      {price ? `R$ ${(price / 100).toFixed(0)}` : "Grátis"}
+                      {price ? (
+                        <span className="text-xs font-normal text-muted-foreground">/mês</span>
+                      ) : null}
+                    </p>
+                  </div>
+                  {current ? (
+                    <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground">
+                      PLANO ATUAL
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                  {planDetails[plan].description}
+                </p>
+                <ul className="my-5 grid gap-2 text-xs">
+                  {planDetails[plan].features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2">
+                      <Check className="size-3.5 text-primary" /> {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  className="mt-auto w-full"
+                  variant={current ? "secondary" : plan === "PROFESSIONAL" ? "default" : "outline"}
+                  disabled={
+                    !status.enabled || loading !== null || (current && !status.cancelAtPeriodEnd)
+                  }
+                  onClick={() => choosePlan(plan)}
+                >
+                  {loading === plan ? <Loader2 className="animate-spin" /> : null}
+                  {current
+                    ? status.cancelAtPeriodEnd
+                      ? "Reativar assinatura"
+                      : "Plano atual"
+                    : planRank[plan] > planRank[status.entitlements.plan]
+                      ? "Fazer upgrade"
+                      : "Mudar para este plano"}
+                </Button>
+              </article>
+            );
+          })}
         </div>
 
         {status.canManage ? (
-          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            A troca de plano, a atualização da forma de pagamento e o cancelamento são feitos no
-            portal seguro da Stripe.
-          </p>
-        ) : null}
-        {status.canSubscribe ? (
-          <ul className="mt-6 grid gap-2 border-t pt-5 text-sm text-muted-foreground sm:grid-cols-2">
-            <li className="flex items-center gap-2">
-              <Check size={16} className="text-primary" /> Essencial: até 50 produtos
-            </li>
-            <li className="flex items-center gap-2">
-              <Check size={16} className="text-primary" /> Profissional: catálogo completo
-            </li>
-          </ul>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t pt-5">
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Cobrança, notas e forma de pagamento ficam no portal seguro da Stripe.
+            </p>
+            <Button
+              variant="ghost"
+              disabled={!status.enabled || loading !== null}
+              onClick={() => void open("/api/billing/portal")}
+            >
+              {loading === "PORTAL" ? <Loader2 className="animate-spin" /> : null}
+              Gerenciar cobrança
+            </Button>
+          </div>
         ) : null}
       </div>
       <AlertDialog open={portalWarningOpen} onOpenChange={setPortalWarningOpen}>
@@ -223,10 +297,12 @@ export function BillingPanel({ status }: { status: BillingStatus }) {
           <AlertDialogFooter>
             <AlertDialogCancel>Manter meu plano</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => void open("/api/billing/portal")}
+              onClick={() => {
+                if (pendingPlan) void open("/api/billing/change-plan", pendingPlan);
+              }}
               disabled={loading !== null}
             >
-              Entendi, abrir gerenciamento
+              Entendi, continuar com o downgrade
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

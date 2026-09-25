@@ -7,7 +7,12 @@ import { db } from "@/lib/server/db";
 import { getEnv } from "@/lib/server/env";
 import { AppError } from "@/lib/server/http";
 import { assertBillingEnabled, getStripe, getStripePriceIds } from "@/lib/server/stripe";
-import { type PaidBillingPlan, paidBillingPlanSchema } from "../contracts";
+import {
+  type BillingPlan,
+  billingPlanSchema,
+  type PaidBillingPlan,
+  paidBillingPlanSchema,
+} from "../contracts";
 import { getEntitlements } from "./entitlements";
 
 const ACTIVE_STATUSES = new Set(["ACTIVE", "TRIALING", "PAST_DUE", "UNPAID", "PAUSED"]);
@@ -111,8 +116,69 @@ export async function createCheckout(context: StoreContext, input: unknown) {
   return { url: session.url };
 }
 
-export async function createPortal(context: StoreContext) {
+async function portalConfiguration(stripe: Stripe) {
+  const prices = getStripePriceIds();
+  const [essentialPrice, professionalPrice, configurations] = await Promise.all([
+    stripe.prices.retrieve(prices.ESSENTIAL),
+    stripe.prices.retrieve(prices.PROFESSIONAL),
+    stripe.billingPortal.configurations.list({ active: true, limit: 100 }),
+  ]);
+  const pricesByProduct = new Map<string, string[]>();
+
+  for (const price of [essentialPrice, professionalPrice]) {
+    const productId = typeof price.product === "string" ? price.product : price.product.id;
+    const productPrices = pricesByProduct.get(productId) ?? [];
+
+    productPrices.push(price.id);
+    pricesByProduct.set(productId, productPrices);
+  }
+
+  const products = Array.from(pricesByProduct, ([product, productIds]) => ({
+    product,
+    prices: productIds,
+  }));
+  const configuration =
+    configurations.data.find((item) => item.metadata?.tuaVitrine === "true") ??
+    configurations.data.find((item) => item.is_default);
+  const features: Stripe.BillingPortal.ConfigurationCreateParams.Features = {
+    payment_method_update: { enabled: true },
+    invoice_history: { enabled: true },
+    subscription_cancel: {
+      enabled: true,
+      mode: "at_period_end" as const,
+      cancellation_reason: {
+        enabled: true,
+        options: ["too_expensive", "missing_features", "unused", "other"],
+      },
+    },
+    subscription_update: {
+      enabled: true,
+      default_allowed_updates: ["price"],
+      proration_behavior: "always_invoice",
+      products,
+      schedule_at_period_end: { conditions: [{ type: "decreasing_item_amount" }] },
+    },
+  };
+
+  if (configuration) {
+    return stripe.billingPortal.configurations.update(configuration.id, {
+      features,
+      metadata: { ...configuration.metadata, tuaVitrine: "true" },
+      name: "Tua Vitrine",
+    });
+  }
+
+  return stripe.billingPortal.configurations.create({
+    features,
+    metadata: { tuaVitrine: "true" },
+    name: "Tua Vitrine",
+  });
+}
+
+export async function createPortal(context: StoreContext, input?: unknown) {
   assertBillingEnabled();
+  const targetPlan: BillingPlan | undefined =
+    input === undefined ? undefined : billingPlanSchema.parse(input);
   const billing = await db.storeSubscription.findUnique({ where: { storeId: context.storeId } });
 
   if (!billing)
@@ -122,12 +188,105 @@ export async function createPortal(context: StoreContext) {
       "Esta loja ainda não possui uma conta de cobrança."
     );
 
-  const session = await getStripe().billingPortal.sessions.create({
+  const stripe = getStripe();
+  const configuration = await portalConfiguration(stripe);
+  const returnUrl = `${getEnv().APP_URL}/admin/billing?billing=updated`;
+  let flowData: Stripe.BillingPortal.SessionCreateParams.FlowData | undefined;
+
+  if (targetPlan) {
+    if (!billing.stripeSubscriptionId)
+      throw new AppError(
+        409,
+        "NO_ACTIVE_SUBSCRIPTION",
+        "Esta loja ainda não possui uma assinatura paga para alterar."
+      );
+
+    if (targetPlan === billing.plan && !billing.cancelAtPeriodEnd)
+      throw new AppError(409, "PLAN_ALREADY_ACTIVE", "Este já é o plano atual da loja.");
+
+    const afterCompletion = {
+      type: "redirect" as const,
+      redirect: { return_url: returnUrl },
+    };
+
+    if (targetPlan === "FREE") {
+      flowData = {
+        type: "subscription_cancel",
+        subscription_cancel: { subscription: billing.stripeSubscriptionId },
+        after_completion: afterCompletion,
+      };
+    } else {
+      const subscription = await stripe.subscriptions.retrieve(billing.stripeSubscriptionId);
+      const item = subscription.items.data[0];
+
+      if (!item)
+        throw new AppError(409, "SUBSCRIPTION_ITEM_MISSING", "A assinatura não possui um plano.");
+
+      flowData = {
+        type: "subscription_update_confirm",
+        subscription_update_confirm: {
+          subscription: billing.stripeSubscriptionId,
+          items: [{ id: item.id, price: getStripePriceIds()[targetPlan], quantity: 1 }],
+        },
+        after_completion: afterCompletion,
+      };
+    }
+  }
+
+  const session = await stripe.billingPortal.sessions.create({
     customer: billing.stripeCustomerId,
+    configuration: configuration.id,
     return_url: `${getEnv().APP_URL}/admin/billing`,
+    ...(flowData ? { flow_data: flowData } : {}),
   });
 
   return { url: session.url };
+}
+
+export async function changePlan(context: StoreContext, input: unknown) {
+  const targetPlan = billingPlanSchema.parse(input);
+  const [billing, entitlements] = await Promise.all([
+    db.storeSubscription.findUnique({ where: { storeId: context.storeId } }),
+    getEntitlements(context),
+  ]);
+
+  if (targetPlan === entitlements.plan && !billing?.cancelAtPeriodEnd)
+    throw new AppError(409, "PLAN_ALREADY_ACTIVE", "Este já é o plano atual da loja.");
+
+  if (targetPlan !== "FREE") {
+    if (billing?.stripeSubscriptionId && billing.status && ACTIVE_STATUSES.has(billing.status))
+      return createPortal(context, targetPlan);
+
+    return createCheckout(context, targetPlan);
+  }
+
+  if (billing?.stripeSubscriptionId && billing.status && ACTIVE_STATUSES.has(billing.status))
+    return createPortal(context, "FREE");
+
+  const customer = await ensureCustomer(context);
+
+  await db.$transaction([
+    db.storeSubscription.update({
+      where: { id: customer.id },
+      data: {
+        plan: "FREE",
+        status: "CANCELED",
+        trialUsedAt: customer.trialUsedAt ?? new Date(),
+        cancelAtPeriodEnd: false,
+      },
+    }),
+    db.store.update({
+      where: { id: context.storeId },
+      data: {
+        primaryColor: "#2563eb",
+        template: "grid",
+        customization: { version: 1, tagline: "" },
+      },
+    }),
+    db.promotionCampaign.deleteMany({ where: { storeId: context.storeId } }),
+  ]);
+
+  return { url: null };
 }
 
 export async function getBillingStatus(context: StoreContext) {

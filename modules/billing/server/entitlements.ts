@@ -16,6 +16,7 @@ type EntitlementState = {
   activatedAt: Date | null;
   subscriptionPlan: DatabaseBillingPlan | null;
   subscriptionStatus: SubscriptionStatus | null;
+  trialUsedAt?: Date | null;
   publishedProducts: number;
   catalogProducts?: number;
 };
@@ -37,7 +38,7 @@ export function resolveEntitlements(state: EntitlementState, now = new Date()): 
   ) {
     plan = state.subscriptionPlan;
     source = "SUBSCRIPTION";
-  } else if (state.activatedAt) {
+  } else if (state.activatedAt && !state.trialUsedAt) {
     const end = addDays(state.activatedAt, INTERNAL_TRIAL_DAYS);
 
     if (end.getTime() > now.getTime()) {
@@ -70,7 +71,7 @@ const getEntitlementsForStore = cache(async (storeId: string): Promise<Entitleme
       where: { id: storeId },
       select: {
         onboardingCompletedAt: true,
-        subscription: { select: { plan: true, status: true } },
+        subscription: { select: { plan: true, status: true, trialUsedAt: true } },
         _count: {
           select: { products: { where: { archivedAt: null, published: true } } },
         },
@@ -83,6 +84,7 @@ const getEntitlementsForStore = cache(async (storeId: string): Promise<Entitleme
     activatedAt: store.onboardingCompletedAt,
     subscriptionPlan: store.subscription?.plan ?? null,
     subscriptionStatus: store.subscription?.status ?? null,
+    trialUsedAt: store.subscription?.trialUsedAt ?? null,
     publishedProducts: store._count.products,
     catalogProducts,
   });

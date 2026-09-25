@@ -65,6 +65,21 @@ describe("entitlements", () => {
     });
   });
 
+  test("lojista pode encerrar o trial e escolher o Free", () => {
+    expect(
+      resolveEntitlements(
+        {
+          activatedAt: new Date("2026-09-20T12:00:00.000Z"),
+          subscriptionPlan: "FREE",
+          subscriptionStatus: "CANCELED",
+          trialUsedAt: now,
+          publishedProducts: 4,
+        },
+        now
+      )
+    ).toMatchObject({ plan: "FREE", source: "FREE", trialDaysRemaining: 0 });
+  });
+
   test("assinatura ativa prevalece e inadimplência perde os recursos pagos", () => {
     const base = {
       activatedAt: new Date("2026-09-01T12:00:00.000Z"),

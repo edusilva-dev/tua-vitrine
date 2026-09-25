@@ -1,6 +1,6 @@
 import { assertAdminAccess, getAdminContext } from "@/lib/server/context";
 import { handle, jsonBody } from "@/lib/server/http";
-import { createPortal } from "@/modules/billing/server/service";
+import { changePlan } from "@/modules/billing/server/service";
 
 export async function POST(request: Request) {
   return handle(async () => {
@@ -9,6 +9,6 @@ export async function POST(request: Request) {
     const plan =
       typeof body === "object" && body !== null && "plan" in body ? body.plan : undefined;
 
-    return Response.json({ data: await createPortal(await getAdminContext(), plan) });
+    return Response.json({ data: await changePlan(await getAdminContext(), plan) });
   });
 }

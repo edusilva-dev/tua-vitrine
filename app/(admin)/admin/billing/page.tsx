@@ -15,7 +15,7 @@ export default async function BillingPage({
   if (!store) redirect("/admin/onboarding");
 
   const status = await getBillingStatus(await getAdminContext());
-  const checkoutCompleted = params.billing === "success";
+  const billingUpdated = params.billing === "success" || params.billing === "updated";
 
   return (
     <div className="space-y-6">
@@ -27,16 +27,16 @@ export default async function BillingPage({
           assinatura.
         </p>
       </div>
-      {checkoutCompleted ? (
+      {billingUpdated ? (
         <div
           role="status"
           className="flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950"
         >
           <CheckCircle2 className="mt-0.5 size-5 shrink-0" />
           <div>
-            <p className="font-medium">Assinatura concluída</p>
+            <p className="font-medium">Assinatura atualizada</p>
             <p className="mt-1 text-emerald-800">
-              O Stripe confirmou seu checkout. A atualização do plano pode levar alguns segundos.
+              O Stripe confirmou a solicitação. A atualização do plano pode levar alguns segundos.
             </p>
           </div>
         </div>
