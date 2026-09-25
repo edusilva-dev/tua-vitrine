@@ -75,7 +75,7 @@ export async function resolveMemberStore(userId: string, selected?: string): Pro
   return { storeId: membership.storeId };
 }
 
-export async function getAdminContext(): Promise<StoreContext> {
+export const getAdminContext = cache(async (): Promise<StoreContext> => {
   await assertAdminAccess();
   const identity = await getAdminIdentity();
 
@@ -95,7 +95,7 @@ export async function getAdminContext(): Promise<StoreContext> {
   if (!first) throw new AppError(404, "NO_STORE", "Crie sua primeira loja.");
 
   return { storeId: first.id };
-}
+});
 
 export async function setAdminContext(storeId: string): Promise<void> {
   await assertAdminAccess(true);

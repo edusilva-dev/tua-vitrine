@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import type {
   BillingPlan as DatabaseBillingPlan,
   SubscriptionStatus,
@@ -63,10 +64,10 @@ export function resolveEntitlements(state: EntitlementState, now = new Date()): 
   };
 }
 
-export async function getEntitlements(context: StoreContext): Promise<Entitlements> {
+const getEntitlementsForStore = cache(async (storeId: string): Promise<Entitlements> => {
   const [store, catalogProducts] = await Promise.all([
     db.store.findUniqueOrThrow({
-      where: { id: context.storeId },
+      where: { id: storeId },
       select: {
         onboardingCompletedAt: true,
         subscription: { select: { plan: true, status: true } },
@@ -75,7 +76,7 @@ export async function getEntitlements(context: StoreContext): Promise<Entitlemen
         },
       },
     }),
-    db.product.count({ where: { storeId: context.storeId, archivedAt: null } }),
+    db.product.count({ where: { storeId, archivedAt: null } }),
   ]);
 
   return resolveEntitlements({
@@ -85,4 +86,8 @@ export async function getEntitlements(context: StoreContext): Promise<Entitlemen
     publishedProducts: store._count.products,
     catalogProducts,
   });
+});
+
+export function getEntitlements(context: StoreContext): Promise<Entitlements> {
+  return getEntitlementsForStore(context.storeId);
 }

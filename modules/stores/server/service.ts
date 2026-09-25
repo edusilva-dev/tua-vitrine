@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Store } from "@/generated/prisma/client";
 import {
   assertAdminAccess,
@@ -42,7 +43,7 @@ export async function toStoreDTO(store: Store): Promise<StoreDTO> {
   };
 }
 
-export async function getCurrentStore(): Promise<StoreDTO | null> {
+export const getCurrentStore = cache(async (): Promise<StoreDTO | null> => {
   try {
     const context = await getAdminContext();
     const store = await storeRepository.find(context.storeId);
@@ -53,7 +54,7 @@ export async function getCurrentStore(): Promise<StoreDTO | null> {
 
     throw error;
   }
-}
+});
 
 export async function listAccessibleStores(): Promise<StoreDTO[]> {
   await assertAdminAccess();
