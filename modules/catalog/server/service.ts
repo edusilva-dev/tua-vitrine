@@ -6,6 +6,7 @@ import type { StoreContext } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { AppError } from "@/lib/server/http";
 import { assetUrl } from "@/lib/server/storage-adapter";
+import { PLAN_CAPABILITIES } from "@/modules/billing/contracts";
 import { getEntitlements } from "@/modules/billing/server/entitlements";
 import { normalizeSlug } from "@/modules/stores/contracts";
 import {
@@ -176,7 +177,7 @@ export async function saveProduct(
   idempotencyKey?: string
 ): Promise<ProductDTO> {
   const values = productInputSchema.parse(input);
-  const entitlements = id ? null : await getEntitlements(context);
+  const entitlements = await getEntitlements(context);
 
   if (id) z.string().uuid().parse(id);
 
@@ -205,9 +206,19 @@ export async function saveProduct(
 
       if (!store) throw new AppError(404, "NOT_FOUND", "Loja não encontrada.");
 
+      const imagesPerProductLimit = store.onboardingCompletedAt
+        ? entitlements.imagesPerProductLimit
+        : PLAN_CAPABILITIES.PROFESSIONAL.imagesPerProductLimit;
+
+      if (values.assetIds.length > imagesPerProductLimit)
+        throw new AppError(
+          403,
+          "IMAGE_LIMIT",
+          `Seu plano permite até ${imagesPerProductLimit} ${imagesPerProductLimit === 1 ? "imagem" : "imagens"} por produto.`
+        );
+
       if (
         !id &&
-        entitlements &&
         (await tx.product.count({
           where: { storeId: context.storeId, archivedAt: null },
         })) >= entitlements.productLimit

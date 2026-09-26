@@ -31,6 +31,7 @@ export default async function ProductsPage({
       categories={categories}
       canImportProducts={entitlements.canImportProducts}
       productLimit={entitlements.productLimit}
+      imagesPerProductLimit={entitlements.imagesPerProductLimit}
       needsProductSelection={entitlements.needsProductSelection}
       initialQuery={params.q ?? ""}
       initialCategory={params.category ?? ""}

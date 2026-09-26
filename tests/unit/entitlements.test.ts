@@ -19,6 +19,7 @@ describe("entitlements", () => {
       plan: "FREE",
       source: "FREE",
       productLimit: 10,
+      imagesPerProductLimit: 1,
       metricsHistoryDays: 7,
       canImportProducts: false,
       needsProductSelection: false,
@@ -42,6 +43,7 @@ describe("entitlements", () => {
       trialEndsAt: "2026-10-04T12:00:00.000Z",
       trialDaysRemaining: 10,
       productLimit: 1000,
+      imagesPerProductLimit: 5,
       canUsePromotionCampaign: true,
     });
   });

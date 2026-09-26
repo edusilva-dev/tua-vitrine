@@ -4,6 +4,7 @@ import {
   BarChart3,
   CreditCard,
   LayoutDashboard,
+  LifeBuoy,
   Loader2,
   Megaphone,
   Package,
@@ -25,6 +26,7 @@ const links = [
   { href: "/admin/promotions", label: "Campanhas", icon: Megaphone },
   { href: "/admin/billing", label: "Assinatura", icon: CreditCard },
   { href: "/admin/settings", label: "Minha vitrine", icon: Paintbrush },
+  { href: "/admin/support", label: "Suporte", icon: LifeBuoy },
 ];
 
 export function AppShell({

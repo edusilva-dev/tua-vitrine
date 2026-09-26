@@ -4,7 +4,11 @@ import type Stripe from "stripe";
 import { db } from "@/lib/server/db";
 import { getEntitlements } from "@/modules/billing/server/entitlements";
 import { processStripeEvent } from "@/modules/billing/server/service";
-import { listProducts, selectPublishedProducts } from "@/modules/catalog/server/service";
+import {
+  listProducts,
+  saveProduct,
+  selectPublishedProducts,
+} from "@/modules/catalog/server/service";
 import {
   getPublicPromotionCampaign,
   savePromotionCampaign,
@@ -64,6 +68,25 @@ test("Free exige seleção e a vitrine pública omite produtos despublicados", a
 
   expect((await listProducts(context)).pagination.total).toBe(11);
   expect((await listProducts(context, {}, { publishedOnly: true })).pagination.total).toBe(10);
+});
+
+test("Free limita cada produto a uma imagem também no servidor", async () => {
+  await expect(
+    saveProduct(
+      context,
+      {
+        name: "Produto com duas fotos",
+        description: "",
+        priceCents: 1000,
+        discountPriceCents: null,
+        available: true,
+        categoryName: "",
+        assetIds: [randomUUID(), randomUUID()],
+        variants: [],
+      },
+      productIds[0]
+    )
+  ).rejects.toThrow("Seu plano permite até 1 imagem por produto.");
 });
 
 test("Free bloqueia cor e campanha, e Profissional libera campanha", async () => {

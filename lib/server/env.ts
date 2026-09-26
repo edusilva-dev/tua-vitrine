@@ -25,6 +25,10 @@ const schema = z.object({
   SMTP_USER: z.string().min(1).optional(),
   SMTP_PASSWORD: z.string().min(1).optional(),
   MAIL_FROM: z.string().email().default("noreply@tuavitrine.local"),
+  SUPPORT_EMAIL: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().email().optional()
+  ),
   RESEND_API_KEY: z.string().startsWith("re_").optional(),
   RESEND_EMAIL_DOMAIN: z.string().min(1).optional(),
   STORAGE_DRIVER: z.enum(["local", "vercel-blob", "disabled"]).default("local"),

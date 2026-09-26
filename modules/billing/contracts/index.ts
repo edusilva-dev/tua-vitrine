@@ -20,6 +20,7 @@ export const entitlementsSchema = z.object({
   trialEndsAt: z.string().datetime().nullable(),
   trialDaysRemaining: z.number().int().nonnegative(),
   productLimit: z.number().int().positive(),
+  imagesPerProductLimit: z.number().int().positive(),
   publishedProducts: z.number().int().nonnegative(),
   catalogProducts: z.number().int().nonnegative(),
   needsProductSelection: z.boolean(),
@@ -35,6 +36,7 @@ export type Entitlements = z.infer<typeof entitlementsSchema>;
 export const PLAN_CAPABILITIES = {
   FREE: {
     productLimit: 10,
+    imagesPerProductLimit: 1,
     metricsHistoryDays: 7,
     canImportProducts: false,
     canCustomizeColors: false,
@@ -43,6 +45,7 @@ export const PLAN_CAPABILITIES = {
   },
   ESSENTIAL: {
     productLimit: 50,
+    imagesPerProductLimit: 5,
     metricsHistoryDays: null,
     canImportProducts: true,
     canCustomizeColors: true,
@@ -51,6 +54,7 @@ export const PLAN_CAPABILITIES = {
   },
   PROFESSIONAL: {
     productLimit: 1000,
+    imagesPerProductLimit: 5,
     metricsHistoryDays: null,
     canImportProducts: true,
     canCustomizeColors: true,
@@ -61,6 +65,7 @@ export const PLAN_CAPABILITIES = {
   BillingPlan,
   {
     productLimit: number;
+    imagesPerProductLimit: number;
     metricsHistoryDays: number | null;
     canImportProducts: boolean;
     canCustomizeColors: boolean;

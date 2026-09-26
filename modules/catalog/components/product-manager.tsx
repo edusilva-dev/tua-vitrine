@@ -105,10 +105,12 @@ export function ProductForm({
   product,
   onSaved,
   onDirtyChange,
+  imagesPerProductLimit = 5,
 }: {
   product?: ProductDTO;
   onSaved: () => void;
   onDirtyChange?: (dirty: boolean) => void;
+  imagesPerProductLimit?: number;
 }) {
   const [images, setImages] = useState<AssetDTO[]>(product?.images ?? []);
   const [uploading, setUploading] = useState(false);
@@ -135,8 +137,10 @@ export function ProductForm({
   async function upload(file?: File) {
     if (!file) return;
 
-    if (images.length >= 5) {
-      setError("Adicione no máximo 5 imagens.");
+    if (images.length >= imagesPerProductLimit) {
+      setError(
+        `Seu plano permite até ${imagesPerProductLimit} ${imagesPerProductLimit === 1 ? "imagem" : "imagens"} por produto.`
+      );
 
       return;
     }
@@ -274,7 +278,9 @@ export function ProductForm({
       <div>
         <Label>
           Fotos do produto{" "}
-          <span className="font-normal text-muted-foreground">({images.length}/5)</span>
+          <span className="font-normal text-muted-foreground">
+            ({images.length}/{imagesPerProductLimit})
+          </span>
         </Label>
         <div className="mt-2 flex flex-wrap gap-3">
           {images.map((image, index) => (
@@ -308,7 +314,7 @@ export function ProductForm({
               </Button>
             </div>
           ))}
-          {images.length < 5 && (
+          {images.length < imagesPerProductLimit && (
             <label className="flex size-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed bg-muted/30 text-xs text-muted-foreground focus-within:ring-2 focus-within:ring-ring">
               {uploading ? <Loader2 className="animate-spin" size={20} /> : <ImagePlus size={20} />}
               Adicionar
@@ -326,7 +332,8 @@ export function ProductForm({
           )}
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          JPG, PNG ou WebP. Até 5 imagens por produto.
+          JPG, PNG ou WebP. Até {imagesPerProductLimit}{" "}
+          {imagesPerProductLimit === 1 ? "imagem" : "imagens"} por produto.
         </p>
       </div>
       <div className="rounded-xl border p-4">
@@ -518,6 +525,7 @@ export function ProductManager({
   categories,
   canImportProducts = false,
   productLimit,
+  imagesPerProductLimit,
   needsProductSelection = false,
   initialQuery = "",
   initialCategory = "",
@@ -526,6 +534,7 @@ export function ProductManager({
   categories: CategoryDTO[];
   canImportProducts?: boolean;
   productLimit: number;
+  imagesPerProductLimit: number;
   needsProductSelection?: boolean;
   initialQuery?: string;
   initialCategory?: string;
@@ -779,6 +788,7 @@ export function ProductManager({
               key={editing?.id ?? "new"}
               {...(editing ? { product: editing } : {})}
               onDirtyChange={setDirty}
+              imagesPerProductLimit={imagesPerProductLimit}
               onSaved={() => {
                 setEditing(undefined);
                 setDirty(false);
