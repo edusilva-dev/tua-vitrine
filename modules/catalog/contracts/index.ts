@@ -94,7 +94,11 @@ export type VariantDTO = {
 
 export type AssetDTO = { id: string; url: string; width: number; height: number };
 
-export type CategoryDTO = { id: string; name: string };
+export type CategoryDTO = { id: string; name: string; position: number };
+
+export const categoryOrderSchema = z.object({
+  categoryIds: z.array(z.string().uuid()).max(200),
+});
 
 export type ProductDTO = {
   id: string;

@@ -1,6 +1,17 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Download, Grid2X2, Link as LinkIcon, List, Loader2, Upload } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Download,
+  Grid2X2,
+  Layers3,
+  Link as LinkIcon,
+  List,
+  Loader2,
+  Rows3,
+  Upload,
+} from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -13,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/client/http";
 import { cn } from "@/lib/utils";
 import type { Entitlements } from "@/modules/billing/contracts";
-import type { AssetDTO } from "@/modules/catalog/contracts";
+import type { AssetDTO, CategoryDTO } from "@/modules/catalog/contracts";
 import {
   type StoreDTO,
   type StoreSettingsInput,
@@ -24,15 +35,19 @@ import { formatWhatsapp } from "@/modules/stores/phone";
 export function StoreSettings({
   store,
   entitlements,
+  categories,
 }: {
   store: StoreDTO;
   entitlements: Entitlements;
+  categories: CategoryDTO[];
 }) {
   const router = useRouter();
   const [logo, setLogo] = useState<AssetDTO | null>(store.logo);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [qr, setQr] = useState("");
+  const [categoryOrder, setCategoryOrder] = useState(categories);
+  const [savingOrder, setSavingOrder] = useState(false);
   const form = useForm<StoreSettingsInput>({
     resolver: zodResolver(storeSettingsSchema),
     defaultValues: {
@@ -40,11 +55,13 @@ export function StoreSettings({
       whatsapp: formatWhatsapp(store.whatsapp ?? "+55"),
       primaryColor: store.primaryColor,
       template: store.template,
+      catalogGrouping: store.catalogGrouping,
       logoAssetId: store.logo?.id ?? null,
       customization: store.customization,
     },
   });
   const template = form.watch("template");
+  const catalogGrouping = form.watch("catalogGrouping");
   const color = form.watch("primaryColor");
   const whatsappField = form.register("whatsapp");
 
@@ -94,6 +111,42 @@ export function StoreSettings({
       );
     } catch {
       toast.error("Não foi possível gerar o QR code.");
+    }
+  }
+
+  function moveCategory(index: number, direction: -1 | 1) {
+    const nextIndex = index + direction;
+
+    if (nextIndex < 0 || nextIndex >= categoryOrder.length) return;
+
+    setCategoryOrder((current) => {
+      const next = [...current];
+      const selected = next[index];
+      const target = next[nextIndex];
+
+      if (!selected || !target) return current;
+
+      next[index] = target;
+      next[nextIndex] = selected;
+
+      return next;
+    });
+  }
+
+  async function saveCategoryOrder() {
+    setSavingOrder(true);
+
+    try {
+      await api("/api/admin/categories", {
+        method: "PUT",
+        body: JSON.stringify({ categoryIds: categoryOrder.map(({ id }) => id) }),
+      });
+      toast.success("Ordem das categorias atualizada.");
+      router.refresh();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Não foi possível salvar a ordem.");
+    } finally {
+      setSavingOrder(false);
     }
   }
 
@@ -270,6 +323,105 @@ export function StoreSettings({
                 </button>
               ))}
             </fieldset>
+            <fieldset
+              aria-label="Organização por categoria"
+              className="mt-6 grid gap-3 sm:grid-cols-2"
+            >
+              {[
+                {
+                  value: "continuous" as const,
+                  title: "Grade contínua",
+                  description: "Categorias ordenam os produtos sem separar a grade",
+                  icon: Rows3,
+                },
+                {
+                  value: "sections" as const,
+                  title: "Seções por categoria",
+                  description: "Cada categoria ganha um título e uma seção",
+                  icon: Layers3,
+                },
+              ].map(({ value, title, description, icon: Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={catalogGrouping === value}
+                  onClick={() => form.setValue("catalogGrouping", value, { shouldDirty: true })}
+                  className={cn(
+                    "min-w-0 rounded-xl border p-4 text-left transition-colors",
+                    catalogGrouping === value
+                      ? "border-primary bg-primary/5 ring-1 ring-primary"
+                      : "hover:bg-muted"
+                  )}
+                >
+                  <Icon size={24} className="mb-3 text-primary" />
+                  <p className="text-sm font-semibold">{title}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {description}
+                  </p>
+                </button>
+              ))}
+            </fieldset>
+          </section>
+          <section className="rounded-xl border bg-card p-6">
+            <h2 className="font-semibold">Ordem das categorias</h2>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              Essa ordem controla a sequência dos produtos na vitrine nos dois modos de exibição.
+            </p>
+            {categoryOrder.length ? (
+              <ol className="mt-5 space-y-2">
+                {categoryOrder.map((category, index) => (
+                  <li
+                    key={category.id}
+                    className="flex min-w-0 items-center gap-3 rounded-xl border bg-background p-3"
+                  >
+                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-xs font-semibold">
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                      {category.name}
+                    </span>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="size-8"
+                      disabled={index === 0}
+                      aria-label={`Mover ${category.name} para cima`}
+                      onClick={() => moveCategory(index, -1)}
+                    >
+                      <ArrowUp size={15} />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="size-8"
+                      disabled={index === categoryOrder.length - 1}
+                      aria-label={`Mover ${category.name} para baixo`}
+                      onClick={() => moveCategory(index, 1)}
+                    >
+                      <ArrowDown size={15} />
+                    </Button>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="mt-5 rounded-xl bg-muted/50 p-4 text-sm text-muted-foreground">
+                As categorias aparecerão aqui conforme você as usar nos produtos.
+              </p>
+            )}
+            {categoryOrder.length > 1 ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-4"
+                disabled={savingOrder}
+                onClick={() => void saveCategoryOrder()}
+              >
+                {savingOrder ? <Loader2 className="animate-spin" size={16} /> : null}
+                Salvar ordem
+              </Button>
+            ) : null}
           </section>
           {error && (
             <p role="alert" className="field-error">

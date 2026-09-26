@@ -11,6 +11,7 @@ import { getEntitlements } from "@/modules/billing/server/entitlements";
 import { normalizeSlug } from "@/modules/stores/contracts";
 import {
   type CategoryDTO,
+  categoryOrderSchema,
   type ProductDTO,
   type ProductFilters,
   type ProductListDTO,
@@ -30,7 +31,13 @@ export function toProductDTO(product: ProductRecord): ProductDTO {
     discountPriceCents: product.discountPriceCents,
     available: product.available,
     published: product.published,
-    category: product.category ? { id: product.category.id, name: product.category.name } : null,
+    category: product.category
+      ? {
+          id: product.category.id,
+          name: product.category.name,
+          position: product.category.position,
+        }
+      : null,
     images: product.images.map(({ asset }) => ({
       id: asset.id,
       url: assetUrl(asset),
@@ -91,7 +98,12 @@ export async function listProducts(
     db.product.findMany({
       where,
       include: productInclude,
-      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      orderBy: [
+        { category: { position: "asc" } },
+        { category: { name: "asc" } },
+        { createdAt: "desc" },
+        { id: "asc" },
+      ],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
@@ -159,6 +171,32 @@ export async function listProductsByIds(
 
 export function listCategories(context: StoreContext): Promise<CategoryDTO[]> {
   return catalogRepository.categories(context);
+}
+
+export async function reorderCategories(context: StoreContext, input: unknown): Promise<void> {
+  const { categoryIds } = categoryOrderSchema.parse(input);
+  const storedIds = (
+    await db.category.findMany({
+      where: { storeId: context.storeId },
+      select: { id: true },
+    })
+  ).map(({ id }) => id);
+
+  if (
+    categoryIds.length !== storedIds.length ||
+    new Set(categoryIds).size !== categoryIds.length ||
+    storedIds.some((id) => !categoryIds.includes(id))
+  )
+    throw new AppError(422, "CATEGORY_ORDER", "A lista de categorias está incompleta.");
+
+  await db.$transaction(
+    categoryIds.map((id, position) =>
+      db.category.update({
+        where: { storeId_id: { storeId: context.storeId, id } },
+        data: { position },
+      })
+    )
+  );
 }
 
 export async function getProduct(context: StoreContext, id: string): Promise<ProductDTO> {
@@ -252,6 +290,13 @@ export async function saveProduct(
             create: {
               storeId: context.storeId,
               name: values.categoryName,
+              position:
+                ((
+                  await tx.category.aggregate({
+                    where: { storeId: context.storeId },
+                    _max: { position: true },
+                  })
+                )._max.position ?? -1) + 1,
               slug:
                 (normalizeSlug(values.categoryName) || "categoria") +
                 "-" +

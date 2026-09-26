@@ -95,6 +95,7 @@ test("Free bloqueia cor e campanha, e Profissional libera campanha", async () =>
     whatsapp: "+5511999999999",
     primaryColor: "#ff0000",
     template: "list",
+    catalogGrouping: "continuous",
     logoAssetId: null,
     customization: { version: 1, tagline: "Personalização antiga" },
   });
@@ -147,6 +148,7 @@ test("Free bloqueia cor e campanha, e Profissional libera campanha", async () =>
     whatsapp: "+5511999999999",
     primaryColor: "#ff0000",
     template: "list",
+    catalogGrouping: "continuous",
     logoAssetId: null,
     customization: { version: 1, tagline: "Profissional" },
   });

@@ -68,6 +68,7 @@ export const storeSettingsSchema = z.object({
   whatsapp: whatsappSchema.shape.whatsapp,
   primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   template: z.enum(["grid", "list"]),
+  catalogGrouping: z.enum(["continuous", "sections"]),
   logoAssetId: z.string().uuid().nullable(),
   customization: customizationSchema,
 });
@@ -81,6 +82,7 @@ export type StoreDTO = {
   signupPlan: "FREE" | "ESSENTIAL" | "PROFESSIONAL";
   primaryColor: string;
   template: "grid" | "list";
+  catalogGrouping: "continuous" | "sections";
   logo: AssetDTO | null;
   customization: { version: 1; tagline: string };
   onboardingStep: 1 | 2 | 3 | 4;

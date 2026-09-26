@@ -32,6 +32,7 @@ model Store {
  status StoreStatus @default(DRAFT)
  primaryColor String @default("#2563eb")
  template String @default("grid")
+ catalogGrouping String @default("continuous")
  customization Json @default("{\"version\":1,\"tagline\":\"\"}")
  logoAssetId String? @db.Uuid
  onboardingCompletedAt DateTime?
@@ -74,11 +75,13 @@ model Category {
  id String @id @default(uuid()) @db.Uuid
  storeId String @db.Uuid
  name String
+ position Int @default(0)
  store Store @relation(fields:[storeId], references:[id], onDelete:Cascade)
  products Product[]
  @@unique([storeId,id])
  @@unique([storeId,name])
  @@unique([storeId,slug])
+ @@index([storeId,position])
 }
 model Product {
  id String @id @default(uuid()) @db.Uuid

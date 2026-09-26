@@ -6,9 +6,11 @@ import type { ProductInput } from "@/modules/catalog/contracts";
 import {
   archiveProduct,
   getProduct,
+  listCategories,
   listProductOptionFilters,
   listProducts,
   listProductsByIds,
+  reorderCategories,
   saveProduct,
 } from "@/modules/catalog/server/service";
 import { createStore, saveIdentity, saveWhatsapp } from "@/modules/stores/server/service";
@@ -121,6 +123,22 @@ describe("Catálogo e isolamento real PostgreSQL", () => {
     await expect(archiveProduct({ storeId: otherStoreId }, product.id)).rejects.toThrow();
     expect(await listProductsByIds({ storeId: otherStoreId }, [product.id])).toEqual([]);
     expect((await getProduct({ storeId }, product.id)).name).toBe("Isolado");
+  });
+  test("ordena categorias e aplica a mesma sequência aos produtos", async () => {
+    await saveProduct({ storeId }, { ...input("Camiseta"), categoryName: "Camisas" });
+    await saveProduct({ storeId }, { ...input("Tênis"), categoryName: "Tênis" });
+    const categories = await listCategories({ storeId });
+    const orderedIds = [...categories].reverse().map(({ id }) => id);
+
+    await reorderCategories({ storeId }, { categoryIds: orderedIds });
+
+    expect((await listCategories({ storeId })).map(({ id }) => id)).toEqual(orderedIds);
+    const products = (await listProducts({ storeId })).data;
+    const positions = products
+      .map((product) => product.category?.position)
+      .filter((position): position is number => position !== undefined);
+
+    expect(positions).toEqual([...positions].sort((first, second) => first - second));
   });
   test("FKs compostas recusam categoria, logo, variante/opção e idempotência cruzadas", async () => {
     const first = await saveProduct({ storeId }, input("Primeiro"));

@@ -15,7 +15,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -93,6 +93,14 @@ export function Storefront({
     Number(Boolean(filters.category)) +
     Number(Boolean(filters.available)) +
     Object.keys(filters.variants ?? {}).length;
+  const showCategorySections =
+    store.catalogGrouping === "sections" &&
+    !favoritesOnly &&
+    !promotionActive &&
+    !filters.q &&
+    !filters.category &&
+    !filters.available &&
+    !Object.keys(filters.variants ?? {}).length;
 
   useEffect(() => {
     setSearch(filters.q ?? "");
@@ -566,126 +574,139 @@ export function Storefront({
             list ? "grid gap-4" : "grid grid-cols-1 gap-5 min-[480px]:grid-cols-2 lg:grid-cols-3"
           }
         >
-          {products.map((product) => {
+          {products.map((product, index) => {
             const liked = selection.likes.includes(product.id);
             const available =
               product.available &&
               (!product.variants.length || product.variants.some((item) => item.available));
             const pricing = productPrice(product);
+            const previousCategory = products[index - 1]?.category?.id ?? "uncategorized";
+            const currentCategory = product.category?.id ?? "uncategorized";
+            const startsCategory =
+              showCategorySections && (index === 0 || previousCategory !== currentCategory);
 
             return (
-              <article
-                key={product.id}
-                className={`group relative flex overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-md ${list ? "flex-row" : "flex-col"}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => openProduct(product)}
-                  className={`block text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${list ? "w-32 shrink-0 sm:w-48" : "w-full"}`}
-                  aria-label={`Ver ${product.name}`}
-                >
-                  <ProductImage
-                    image={product.images[0]}
-                    name={product.name}
-                    className={
-                      list
-                        ? "h-full"
-                        : "transition-transform duration-500 group-hover:scale-[1.025]"
-                    }
-                  />
-                </button>
-                <div className={`absolute top-3 flex gap-1.5 ${list ? "left-3" : "right-3"}`}>
-                  <Button
-                    size="icon-sm"
-                    variant="secondary"
-                    className="border border-white/60 bg-white/90 text-slate-800 shadow-sm hover:bg-white"
-                    disabled={!selection.ready}
-                    aria-label={liked ? `Descurtir ${product.name}` : `Curtir ${product.name}`}
-                    aria-pressed={liked}
-                    onClick={() => selection.toggleLike(product.id)}
-                  >
-                    <Heart className={liked ? "fill-rose-500 text-rose-500" : ""} />
-                  </Button>
-                  <Button
-                    size="icon-sm"
-                    variant="secondary"
-                    className="border border-white/60 bg-white/90 text-slate-800 shadow-sm hover:bg-white"
-                    aria-label={`Perguntar sobre ${product.name} no WhatsApp`}
-                    disabled={!available || !store.whatsapp}
-                    onClick={() => {
-                      if (product.variants.length) {
-                        openProduct(product);
-
-                        return;
-                      }
-
-                      if (store.whatsapp)
-                        window.open(
-                          whatsappLink(
-                            store.whatsapp,
-                            `Olá! Tenho interesse em ${product.name} (${money(pricing.currentPriceCents)}).\n${store.url}`
-                          ),
-                          "_blank",
-                          "noopener,noreferrer"
-                        );
-                    }}
-                  >
-                    <MessageCircle />
-                  </Button>
-                </div>
-                <div className="flex flex-1 flex-col p-5">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
-                      {product.category?.name ?? "Selecionado para você"}
-                    </span>
-                    <div className="flex shrink-0 items-center gap-1">
-                      {pricing.discountPercent ? (
-                        <Badge className="bg-emerald-600 text-[10px] text-white hover:bg-emerald-600">
-                          {pricing.discountPercent}% OFF
-                        </Badge>
-                      ) : null}
-                      {!available ? (
-                        <Badge variant="secondary" className="text-[10px]">
-                          Indisponível
-                        </Badge>
-                      ) : null}
-                    </div>
+              <Fragment key={product.id}>
+                {startsCategory ? (
+                  <div className="col-span-full mt-5 border-b pb-3 first:mt-0">
+                    <p className="eyebrow">CATEGORIA</p>
+                    <h3 className="mt-1 font-heading text-xl font-semibold">
+                      {product.category?.name ?? "Outros produtos"}
+                    </h3>
                   </div>
-                  <h3>
-                    <button
-                      type="button"
-                      onClick={() => openProduct(product)}
-                      className="text-left font-heading text-base font-semibold underline-offset-4 hover:underline focus-visible:outline-primary"
+                ) : null}
+                <article
+                  className={`group relative flex overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-md ${list ? "flex-row" : "flex-col"}`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => openProduct(product)}
+                    className={`block text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${list ? "w-32 shrink-0 sm:w-48" : "w-full"}`}
+                    aria-label={`Ver ${product.name}`}
+                  >
+                    <ProductImage
+                      image={product.images[0]}
+                      name={product.name}
+                      className={
+                        list
+                          ? "h-full"
+                          : "transition-transform duration-500 group-hover:scale-[1.025]"
+                      }
+                    />
+                  </button>
+                  <div className={`absolute top-3 flex gap-1.5 ${list ? "left-3" : "right-3"}`}>
+                    <Button
+                      size="icon-sm"
+                      variant="secondary"
+                      className="border border-white/60 bg-white/90 text-slate-800 shadow-sm hover:bg-white"
+                      disabled={!selection.ready}
+                      aria-label={liked ? `Descurtir ${product.name}` : `Curtir ${product.name}`}
+                      aria-pressed={liked}
+                      onClick={() => selection.toggleLike(product.id)}
                     >
-                      {product.name}
-                    </button>
-                  </h3>
-                  <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                    {product.description || "Conheça os detalhes deste produto."}
-                  </p>
-                  <div className="mt-auto flex items-end justify-between gap-2 pt-5">
-                    <div>
-                      {product.variants.length ? (
-                        <p className="text-[10px] text-muted-foreground">a partir de</p>
-                      ) : null}
-                      <div className="flex flex-wrap items-baseline gap-x-2">
-                        <p className="text-lg font-semibold tracking-tight">
-                          {money(pricing.currentPriceCents)}
-                        </p>
-                        {pricing.originalPriceCents ? (
-                          <p className="text-xs text-muted-foreground line-through">
-                            {money(pricing.originalPriceCents)}
-                          </p>
+                      <Heart className={liked ? "fill-rose-500 text-rose-500" : ""} />
+                    </Button>
+                    <Button
+                      size="icon-sm"
+                      variant="secondary"
+                      className="border border-white/60 bg-white/90 text-slate-800 shadow-sm hover:bg-white"
+                      aria-label={`Perguntar sobre ${product.name} no WhatsApp`}
+                      disabled={!available || !store.whatsapp}
+                      onClick={() => {
+                        if (product.variants.length) {
+                          openProduct(product);
+
+                          return;
+                        }
+
+                        if (store.whatsapp)
+                          window.open(
+                            whatsappLink(
+                              store.whatsapp,
+                              `Olá! Tenho interesse em ${product.name} (${money(pricing.currentPriceCents)}).\n${store.url}`
+                            ),
+                            "_blank",
+                            "noopener,noreferrer"
+                          );
+                      }}
+                    >
+                      <MessageCircle />
+                    </Button>
+                  </div>
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+                        {product.category?.name ?? "Selecionado para você"}
+                      </span>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {pricing.discountPercent ? (
+                          <Badge className="bg-emerald-600 text-[10px] text-white hover:bg-emerald-600">
+                            {pricing.discountPercent}% OFF
+                          </Badge>
+                        ) : null}
+                        {!available ? (
+                          <Badge variant="secondary" className="text-[10px]">
+                            Indisponível
+                          </Badge>
                         ) : null}
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => openProduct(product)}>
-                      Ver detalhes
-                      <ArrowRight />
-                    </Button>
+                    <h3>
+                      <button
+                        type="button"
+                        onClick={() => openProduct(product)}
+                        className="text-left font-heading text-base font-semibold underline-offset-4 hover:underline focus-visible:outline-primary"
+                      >
+                        {product.name}
+                      </button>
+                    </h3>
+                    <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                      {product.description || "Conheça os detalhes deste produto."}
+                    </p>
+                    <div className="mt-auto flex items-end justify-between gap-2 pt-5">
+                      <div>
+                        {product.variants.length ? (
+                          <p className="text-[10px] text-muted-foreground">a partir de</p>
+                        ) : null}
+                        <div className="flex flex-wrap items-baseline gap-x-2">
+                          <p className="text-lg font-semibold tracking-tight">
+                            {money(pricing.currentPriceCents)}
+                          </p>
+                          {pricing.originalPriceCents ? (
+                            <p className="text-xs text-muted-foreground line-through">
+                              {money(pricing.originalPriceCents)}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => openProduct(product)}>
+                        Ver detalhes
+                        <ArrowRight />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </article>
+                </article>
+              </Fragment>
             );
           })}
         </div>

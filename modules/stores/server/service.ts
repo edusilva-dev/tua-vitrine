@@ -57,6 +57,8 @@ export async function toStoreDTO(store: Store): Promise<StoreDTO> {
     whatsapp: store.whatsapp,
     status: store.status,
     signupPlan: store.signupPlan,
+    catalogGrouping:
+      store.catalogGrouping === "sections" ? ("sections" as const) : ("continuous" as const),
     ...appearance,
     logo: logo
       ? { id: logo.id, url: assetUrl(logo), width: logo.width, height: logo.height }

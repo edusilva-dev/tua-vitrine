@@ -23,7 +23,7 @@ export const catalogRepository = {
   categories: (context: StoreContext) =>
     db.category.findMany({
       where: { storeId: context.storeId },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
+      select: { id: true, name: true, position: true },
+      orderBy: [{ position: "asc" }, { name: "asc" }],
     }),
 };
