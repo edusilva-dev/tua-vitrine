@@ -85,6 +85,7 @@ model Product {
  name String
  description String
  priceCents Int
+ discountPriceCents Int?
  available Boolean @default(true)
  published Boolean @default(true)
  archivedAt DateTime?
@@ -109,6 +110,7 @@ model ProductVariant {
  label String
  combinationKey String
  priceCents Int
+ discountPriceCents Int?
  available Boolean
  product Product @relation(fields:[storeId,productId], references:[storeId,id], onDelete:Cascade)
  values VariantOptionValue[]

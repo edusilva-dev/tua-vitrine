@@ -54,6 +54,7 @@ const emptyProduct: ProductInput = {
   name: "",
   description: "",
   priceCents: 0,
+  discountPriceCents: null,
   available: true,
   categoryName: "",
   assetIds: [],
@@ -73,11 +74,13 @@ function CurrencyInput({
   value,
   onChange,
   invalid,
+  optional = false,
 }: {
   id: string;
-  value: number;
-  onChange: (value: number) => void;
+  value: number | null | undefined;
+  onChange: (value: number | null) => void;
   invalid?: boolean;
+  optional?: boolean;
 }) {
   return (
     <Input
@@ -86,8 +89,13 @@ function CurrencyInput({
       inputMode="numeric"
       autoComplete="off"
       className="mt-2"
-      value={money(value)}
-      onChange={(event) => onChange(centsFromCurrencyInput(event.target.value))}
+      value={value == null ? "" : money(value)}
+      placeholder={optional ? "Sem desconto" : undefined}
+      onChange={(event) => {
+        const digits = event.target.value.replace(/\D/g, "");
+
+        onChange(optional && !digits ? null : centsFromCurrencyInput(event.target.value));
+      }}
       aria-invalid={invalid}
     />
   );
@@ -113,6 +121,7 @@ export function ProductForm({
           name: product.name,
           description: product.description,
           priceCents: product.priceCents,
+          discountPriceCents: product.discountPriceCents,
           available: product.available,
           categoryName: product.category?.name ?? "",
           assetIds: product.images.map((image) => image.id),
@@ -209,9 +218,9 @@ export function ProductForm({
         />
         {errors.description && <p className="field-error">{errors.description.message}</p>}
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <div>
-          <Label htmlFor="product-price">Preço (R$)</Label>
+          <Label htmlFor="product-price">Preço normal (R$)</Label>
           <Controller
             control={form.control}
             name="priceCents"
@@ -221,13 +230,35 @@ export function ProductForm({
                 value={field.value}
                 invalid={!!errors.priceCents}
                 onChange={(value) => {
-                  field.onChange(value);
+                  field.onChange(value ?? 0);
                   onDirtyChange?.(true);
                 }}
               />
             )}
           />
           {errors.priceCents && <p className="field-error">Informe um preço válido.</p>}
+        </div>
+        <div>
+          <Label htmlFor="product-discount-price">Preço com desconto</Label>
+          <Controller
+            control={form.control}
+            name="discountPriceCents"
+            render={({ field }) => (
+              <CurrencyInput
+                id="product-discount-price"
+                value={field.value}
+                optional
+                invalid={!!errors.discountPriceCents}
+                onChange={(value) => {
+                  field.onChange(value);
+                  onDirtyChange?.(true);
+                }}
+              />
+            )}
+          />
+          {errors.discountPriceCents && (
+            <p className="field-error">{errors.discountPriceCents.message}</p>
+          )}
         </div>
         <div>
           <Label htmlFor="product-category">Categoria</Label>
@@ -315,6 +346,7 @@ export function ProductForm({
               append({
                 options: { Opção: "" },
                 priceCents: form.getValues("priceCents"),
+                discountPriceCents: form.getValues("discountPriceCents"),
                 available: true,
               });
             }}
@@ -341,7 +373,7 @@ export function ProductForm({
                 <Trash2 size={14} />
               </Button>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <Label htmlFor={`variant-options-${index}`}>Combinação</Label>
                 <Input
@@ -373,7 +405,7 @@ export function ProductForm({
                 </p>
               </div>
               <div>
-                <Label htmlFor={`variant-price-${index}`}>Preço final (R$)</Label>
+                <Label htmlFor={`variant-price-${index}`}>Preço normal (R$)</Label>
                 <Controller
                   control={form.control}
                   name={`variants.${index}.priceCents`}
@@ -382,15 +414,36 @@ export function ProductForm({
                       id={`variant-price-${index}`}
                       value={priceField.value}
                       onChange={(value) => {
+                        priceField.onChange(value ?? 0);
+                        onDirtyChange?.(true);
+                      }}
+                    />
+                  )}
+                />
+              </div>
+              <div>
+                <Label htmlFor={`variant-discount-price-${index}`}>Preço com desconto</Label>
+                <Controller
+                  control={form.control}
+                  name={`variants.${index}.discountPriceCents`}
+                  render={({ field: priceField }) => (
+                    <CurrencyInput
+                      id={`variant-discount-price-${index}`}
+                      value={priceField.value}
+                      optional
+                      invalid={!!errors.variants?.[index]?.discountPriceCents}
+                      onChange={(value) => {
                         priceField.onChange(value);
                         onDirtyChange?.(true);
                       }}
                     />
                   )}
                 />
-                <p className="mt-1.5 text-xs text-muted-foreground">
-                  Valor cobrado quando o cliente escolher esta combinação.
-                </p>
+                {errors.variants?.[index]?.discountPriceCents && (
+                  <p className="field-error">
+                    {errors.variants[index]?.discountPriceCents?.message}
+                  </p>
+                )}
               </div>
             </div>
             <label
@@ -617,7 +670,16 @@ export function ProductManager({
                 </p>
                 <h2 className="truncate font-semibold">{product.name}</h2>
                 <div className="mt-3 flex items-center justify-between">
-                  <strong className="text-lg text-primary">{money(product.priceCents)}</strong>
+                  <div className="flex items-baseline gap-2">
+                    <strong className="text-lg text-primary">
+                      {money(product.discountPriceCents ?? product.priceCents)}
+                    </strong>
+                    {product.discountPriceCents ? (
+                      <span className="text-xs text-muted-foreground line-through">
+                        {money(product.priceCents)}
+                      </span>
+                    ) : null}
+                  </div>
                   <span className="text-xs text-muted-foreground">
                     {product.variants.length ? `${product.variants.length} variações` : ""}
                   </span>

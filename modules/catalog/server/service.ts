@@ -26,6 +26,7 @@ export function toProductDTO(product: ProductRecord): ProductDTO {
     name: product.name,
     description: product.description,
     priceCents: product.priceCents,
+    discountPriceCents: product.discountPriceCents,
     available: product.available,
     published: product.published,
     category: product.category ? { id: product.category.id, name: product.category.name } : null,
@@ -42,6 +43,7 @@ export function toProductDTO(product: ProductRecord): ProductDTO {
         variant.values.map(({ value }) => [value.option.name, value.value])
       ),
       priceCents: variant.priceCents,
+      discountPriceCents: variant.discountPriceCents ?? null,
       available: variant.available,
     })),
     createdAt: product.createdAt.toISOString(),
@@ -250,6 +252,7 @@ export async function saveProduct(
         name: values.name,
         description: values.description,
         priceCents: values.priceCents,
+        discountPriceCents: values.discountPriceCents ?? null,
         available: values.available,
         categoryId: category?.id ?? null,
       };
@@ -323,6 +326,7 @@ export async function saveProduct(
               Object.entries(variant.options).sort(([a], [b]) => a.localeCompare(b))
             ),
             priceCents: variant.priceCents,
+            discountPriceCents: variant.discountPriceCents ?? null,
             available: variant.available,
           },
         });

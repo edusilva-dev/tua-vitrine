@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ProductDTO } from "@/modules/catalog/contracts";
+import { productPrice } from "@/modules/catalog/pricing";
 
 export const cartLineSchema = z.object({
   productId: z.string().uuid(),
@@ -47,7 +48,7 @@ export function resolveCart(lines: CartLine[], products: ProductDTO[]): Resolved
       ...line,
       product,
       label: product ? `${product.name}${variant ? ` · ${variant.label}` : ""}` : line.name,
-      priceCents: variant?.priceCents ?? product?.priceCents ?? 0,
+      priceCents: product ? productPrice(product, variant).currentPriceCents : 0,
       available,
     };
   });

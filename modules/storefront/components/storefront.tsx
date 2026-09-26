@@ -38,6 +38,7 @@ import type {
   ProductOptionFilterDTO,
 } from "@/modules/catalog/contracts";
 import { encodeVariantFilter } from "@/modules/catalog/contracts";
+import { productPrice } from "@/modules/catalog/pricing";
 import type { PublicPromotionCampaignDTO } from "@/modules/promotions/contracts";
 import type { StoreDTO } from "@/modules/stores/contracts";
 import { type CartLine, lineKey } from "../selection";
@@ -570,9 +571,7 @@ export function Storefront({
             const available =
               product.available &&
               (!product.variants.length || product.variants.some((item) => item.available));
-            const price = product.variants.length
-              ? Math.min(...product.variants.map((item) => item.priceCents))
-              : product.priceCents;
+            const pricing = productPrice(product);
 
             return (
               <article
@@ -624,7 +623,7 @@ export function Storefront({
                         window.open(
                           whatsappLink(
                             store.whatsapp,
-                            `Olá! Tenho interesse em ${product.name} (${money(price)}).\n${store.url}`
+                            `Olá! Tenho interesse em ${product.name} (${money(pricing.currentPriceCents)}).\n${store.url}`
                           ),
                           "_blank",
                           "noopener,noreferrer"
@@ -639,11 +638,18 @@ export function Storefront({
                     <span className="text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
                       {product.category?.name ?? "Selecionado para você"}
                     </span>
-                    {!available ? (
-                      <Badge variant="secondary" className="text-[10px]">
-                        Indisponível
-                      </Badge>
-                    ) : null}
+                    <div className="flex shrink-0 items-center gap-1">
+                      {pricing.discountPercent ? (
+                        <Badge className="bg-emerald-600 text-[10px] text-white hover:bg-emerald-600">
+                          {pricing.discountPercent}% OFF
+                        </Badge>
+                      ) : null}
+                      {!available ? (
+                        <Badge variant="secondary" className="text-[10px]">
+                          Indisponível
+                        </Badge>
+                      ) : null}
+                    </div>
                   </div>
                   <h3>
                     <button
@@ -662,7 +668,16 @@ export function Storefront({
                       {product.variants.length ? (
                         <p className="text-[10px] text-muted-foreground">a partir de</p>
                       ) : null}
-                      <p className="text-lg font-semibold tracking-tight">{money(price)}</p>
+                      <div className="flex flex-wrap items-baseline gap-x-2">
+                        <p className="text-lg font-semibold tracking-tight">
+                          {money(pricing.currentPriceCents)}
+                        </p>
+                        {pricing.originalPriceCents ? (
+                          <p className="text-xs text-muted-foreground line-through">
+                            {money(pricing.originalPriceCents)}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => openProduct(product)}>
                       Ver detalhes

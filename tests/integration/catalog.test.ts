@@ -26,12 +26,25 @@ const input = (name = "Caneca artesanal"): ProductInput => ({
   name,
   description: "Cerâmica produzida à mão.",
   priceCents: 4500,
+  discountPriceCents: 3900,
   available: true,
   categoryName: "Cerâmica",
   assetIds: [],
   variants: [
-    { label: "Areia", options: { Cor: "Areia" }, priceCents: 4500, available: true },
-    { label: "Azul", options: { Cor: "Azul" }, priceCents: 4900, available: false },
+    {
+      label: "Areia",
+      options: { Cor: "Areia" },
+      priceCents: 4500,
+      discountPriceCents: 3900,
+      available: true,
+    },
+    {
+      label: "Azul",
+      options: { Cor: "Azul" },
+      priceCents: 4900,
+      discountPriceCents: null,
+      available: false,
+    },
   ],
 });
 
@@ -60,6 +73,10 @@ describe("Catálogo e isolamento real PostgreSQL", () => {
     const created = await saveProduct({ storeId }, input());
 
     expect(created.variants).toHaveLength(2);
+    expect(created.discountPriceCents).toBe(3900);
+    expect(created.variants.find((variant) => variant.label === "Areia")?.discountPriceCents).toBe(
+      3900
+    );
     expect(created.variants.find((variant) => variant.label === "Azul")?.priceCents).toBe(4900);
     expect(created.category?.name).toBe("Cerâmica");
     const edited = await saveProduct(

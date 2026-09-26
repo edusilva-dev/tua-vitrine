@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { productInputSchema, variantLabel } from "@/modules/catalog/contracts";
+import { type ProductDTO, productInputSchema, variantLabel } from "@/modules/catalog/contracts";
+import { productPrice } from "@/modules/catalog/pricing";
 import { cartSchema, resolveCart, selectionKeys } from "@/modules/storefront/selection";
 import { cartMessage, whatsappLink } from "@/modules/storefront/whatsapp";
 import { normalizeSlug, storeIdentitySchema, whatsappSchema } from "@/modules/stores/contracts";
@@ -30,6 +31,18 @@ describe("contratos", () => {
   });
   test("preço deve ser centavos inteiros e combinações únicas", () => {
     expect(productInputSchema.safeParse({ ...input, priceCents: 19.9 }).success).toBe(false);
+    expect(
+      productInputSchema.safeParse({
+        ...input,
+        discountPriceCents: input.priceCents,
+      }).success
+    ).toBe(false);
+    expect(
+      productInputSchema.safeParse({
+        ...input,
+        discountPriceCents: 1490,
+      }).success
+    ).toBe(true);
     const variant = { label: "Azul", options: { Cor: "Azul" }, priceCents: 1990, available: true };
 
     expect(productInputSchema.safeParse({ ...input, variants: [variant, variant] }).success).toBe(
@@ -44,6 +57,19 @@ describe("contratos", () => {
   });
   test("nome exibido da variante é derivado da combinação", () => {
     expect(variantLabel({ Tamanho: "M", Cor: "Azul" })).toBe("Azul / M");
+  });
+  test("preço promocional calcula valor atual e percentual", () => {
+    const product = {
+      priceCents: 2000,
+      discountPriceCents: 1500,
+      variants: [],
+    } as unknown as ProductDTO;
+
+    expect(productPrice(product)).toEqual({
+      currentPriceCents: 1500,
+      originalPriceCents: 2000,
+      discountPercent: 25,
+    });
   });
 });
 describe("seleções e WhatsApp", () => {

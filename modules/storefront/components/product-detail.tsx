@@ -2,6 +2,7 @@
 
 import { Heart, MessageCircle, ShoppingBag } from "lucide-react";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { money } from "@/lib/format";
 import type { ProductDTO } from "@/modules/catalog/contracts";
+import { productPrice } from "@/modules/catalog/pricing";
 import type { StoreDTO } from "@/modules/stores/contracts";
 import type { CartLine } from "../selection";
 import { whatsappLink } from "../whatsapp";
@@ -48,8 +50,8 @@ export function ProductDetail({
   const [imageIndex, setImageIndex] = useState(0);
   const variant = product.variants.find((item) => item.id === variantId);
   const available = product.available && (!product.variants.length || !!variant?.available);
-  const price = variant?.priceCents ?? product.priceCents;
-  const message = `Olá, ${store.name}! Tenho interesse em ${quantity}x ${product.name}${variant ? ` · ${variant.label}` : ""} (${money(price)} cada). Pode me ajudar?\n${store.url}`;
+  const pricing = productPrice(product, variant);
+  const message = `Olá, ${store.name}! Tenho interesse em ${quantity}x ${product.name}${variant ? ` · ${variant.label}` : ""} (${money(pricing.currentPriceCents)} cada). Pode me ajudar?\n${store.url}`;
 
   return (
     <Dialog
@@ -93,18 +95,24 @@ export function ProductDetail({
                   {product.description || "Fale com a loja para saber mais sobre este produto."}
                 </DialogDescription>
               </DialogHeader>
-              <p className="my-5 text-3xl font-semibold tracking-tight">
+              <div className="my-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 {product.variants.length && !variant ? (
-                  <span className="mr-1 text-sm font-normal text-muted-foreground">
-                    A partir de
+                  <span className="text-sm font-normal text-muted-foreground">A partir de</span>
+                ) : null}
+                <span className="text-3xl font-semibold tracking-tight">
+                  {money(pricing.currentPriceCents)}
+                </span>
+                {pricing.originalPriceCents ? (
+                  <span className="text-sm text-muted-foreground line-through">
+                    {money(pricing.originalPriceCents)}
                   </span>
                 ) : null}
-                {money(
-                  product.variants.length && !variant
-                    ? Math.min(...product.variants.map((item) => item.priceCents))
-                    : price
-                )}
-              </p>
+                {pricing.discountPercent ? (
+                  <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">
+                    {pricing.discountPercent}% OFF
+                  </Badge>
+                ) : null}
+              </div>
               {product.variants.length ? (
                 <div className="mb-4 space-y-2">
                   <Label htmlFor="product-variant">Escolha uma opção</Label>
@@ -115,7 +123,7 @@ export function ProductDetail({
                     <SelectContent>
                       {product.variants.map((item) => (
                         <SelectItem key={item.id} value={item.id} disabled={!item.available}>
-                          {item.label} · {money(item.priceCents)}
+                          {item.label} · {money(productPrice(product, item).currentPriceCents)}
                           {!item.available ? " · Indisponível" : ""}
                         </SelectItem>
                       ))}

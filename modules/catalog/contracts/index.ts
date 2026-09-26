@@ -9,6 +9,7 @@ export const variantInputSchema = z.object({
   label: z.string().trim().max(120).optional(),
   options: z.record(z.string().min(1).max(40), z.string().min(1).max(60)),
   priceCents: cents,
+  discountPriceCents: cents.min(1).nullable().optional(),
   available: z.boolean(),
 });
 
@@ -25,12 +26,31 @@ export const productInputSchema = z
     name: z.string().trim().min(2, "Informe pelo menos 2 caracteres.").max(120),
     description: z.string().trim().max(5000),
     priceCents: cents,
+    discountPriceCents: cents.min(1).nullable().optional(),
     available: z.boolean(),
     categoryName: z.string().trim().max(60),
     assetIds: z.array(z.string().uuid()).max(5),
     variants: z.array(variantInputSchema).max(100),
   })
   .superRefine((value, ctx) => {
+    if (value.discountPriceCents != null && value.discountPriceCents >= value.priceCents) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["discountPriceCents"],
+        message: "O preço com desconto deve ser menor que o preço normal.",
+      });
+    }
+
+    for (const [index, variant] of value.variants.entries()) {
+      if (variant.discountPriceCents != null && variant.discountPriceCents >= variant.priceCents) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["variants", index, "discountPriceCents"],
+          message: "O preço com desconto deve ser menor que o preço normal.",
+        });
+      }
+    }
+
     const keys = value.variants.map((variant) =>
       JSON.stringify(Object.entries(variant.options).sort(([a], [b]) => a.localeCompare(b)))
     );
@@ -68,6 +88,7 @@ export type VariantDTO = {
   label: string;
   options: Record<string, string>;
   priceCents: number;
+  discountPriceCents: number | null;
   available: boolean;
 };
 
@@ -81,6 +102,7 @@ export type ProductDTO = {
   name: string;
   description: string;
   priceCents: number;
+  discountPriceCents: number | null;
   available: boolean;
   published: boolean;
   category: CategoryDTO | null;
