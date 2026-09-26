@@ -1,8 +1,7 @@
 # Deploy na Vercel com Neon
 
-Esta é a referência de deploy gerenciado. O Compose de produção continua útil para uma VPS, mas não
-participa do deploy na Vercel. A Vercel instala com Bun a partir do `bun.lock`; as funções Next.js
-executam no runtime Node.js gerenciado da plataforma.
+Esta é a referência oficial de produção. A Vercel instala com Bun a partir do bun.lock; as
+funções Next.js executam no runtime Node.js gerenciado da plataforma.
 
 ## Cobrança
 

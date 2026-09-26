@@ -44,4 +44,3 @@ jobs:
           name: browser-failures
           path: test-results/
           if-no-files-found: ignore
-      - run: docker build -t tua-vitrine:ci .
