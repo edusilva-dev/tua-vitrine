@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { billingPlanSchema } from "@/modules/billing/contracts";
 import type { AssetDTO } from "@/modules/catalog/contracts";
 
 export const reservedSlugs = [
@@ -42,6 +43,10 @@ export const storeIdentitySchema = z.object({
     ),
 });
 
+export const storeCreationSchema = storeIdentitySchema.extend({
+  signupPlan: billingPlanSchema.default("FREE"),
+});
+
 export const whatsappSchema = z.object({
   whatsapp: z
     .string()
@@ -73,6 +78,7 @@ export type StoreDTO = {
   slug: string;
   whatsapp: string | null;
   status: "DRAFT" | "ACTIVE";
+  signupPlan: "FREE" | "ESSENTIAL" | "PROFESSIONAL";
   primaryColor: string;
   template: "grid" | "list";
   logo: AssetDTO | null;

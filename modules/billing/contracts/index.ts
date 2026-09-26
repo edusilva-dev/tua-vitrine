@@ -19,6 +19,7 @@ export const entitlementsSchema = z.object({
   source: z.enum(["FREE", "INTERNAL_TRIAL", "SUBSCRIPTION"]),
   trialEndsAt: z.string().datetime().nullable(),
   trialDaysRemaining: z.number().int().nonnegative(),
+  trialAvailable: z.boolean(),
   productLimit: z.number().int().positive(),
   imagesPerProductLimit: z.number().int().positive(),
   publishedProducts: z.number().int().nonnegative(),

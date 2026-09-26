@@ -208,7 +208,8 @@ export async function saveProduct(
 
       const imagesPerProductLimit = store.onboardingCompletedAt
         ? entitlements.imagesPerProductLimit
-        : PLAN_CAPABILITIES.PROFESSIONAL.imagesPerProductLimit;
+        : PLAN_CAPABILITIES[store.signupPlan === "FREE" ? "FREE" : "PROFESSIONAL"]
+            .imagesPerProductLimit;
 
       if (values.assetIds.length > imagesPerProductLimit)
         throw new AppError(
@@ -356,7 +357,11 @@ export async function saveProduct(
       if (!store.onboardingCompletedAt)
         await tx.store.update({
           where: { id: store.id },
-          data: { status: "ACTIVE", onboardingCompletedAt: new Date() },
+          data: {
+            status: "ACTIVE",
+            onboardingCompletedAt: new Date(),
+            ...(store.signupPlan === "FREE" ? {} : { trialStartedAt: new Date() }),
+          },
         });
 
       if (idempotencyKey)

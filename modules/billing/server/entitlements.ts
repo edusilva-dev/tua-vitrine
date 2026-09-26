@@ -13,7 +13,8 @@ export const INTERNAL_TRIAL_DAYS = 14;
 const ACTIVE_PAID_STATUSES = new Set<SubscriptionStatus>(["ACTIVE", "TRIALING"]);
 
 type EntitlementState = {
-  activatedAt: Date | null;
+  onboardingCompletedAt: Date | null;
+  trialStartedAt: Date | null;
   subscriptionPlan: DatabaseBillingPlan | null;
   subscriptionStatus: SubscriptionStatus | null;
   trialUsedAt?: Date | null;
@@ -38,8 +39,8 @@ export function resolveEntitlements(state: EntitlementState, now = new Date()): 
   ) {
     plan = state.subscriptionPlan;
     source = "SUBSCRIPTION";
-  } else if (state.activatedAt && !state.trialUsedAt) {
-    const end = addDays(state.activatedAt, INTERNAL_TRIAL_DAYS);
+  } else if (state.trialStartedAt && !state.trialUsedAt) {
+    const end = addDays(state.trialStartedAt, INTERNAL_TRIAL_DAYS);
 
     if (end.getTime() > now.getTime()) {
       plan = "PROFESSIONAL";
@@ -58,6 +59,12 @@ export function resolveEntitlements(state: EntitlementState, now = new Date()): 
     source,
     trialEndsAt: trialEndsAt?.toISOString() ?? null,
     trialDaysRemaining: Math.ceil(millisecondsRemaining / (24 * 60 * 60 * 1000)),
+    trialAvailable: Boolean(
+      state.onboardingCompletedAt &&
+        !state.trialStartedAt &&
+        !state.trialUsedAt &&
+        source === "FREE"
+    ),
     publishedProducts: state.publishedProducts,
     catalogProducts: state.catalogProducts ?? state.publishedProducts,
     needsProductSelection: state.publishedProducts > capabilities.productLimit,
@@ -71,6 +78,7 @@ const getEntitlementsForStore = cache(async (storeId: string): Promise<Entitleme
       where: { id: storeId },
       select: {
         onboardingCompletedAt: true,
+        trialStartedAt: true,
         subscription: { select: { plan: true, status: true, trialUsedAt: true } },
         _count: {
           select: { products: { where: { archivedAt: null, published: true } } },
@@ -81,7 +89,8 @@ const getEntitlementsForStore = cache(async (storeId: string): Promise<Entitleme
   ]);
 
   return resolveEntitlements({
-    activatedAt: store.onboardingCompletedAt,
+    onboardingCompletedAt: store.onboardingCompletedAt,
+    trialStartedAt: store.trialStartedAt,
     subscriptionPlan: store.subscription?.plan ?? null,
     subscriptionStatus: store.subscription?.status ?? null,
     trialUsedAt: store.subscription?.trialUsedAt ?? null,

@@ -334,6 +334,36 @@ export async function getBillingStatus(context: StoreContext) {
   };
 }
 
+export async function activateInternalTrial(context: StoreContext): Promise<void> {
+  await db.$transaction(async (tx) => {
+    const store = await tx.store.findUnique({
+      where: { id: context.storeId },
+      select: {
+        onboardingCompletedAt: true,
+        trialStartedAt: true,
+        subscription: { select: { status: true, trialUsedAt: true } },
+      },
+    });
+
+    if (!store) throw new AppError(404, "NOT_FOUND", "Loja não encontrada.");
+
+    if (!store.onboardingCompletedAt)
+      throw new AppError(409, "ONBOARDING", "Conclua a configuração da loja antes do trial.");
+
+    if (
+      store.trialStartedAt ||
+      store.subscription?.trialUsedAt ||
+      (store.subscription?.status && ACTIVE_STATUSES.has(store.subscription.status))
+    )
+      throw new AppError(409, "TRIAL_UNAVAILABLE", "O trial desta loja já foi utilizado.");
+
+    await tx.store.update({
+      where: { id: context.storeId },
+      data: { signupPlan: "PROFESSIONAL", trialStartedAt: new Date() },
+    });
+  });
+}
+
 export async function processStripeEvent(event: Stripe.Event) {
   let subscription: Stripe.Subscription | null = null;
 

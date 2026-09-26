@@ -15,6 +15,7 @@ import { assetUrl } from "@/lib/server/storage-adapter";
 import {
   customizationSchema,
   type StoreDTO,
+  storeCreationSchema,
   storeIdentitySchema,
   storeSettingsSchema,
   whatsappSchema,
@@ -55,6 +56,7 @@ export async function toStoreDTO(store: Store): Promise<StoreDTO> {
     slug: store.slug,
     whatsapp: store.whatsapp,
     status: store.status,
+    signupPlan: store.signupPlan,
     ...appearance,
     logo: logo
       ? { id: logo.id, url: assetUrl(logo), width: logo.width, height: logo.height }
@@ -91,7 +93,7 @@ export async function getStoreBySlug(slug: string): Promise<StoreDTO | null> {
 }
 
 export async function createStore(input: unknown, ownerId?: string): Promise<StoreDTO> {
-  const values = storeIdentitySchema.parse(input);
+  const values = storeCreationSchema.parse(input);
 
   if (ownerId && (await db.storeMember.findFirst({ where: { userId: ownerId } })))
     throw new AppError(409, "STORE_LIMIT", "Sua conta já possui uma vitrine.");
@@ -111,7 +113,7 @@ export async function saveIdentity(
   input: unknown,
   ownerId?: string
 ): Promise<StoreDTO> {
-  const values = storeIdentitySchema.parse(input);
+  const values = context ? storeIdentitySchema.parse(input) : storeCreationSchema.parse(input);
 
   if (!context) {
     const existing = await storeRepository.bySlug(values.slug);

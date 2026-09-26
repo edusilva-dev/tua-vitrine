@@ -55,10 +55,12 @@ export function AuthForm({
   mode,
   token = "",
   invalidLink = false,
+  signupPlan = "free",
 }: {
   mode: Mode;
   token?: string;
   invalidLink?: boolean;
+  signupPlan?: "free" | "essencial" | "profissional";
 }) {
   const [failure, setFailure] = useState("");
   const [success, setSuccess] = useState("");
@@ -103,7 +105,7 @@ export function AuthForm({
           name: fields.name.trim(),
           email: fields.email.trim(),
           password: fields.password,
-          callbackURL: "/admin",
+          callbackURL: `/admin?plano=${signupPlan}`,
         });
 
         if (result.error) {

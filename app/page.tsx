@@ -290,7 +290,7 @@ export default function Home() {
                 Comece grátis. Cresça no seu ritmo.
               </h2>
               <p className="mt-4 text-[#607169]">
-                Teste todos os recursos por 14 dias. Escolha seu plano depois.
+                Comece no Free ou teste todos os recursos por 14 dias ao escolher um plano pago.
               </p>
             </div>
             <div className="mt-12 grid gap-5 md:grid-cols-3">

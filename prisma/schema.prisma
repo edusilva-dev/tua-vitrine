@@ -35,6 +35,8 @@ model Store {
  customization Json @default("{\"version\":1,\"tagline\":\"\"}")
  logoAssetId String? @db.Uuid
  onboardingCompletedAt DateTime?
+ signupPlan BillingPlan @default(FREE)
+ trialStartedAt DateTime?
  createdAt DateTime @default(now())
  updatedAt DateTime @updatedAt
  products Product[]

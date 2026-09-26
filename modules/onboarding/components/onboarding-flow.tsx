@@ -23,9 +23,11 @@ import { formatWhatsapp } from "@/modules/stores/phone";
 export function OnboardingFlow({
   store,
   newStore = false,
+  signupPlan = "FREE",
 }: {
   store: StoreDTO | null;
   newStore?: boolean;
+  signupPlan?: "FREE" | "ESSENTIAL" | "PROFESSIONAL";
 }) {
   const router = useRouter();
   const [current, setCurrent] = useState<StoreDTO | null>(newStore ? null : store);
@@ -53,7 +55,10 @@ export function OnboardingFlow({
     try {
       const saved = await api<StoreDTO>(
         newStore && !current ? "/api/admin/stores" : "/api/admin/onboarding/store",
-        { method: newStore && !current ? "POST" : "PUT", body: JSON.stringify(values) }
+        {
+          method: newStore && !current ? "POST" : "PUT",
+          body: JSON.stringify({ ...values, signupPlan }),
+        }
       );
 
       setCurrent(saved);
@@ -234,6 +239,7 @@ export function OnboardingFlow({
               </p>
             </div>
             <ProductForm
+              imagesPerProductLimit={(current?.signupPlan ?? signupPlan) === "FREE" ? 1 : 5}
               onSaved={() => {
                 toast.success("Sua vitrine está pronta!");
                 router.push("/admin");

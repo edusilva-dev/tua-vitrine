@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type Stripe from "stripe";
 import { db } from "@/lib/server/db";
 import { getEntitlements } from "@/modules/billing/server/entitlements";
-import { processStripeEvent } from "@/modules/billing/server/service";
+import { activateInternalTrial, processStripeEvent } from "@/modules/billing/server/service";
 import {
   listProducts,
   saveProduct,
@@ -178,4 +178,78 @@ test("Free bloqueia cor e campanha, e Profissional libera campanha", async () =>
     customization: { version: 1, tagline: "" },
   });
   expect(await getPublicPromotionCampaign(context)).toBeNull();
+});
+
+test("Free ativa o trial sob demanda uma única vez", async () => {
+  const freeStoreId = randomUUID();
+  const freeContext = { storeId: freeStoreId };
+
+  await db.store.create({
+    data: {
+      id: freeStoreId,
+      name: "Free com trial disponível",
+      slug: `free-trial-${freeStoreId}`,
+      whatsapp: "+5511999999999",
+      status: "ACTIVE",
+      onboardingCompletedAt: new Date(),
+      signupPlan: "FREE",
+    },
+  });
+
+  try {
+    expect(await getEntitlements(freeContext)).toMatchObject({
+      plan: "FREE",
+      trialAvailable: true,
+    });
+
+    await activateInternalTrial(freeContext);
+
+    expect(await getEntitlements(freeContext)).toMatchObject({
+      plan: "PROFESSIONAL",
+      source: "INTERNAL_TRIAL",
+      trialAvailable: false,
+      trialDaysRemaining: 14,
+    });
+    await expect(activateInternalTrial(freeContext)).rejects.toThrow(
+      "O trial desta loja já foi utilizado."
+    );
+  } finally {
+    await db.store.delete({ where: { id: freeStoreId } });
+  }
+});
+
+test("cadastro por plano pago inicia o trial Profissional ao publicar a loja", async () => {
+  const paidStoreId = randomUUID();
+  const paidContext = { storeId: paidStoreId };
+
+  await db.store.create({
+    data: {
+      id: paidStoreId,
+      name: "Cadastro Essencial",
+      slug: `essencial-trial-${paidStoreId}`,
+      whatsapp: "+5511999999999",
+      signupPlan: "ESSENTIAL",
+    },
+  });
+
+  try {
+    await saveProduct(paidContext, {
+      name: "Primeiro produto",
+      description: "",
+      priceCents: 1000,
+      discountPriceCents: null,
+      available: true,
+      categoryName: "",
+      assetIds: [],
+      variants: [],
+    });
+
+    expect(await getEntitlements(paidContext)).toMatchObject({
+      plan: "PROFESSIONAL",
+      source: "INTERNAL_TRIAL",
+      trialDaysRemaining: 14,
+    });
+  } finally {
+    await db.store.delete({ where: { id: paidStoreId } });
+  }
 });

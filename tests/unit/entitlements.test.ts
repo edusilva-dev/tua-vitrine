@@ -8,7 +8,8 @@ describe("entitlements", () => {
     expect(
       resolveEntitlements(
         {
-          activatedAt: null,
+          onboardingCompletedAt: null,
+          trialStartedAt: null,
           subscriptionPlan: null,
           subscriptionStatus: null,
           publishedProducts: 3,
@@ -29,7 +30,8 @@ describe("entitlements", () => {
   test("ativação inicia 14 dias de Profissional sem cartão", () => {
     const value = resolveEntitlements(
       {
-        activatedAt: new Date("2026-09-20T12:00:00.000Z"),
+        onboardingCompletedAt: new Date("2026-09-20T12:00:00.000Z"),
+        trialStartedAt: new Date("2026-09-20T12:00:00.000Z"),
         subscriptionPlan: null,
         subscriptionStatus: null,
         publishedProducts: 51,
@@ -52,7 +54,8 @@ describe("entitlements", () => {
     expect(
       resolveEntitlements(
         {
-          activatedAt: new Date("2026-09-01T12:00:00.000Z"),
+          onboardingCompletedAt: new Date("2026-09-01T12:00:00.000Z"),
+          trialStartedAt: new Date("2026-09-01T12:00:00.000Z"),
           subscriptionPlan: null,
           subscriptionStatus: null,
           publishedProducts: 11,
@@ -71,7 +74,8 @@ describe("entitlements", () => {
     expect(
       resolveEntitlements(
         {
-          activatedAt: new Date("2026-09-20T12:00:00.000Z"),
+          onboardingCompletedAt: new Date("2026-09-20T12:00:00.000Z"),
+          trialStartedAt: new Date("2026-09-20T12:00:00.000Z"),
           subscriptionPlan: "FREE",
           subscriptionStatus: "CANCELED",
           trialUsedAt: now,
@@ -84,7 +88,8 @@ describe("entitlements", () => {
 
   test("assinatura ativa prevalece e inadimplência perde os recursos pagos", () => {
     const base = {
-      activatedAt: new Date("2026-09-01T12:00:00.000Z"),
+      onboardingCompletedAt: new Date("2026-09-01T12:00:00.000Z"),
+      trialStartedAt: null,
       subscriptionPlan: "ESSENTIAL" as const,
       publishedProducts: 40,
     };
@@ -106,7 +111,8 @@ describe("entitlements", () => {
     expect(
       resolveEntitlements(
         {
-          activatedAt: null,
+          onboardingCompletedAt: null,
+          trialStartedAt: null,
           subscriptionPlan: "PROFESSIONAL",
           subscriptionStatus: "ACTIVE",
           publishedProducts: 1001,
@@ -118,6 +124,26 @@ describe("entitlements", () => {
       needsProductSelection: true,
       metricsHistoryDays: null,
       canUseFullCustomization: true,
+    });
+  });
+
+  test("Free concluído mantém o trial disponível sem ativá-lo", () => {
+    expect(
+      resolveEntitlements(
+        {
+          onboardingCompletedAt: new Date("2026-09-20T12:00:00.000Z"),
+          trialStartedAt: null,
+          subscriptionPlan: null,
+          subscriptionStatus: null,
+          publishedProducts: 1,
+        },
+        now
+      )
+    ).toMatchObject({
+      plan: "FREE",
+      source: "FREE",
+      trialAvailable: true,
+      trialEndsAt: null,
     });
   });
 });
