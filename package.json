@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "bun --bun next dev --webpack --hostname 127.0.0.1",
-    "build": "bun --bun next build --webpack",
+    "build": "bunx prisma generate && bun --bun next build --webpack",
     "start": "bun --bun next start --hostname 127.0.0.1",
     "lint": "bun --bun biome check . && bun --bun eslint . --max-warnings 0",
     "lint:fix": "bun --bun biome check --write . && bun --bun eslint . --fix",
