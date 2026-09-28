@@ -61,10 +61,10 @@ export function AppShell({
           href="/admin"
           className="flex items-center gap-3 px-6 py-8 text-2xl font-bold tracking-tight"
         >
-          <span className="grid size-10 place-items-center rounded-xl bg-[#d5e9bc] text-[#183c3d]">
+          <span className="grid size-10 place-items-center rounded-xl bg-brand-lime text-brand-forest">
             <Store size={23} />
           </span>
-          tua vitrine<span className="text-[#d5e9bc]">.</span>
+          tua vitrine<span className="text-brand-lime">.</span>
         </Link>
         <div className="px-5 pb-6">
           <p className="mb-2 text-[10px] font-semibold tracking-[.18em] text-white/45">

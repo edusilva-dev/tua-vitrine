@@ -59,19 +59,19 @@ export function MetricsOverview({
         </p>
       </div>
       {!detailed && (
-        <section className="relative overflow-hidden rounded-2xl bg-[#dfe8dc] p-7 sm:p-9">
+        <section className="relative overflow-hidden rounded-2xl bg-brand-mist p-7 sm:p-9">
           <div className="absolute -right-10 -top-12 size-64 rounded-full border-[40px] border-white/25" />
           <div className="relative max-w-lg">
-            <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/65 px-3 py-1 text-xs font-medium text-[#31574a]">
+            <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/65 px-3 py-1 text-xs font-medium text-brand-ink-green">
               <Sparkles size={13} />
               Seu próximo cliente está por aí
             </span>
-            <h2 className="font-heading text-2xl font-semibold leading-tight text-[#193d35]">
+            <h2 className="font-heading text-2xl font-semibold leading-tight text-brand-ink-strong">
               Sua vitrine aberta.
               <br />
               Seu negócio indo mais longe.
             </h2>
-            <p className="mt-3 max-w-sm text-sm leading-relaxed text-[#456455]">
+            <p className="mt-3 max-w-sm text-sm leading-relaxed text-brand-copy-strong">
               Capriche nos produtos e compartilhe sua loja. As próximas conversas começam aqui.
             </p>
             <Button asChild className="mt-5">
@@ -88,7 +88,7 @@ export function MetricsOverview({
           <article key={label} className="min-w-0 overflow-hidden rounded-xl border bg-card p-5">
             <div className="mb-6 flex items-center justify-between">
               <p className="min-w-0 text-xs font-medium text-muted-foreground">{label}</p>
-              <span className="rounded-lg bg-[#eef1e9] p-2 text-[#446255]">
+              <span className="rounded-lg bg-brand-soft p-2 text-brand-icon">
                 <Icon size={17} />
               </span>
             </div>

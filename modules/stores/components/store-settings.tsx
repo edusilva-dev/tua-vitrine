@@ -435,7 +435,7 @@ export function StoreSettings({
         </form>
         <aside className="min-w-0 space-y-5">
           <section className="rounded-xl border bg-card p-6">
-            <span className="mb-4 inline-flex rounded-lg bg-[#e8eee2] p-2 text-primary">
+            <span className="mb-4 inline-flex rounded-lg bg-brand-settings p-2 text-primary">
               <LinkIcon size={20} />
             </span>
             <h2 className="font-semibold">Sua loja, em um link</h2>

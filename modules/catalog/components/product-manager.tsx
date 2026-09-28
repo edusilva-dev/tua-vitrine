@@ -647,7 +647,7 @@ export function ProductManager({
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {products.data.map((product) => (
             <article key={product.id} className="group overflow-hidden rounded-xl border bg-card">
-              <div className="relative aspect-[4/3] bg-[#eeeee6]">
+              <div className="relative aspect-[4/3] bg-brand-product-surface">
                 {product.images[0] ? (
                   <Image
                     src={product.images[0].url}
@@ -657,14 +657,14 @@ export function ProductManager({
                     className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                   />
                 ) : (
-                  <div className="flex h-full flex-col items-center justify-center gap-2 text-[#98a69b]">
+                  <div className="flex h-full flex-col items-center justify-center gap-2 text-brand-disabled">
                     <Package size={42} strokeWidth={1} />
                     <span className="text-xs">Seu produto em destaque</span>
                   </div>
                 )}
                 <Badge
                   variant="secondary"
-                  className={`absolute left-3 top-3 bg-white/90 ${product.published ? "text-[#345044]" : "text-amber-700"}`}
+                  className={`absolute left-3 top-3 bg-white/90 ${product.published ? "text-brand-ink-published" : "text-amber-700"}`}
                 >
                   {!product.published
                     ? "Rascunho"
@@ -722,7 +722,7 @@ export function ProductManager({
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed bg-card px-6 py-20 text-center">
-          <span className="mx-auto mb-5 grid size-16 place-items-center rounded-2xl bg-[#eef1e9] text-primary">
+          <span className="mx-auto mb-5 grid size-16 place-items-center rounded-2xl bg-brand-soft text-primary">
             <Package size={30} strokeWidth={1.5} />
           </span>
           <h2 className="font-heading text-xl font-semibold">

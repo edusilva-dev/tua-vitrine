@@ -61,14 +61,14 @@ export function TrialBanner({ entitlements }: { entitlements: Entitlements }) {
   if (!entitlements.trialAvailable) return null;
 
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border border-[#c8ddb0] bg-[#eef6e5] p-5 sm:flex-row sm:items-center sm:justify-between">
+    <section className="flex flex-col gap-4 rounded-2xl border border-brand-trial-border bg-brand-trial p-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#183c3d] text-white">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-forest text-white">
           <Sparkles size={20} />
         </span>
         <div>
           <p className="font-heading font-semibold">Experimente o plano Profissional</p>
-          <p className="mt-1 text-sm leading-relaxed text-[#526a62]">
+          <p className="mt-1 text-sm leading-relaxed text-brand-copy">
             Ative quando quiser e use todos os recursos por 14 dias. Não precisa de cartão.
           </p>
         </div>

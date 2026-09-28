@@ -90,7 +90,7 @@ export function OnboardingFlow({
   return (
     <div className="mx-auto max-w-2xl py-3">
       <div className="mb-8 text-center">
-        <span className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-[#e0e9dc] text-primary">
+        <span className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-brand-onboarding text-primary">
           <Store size={27} />
         </span>
         <p className="eyebrow">SEU NEGÓCIO MERECE UMA VITRINE</p>
