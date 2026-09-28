@@ -7,6 +7,7 @@ import {
   type StoreContext,
 } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
+import { getEnv } from "@/lib/server/env";
 import { AppError } from "@/lib/server/http";
 import type { Entitlements } from "@/modules/billing/contracts";
 import { getEntitlements } from "@/modules/billing/server/entitlements";
@@ -64,7 +65,7 @@ export async function toStoreDTO(store: Store): Promise<StoreDTO> {
       ? { id: logo.id, url: assetUrl(logo), width: logo.width, height: logo.height }
       : null,
     onboardingStep: store.onboardingCompletedAt ? 4 : store.whatsapp ? 3 : 2,
-    url: `${(process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "")}/${store.slug}`,
+    url: `${getEnv().APP_URL.replace(/\/$/, "")}/${store.slug}`,
   };
 }
 

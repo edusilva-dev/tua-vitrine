@@ -300,7 +300,7 @@ export async function getBillingStatus(context: StoreContext) {
       stripeSubscriptionId: true,
     },
   });
-  const billingEnabled = getEnv().BILLING_MODE === "stripe";
+  const billingEnabled = getEnv().BILLING_ENABLED;
 
   if (billingEnabled && billing?.stripeSubscriptionId) {
     try {

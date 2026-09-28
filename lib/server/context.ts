@@ -15,11 +15,11 @@ export const getOptionalAdminIdentity = cache(
     const env = getEnv();
     const values = await headers();
 
-    if (env.AUTH_MODE === "local") {
+    if (!env.AUTH_ENABLED) {
       if (!/^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(values.get("host") ?? "")) {
         throw new AppError(
           403,
-          "LOCAL_ONLY",
+          "LOCAL_ACCESS",
           "O painel de demonstração funciona apenas em localhost."
         );
       }
@@ -83,10 +83,10 @@ export async function resolveMemberStore(userId: string, selected?: string): Pro
 export const getAdminContext = cache(async (): Promise<StoreContext> => {
   await assertAdminAccess();
   const identity = await getAdminIdentity();
-
-  if (identity.userId) return resolveMemberStore(identity.userId);
-
   const jar = await cookies();
+
+  if (identity.userId) return resolveMemberStore(identity.userId, jar.get("tv-store")?.value);
+
   const selected = jar.get("tv-local-store")?.value;
 
   if (selected && z.string().uuid().safeParse(selected).success) {

@@ -1,95 +1,78 @@
 import "server-only";
 import { z } from "zod";
 
+const LOCAL_DATABASE_URL = "postgresql://tuavitrine:tuavitrine_local@localhost:55432/tuavitrine";
+const LOCAL_APP_URL = "http://localhost:3000";
+
+const optionalString = (schema: z.ZodString) =>
+  z.preprocess((value) => (value === "" ? undefined : value), schema.optional());
+
 const schema = z.object({
   DATABASE_URL: z
     .string()
     .url()
-    .refine((url) => /^postgres(ql)?:/.test(url), "Use PostgreSQL."),
-  DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(20).default(10),
+    .refine((url) => /^postgres(ql)?:/.test(url), "Use PostgreSQL.")
+    .default(LOCAL_DATABASE_URL),
+  DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(20).optional(),
   APP_URL: z
     .string()
     .url()
     .refine((url) => /^https?:/.test(url), "Use HTTP ou HTTPS."),
-  APP_ENV: z.enum(["development", "test", "staging", "production"]).default("development"),
-  LOCAL_ONLY: z.enum(["true", "false"]).default("true"),
-  AUTH_MODE: z.enum(["local", "session"]).default("local"),
-  BETTER_AUTH_SECRET: z.preprocess(
-    (value) => (value === "" ? undefined : value),
-    z.string().min(32).optional()
-  ),
-  MAIL_TRANSPORT: z.enum(["file", "smtp", "resend", "disabled"]).default("file"),
+  BETTER_AUTH_SECRET: optionalString(z.string().min(32)),
   MAIL_OUTBOX_DIR: z.string().min(1).default("./work/mail-outbox"),
-  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_HOST: optionalString(z.string().min(1)),
   SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
-  SMTP_USER: z.string().min(1).optional(),
-  SMTP_PASSWORD: z.string().min(1).optional(),
+  SMTP_USER: optionalString(z.string().min(1)),
+  SMTP_PASSWORD: optionalString(z.string().min(1)),
   MAIL_FROM: z.string().email().default("noreply@tuavitrine.local"),
-  SUPPORT_EMAIL: z.preprocess(
-    (value) => (value === "" ? undefined : value),
-    z.string().email().optional()
-  ),
-  RESEND_API_KEY: z.string().startsWith("re_").optional(),
-  RESEND_EMAIL_DOMAIN: z.string().min(1).optional(),
-  STORAGE_DRIVER: z.enum(["local", "vercel-blob", "disabled"]).default("local"),
+  SUPPORT_EMAIL: optionalString(z.string().email()),
+  RESEND_API_KEY: optionalString(z.string().startsWith("re_")),
   STORAGE_DIR: z.string().min(1).default("./work/storage"),
-  BLOB_READ_WRITE_TOKEN: z.string().min(20).optional(),
-  BILLING_MODE: z.enum(["disabled", "stripe"]).default("disabled"),
-  STRIPE_SECRET_KEY: z
-    .string()
-    .regex(/^[sr]k_(test|live)_/)
-    .optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_").optional(),
-  STRIPE_PRICE_BASIC_MONTHLY: z.string().startsWith("price_").optional(),
-  STRIPE_PRICE_PRO_MONTHLY: z.string().startsWith("price_").optional(),
+  BLOB_READ_WRITE_TOKEN: optionalString(z.string().min(20)),
+  STRIPE_SECRET_KEY: optionalString(z.string().regex(/^[sr]k_(test|live)_/)),
+  STRIPE_WEBHOOK_SECRET: optionalString(z.string().startsWith("whsec_")),
+  STRIPE_PRICE_BASIC_MONTHLY: optionalString(z.string().startsWith("price_")),
+  STRIPE_PRICE_PRO_MONTHLY: optionalString(z.string().startsWith("price_")),
 });
 
 export function parseEnv(input: Record<string, string | undefined>) {
+  const isVercel = input.VERCEL === "1";
   const vercelUrl = input.VERCEL_URL ? `https://${input.VERCEL_URL}` : undefined;
-  const env = schema.parse({ ...input, APP_URL: input.APP_URL || vercelUrl });
-  const publicEnvironment = env.APP_ENV === "staging" || env.APP_ENV === "production";
+  const env = schema.parse({
+    ...input,
+    APP_URL: input.APP_URL || vercelUrl || LOCAL_APP_URL,
+  });
+  const appUrl = new URL(env.APP_URL);
+  const authEnabled = Boolean(env.BETTER_AUTH_SECRET);
 
-  if (env.AUTH_MODE === "session" && !env.BETTER_AUTH_SECRET) {
-    throw new Error("BETTER_AUTH_SECRET é obrigatório no modo autenticado (mínimo 32 caracteres).");
-  }
-
-  if (env.AUTH_MODE === "local" && (publicEnvironment || env.LOCAL_ONLY !== "true")) {
-    throw new Error("O painel sem autenticação funciona somente em ambiente local.");
-  }
-
-  const url = new URL(env.APP_URL);
-
-  if (url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
+  if (appUrl.username || appUrl.password || appUrl.pathname !== "/" || appUrl.search || appUrl.hash)
     throw new Error("APP_URL deve conter somente a origem da aplicação.");
-  }
 
-  if (env.LOCAL_ONLY === "true" && !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) {
-    throw new Error("APP_URL deve apontar para localhost no modo LOCAL_ONLY.");
-  }
+  if (!authEnabled && !["localhost", "127.0.0.1", "[::1]"].includes(appUrl.hostname))
+    throw new Error("BETTER_AUTH_SECRET é obrigatório fora do ambiente local.");
 
-  if (publicEnvironment && url.protocol !== "https:") {
-    throw new Error("Staging/produção exigem HTTPS.");
-  }
+  if (isVercel && !input.DATABASE_URL) throw new Error("DATABASE_URL é obrigatória na Vercel.");
 
-  if (env.MAIL_TRANSPORT === "smtp" && (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASSWORD)) {
-    throw new Error("Configure SMTP_HOST, SMTP_USER e SMTP_PASSWORD.");
-  }
+  if (isVercel && !authEnabled) throw new Error("BETTER_AUTH_SECRET é obrigatório na Vercel.");
 
-  if (env.MAIL_TRANSPORT === "resend" && (!env.RESEND_API_KEY || !env.RESEND_EMAIL_DOMAIN)) {
-    throw new Error("Configure RESEND_API_KEY e RESEND_EMAIL_DOMAIN.");
-  }
+  if (isVercel && appUrl.protocol !== "https:") throw new Error("Deploys na Vercel exigem HTTPS.");
 
-  if (env.MAIL_TRANSPORT === "file" && env.LOCAL_ONLY !== "true") {
-    throw new Error("A caixa de e-mails em arquivos funciona somente em localhost.");
-  }
+  const smtpValues = [env.SMTP_HOST, env.SMTP_USER, env.SMTP_PASSWORD];
+  const configuredSmtpValues = smtpValues.filter(Boolean).length;
 
-  if (env.STORAGE_DRIVER === "vercel-blob" && !env.BLOB_READ_WRITE_TOKEN) {
-    throw new Error("BLOB_READ_WRITE_TOKEN é obrigatório com STORAGE_DRIVER=vercel-blob.");
-  }
+  if (configuredSmtpValues > 0 && configuredSmtpValues < smtpValues.length)
+    throw new Error("Configure SMTP_HOST, SMTP_USER e SMTP_PASSWORD juntos.");
 
-  if (publicEnvironment && input.VERCEL === "1" && env.STORAGE_DRIVER === "local") {
-    throw new Error("Na Vercel, use STORAGE_DRIVER=vercel-blob ou disabled.");
-  }
+  const mailTransport = env.RESEND_API_KEY
+    ? ("resend" as const)
+    : configuredSmtpValues === smtpValues.length
+      ? ("smtp" as const)
+      : isVercel
+        ? ("disabled" as const)
+        : ("file" as const);
+
+  if ((mailTransport === "resend" || mailTransport === "smtp") && !input.MAIL_FROM)
+    throw new Error("MAIL_FROM é obrigatório quando o envio de e-mail está configurado.");
 
   const stripeValues = [
     env.STRIPE_SECRET_KEY,
@@ -97,12 +80,23 @@ export function parseEnv(input: Record<string, string | undefined>) {
     env.STRIPE_PRICE_BASIC_MONTHLY,
     env.STRIPE_PRICE_PRO_MONTHLY,
   ];
+  const configuredStripeValues = stripeValues.filter(Boolean).length;
 
-  if (env.BILLING_MODE === "stripe" && !stripeValues.every(Boolean)) {
-    throw new Error("Configure todas as variáveis do Stripe para habilitar assinaturas.");
-  }
+  if (configuredStripeValues > 0 && configuredStripeValues < stripeValues.length)
+    throw new Error("Configure todas as quatro variáveis do Stripe juntas.");
 
-  return env;
+  return {
+    ...env,
+    DATABASE_POOL_MAX: env.DATABASE_POOL_MAX ?? (isVercel ? 1 : 10),
+    AUTH_ENABLED: authEnabled,
+    MAIL_TRANSPORT: mailTransport,
+    STORAGE_DRIVER: env.BLOB_READ_WRITE_TOKEN
+      ? ("vercel-blob" as const)
+      : isVercel
+        ? ("disabled" as const)
+        : ("local" as const),
+    BILLING_ENABLED: configuredStripeValues === stripeValues.length,
+  };
 }
 
 export function getEnv() {

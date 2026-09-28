@@ -27,8 +27,19 @@ if (
 const storeId = randomUUID();
 const context = { storeId };
 const productIds = Array.from({ length: 11 }, () => randomUUID());
+const stripeEnvironment = {
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+  STRIPE_PRICE_BASIC_MONTHLY: process.env.STRIPE_PRICE_BASIC_MONTHLY,
+  STRIPE_PRICE_PRO_MONTHLY: process.env.STRIPE_PRICE_PRO_MONTHLY,
+};
 
 beforeAll(async () => {
+  process.env.STRIPE_SECRET_KEY = "rk_test_plan_enforcement";
+  process.env.STRIPE_WEBHOOK_SECRET = "whsec_plan_enforcement";
+  process.env.STRIPE_PRICE_BASIC_MONTHLY = "price_basic_plan_enforcement";
+  process.env.STRIPE_PRICE_PRO_MONTHLY = "price_pro_plan_enforcement";
+
   await db.store.create({
     data: {
       id: storeId,
@@ -54,6 +65,11 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await db.store.delete({ where: { id: storeId } });
+
+  for (const [name, value] of Object.entries(stripeEnvironment)) {
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
 });
 
 test("Free exige seleção e a vitrine pública omite produtos despublicados", async () => {

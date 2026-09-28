@@ -13,12 +13,13 @@ if (
 }
 
 process.env.DATABASE_URL = databaseUrl;
-process.env.APP_ENV = "test";
-process.env.AUTH_MODE = "local";
-process.env.LOCAL_ONLY = "true";
 process.env.APP_URL = "http://localhost:3000";
 process.env.STORAGE_DIR = "./work/test-storage";
-process.env.BILLING_MODE = "disabled";
-process.env.MAIL_TRANSPORT = "file";
+delete process.env.BETTER_AUTH_SECRET;
+delete process.env.BLOB_READ_WRITE_TOKEN;
+delete process.env.STRIPE_SECRET_KEY;
+delete process.env.STRIPE_WEBHOOK_SECRET;
+delete process.env.STRIPE_PRICE_BASIC_MONTHLY;
+delete process.env.STRIPE_PRICE_PRO_MONTHLY;
 
 mock.module("server-only", () => ({}));

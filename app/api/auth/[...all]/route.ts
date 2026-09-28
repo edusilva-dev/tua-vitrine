@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 async function handler(request: Request) {
-  if (getEnv().AUTH_MODE !== "session") return new Response(null, { status: 404 });
+  if (!getEnv().AUTH_ENABLED) return new Response(null, { status: 404 });
 
   const path = new URL(request.url).pathname;
   const emailRequired = [

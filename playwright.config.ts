@@ -34,10 +34,7 @@ export default defineConfig({
     reuseExistingServer: false,
     env: {
       DATABASE_URL: databaseUrl,
-      APP_ENV: "test",
       APP_URL: "http://localhost:3100",
-      AUTH_MODE: "local",
-      LOCAL_ONLY: "true",
       STORAGE_DIR: "./work/test-storage",
     },
     timeout: 120000,

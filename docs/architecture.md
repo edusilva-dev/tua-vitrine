@@ -28,6 +28,6 @@ O arquivo prisma7.config.ts é reconhecido pela versão instalada; scripts passa
 
 Decisão original da fundação. A implementação de contas e os requisitos atuais substituem o bloqueio absoluto de staging/produção; consulte ADR 006 em [autenticação](authentication.md). O modo sem contas continua estritamente local.
 
-A versão sem autenticação só pode funcionar com LOCAL_ONLY=true e APP_ENV development/test. Compose vincula portas ao loopback. Staging/produção estão documentados, mas sua ativação depende de autenticação/autorização e testes de isolamento; não relaxar o bloqueio apenas para publicar.
+A versão sem autenticação só funciona quando `BETTER_AUTH_SECRET` está ausente e `APP_URL` aponta para localhost. O Compose vincula portas ao loopback. A Vercel exige autenticação configurada.
 
-A mesma imagem deve ser promovida entre ambientes. Configuração privada é validada no runtime. NEXT_PUBLIC_* é congelado no build, portanto APP_URL é configuração de servidor. NODE_ENV=production também vale para staging; APP_ENV representa o ambiente de negócio.
+A mesma imagem deve ser promovida entre ambientes. A configuração privada é validada no runtime. `NEXT_PUBLIC_*` é congelado no build, portanto `APP_URL` permanece configuração de servidor.

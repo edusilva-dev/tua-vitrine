@@ -127,6 +127,20 @@ async function removeFixtureMessages() {
   }
 }
 
+test.beforeAll(async () => {
+  const url = process.env.E2E_DATABASE_URL;
+
+  if (!url || new URL(url).pathname !== "/tuavitrine_test") throw new Error("Banco inválido.");
+
+  const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
+
+  try {
+    await db.rateLimit.deleteMany();
+  } finally {
+    await db.$disconnect();
+  }
+});
+
 test.afterAll(async () => {
   const url = process.env.E2E_DATABASE_URL;
 
@@ -169,7 +183,7 @@ test("conta verificada, isolamento por sessão e recuperação com revogação",
   await expect(page.getByRole("status")).toContainText("Confira seu e-mail");
   expect((await page.request.get("/api/admin/products")).status()).toBe(401);
   await page.goto(await mailLink(ownerEmail, "Confirme seu e-mail"));
-  await expect(page).toHaveURL(/\/admin/);
+  await expect(page).toHaveURL(/\/admin\/onboarding$/);
   const ownerCatalog = await createCatalog(page, ownerSlug);
 
   await page.goto("/admin");
@@ -191,7 +205,7 @@ test("conta verificada, isolamento por sessão e recuperação com revogação",
   const otherPage = await other.newPage();
 
   await otherPage.goto(await mailLink(otherEmail, "Confirme seu e-mail"));
-  await expect(otherPage).toHaveURL(/\/admin/);
+  await expect(otherPage).toHaveURL(/\/admin\/onboarding$/);
   const otherCatalog = await createCatalog(otherPage, otherSlug);
 
   for (const method of ["get", "patch", "delete"] as const) {

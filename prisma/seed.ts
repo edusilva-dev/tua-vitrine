@@ -1,15 +1,12 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 
-const url = process.env.DATABASE_URL;
+const url =
+  process.env.DATABASE_URL ?? "postgresql://tuavitrine:tuavitrine_local@localhost:55432/tuavitrine";
+const database = new URL(url);
 
-if (!url) throw new Error("DATABASE_URL é obrigatória.");
-
-if (
-  !["development", "local", "test"].includes(process.env.APP_ENV ?? "") ||
-  process.env.LOCAL_ONLY !== "true"
-)
-  throw new Error("O seed de demonstração funciona somente no ambiente local.");
+if (process.env.VERCEL === "1" || !["localhost", "127.0.0.1", "db"].includes(database.hostname))
+  throw new Error("O seed de demonstração funciona somente com o PostgreSQL local.");
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
 const examples = [

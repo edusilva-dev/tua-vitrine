@@ -1,7 +1,7 @@
 # Armazenamento de imagens
 
-Em desenvolvimento, STORAGE_DRIVER=local grava fora de public/, no diretório definido por
-STORAGE_DIR. Em produção, STORAGE_DRIVER=vercel-blob grava no Vercel Blob e entrega imagens pelo CDN.
+Em desenvolvimento, o app grava fora de `public/`, em `./work/storage`. Quando
+`BLOB_READ_WRITE_TOKEN` está presente, usa o Vercel Blob e entrega imagens pelo CDN.
 O banco guarda a referência do objeto; não armazena os bytes.
 
 ## Upload e entrega
@@ -16,13 +16,13 @@ HTTPS sob *.blob.vercel-storage.com.
 ## Limpeza
 
 ~~~sh
-bun --env-file=.env.local --conditions=react-server scripts/cleanup-assets.ts --dry-run
-bun --env-file=.env.local --conditions=react-server scripts/cleanup-assets.ts --apply
+bun --conditions=react-server scripts/cleanup-assets.ts --dry-run
+bun --conditions=react-server scripts/cleanup-assets.ts --apply
 ~~~
 
 O modo padrão apenas lista candidatos. --apply remove até 100 uploads com mais de 24 horas que não
 estão ligados a produto, logo ou campanha. A seleção é revalidada no banco antes da exclusão.
 
-No armazenamento local, falhas físicas ficam registradas em STORAGE_DIR/.cleanup para nova
+No armazenamento local, falhas físicas ficam registradas em `./work/storage/.cleanup` para nova
 tentativa. No Vercel Blob, execute a rotina por um operador controlado; não exponha a limpeza como
 endpoint público. Falha na remoção de imagem nunca deve bloquear catálogo ou venda.

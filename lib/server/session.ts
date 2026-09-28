@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { db } from "./db";
+import { getEnv } from "./env";
 import { AppError } from "./http";
 
 export async function assertSameOrigin(): Promise<void> {
@@ -41,7 +42,7 @@ export async function anonymousSession(): Promise<string> {
   jar.set("tv-visitor", newToken, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.APP_URL?.startsWith("https:") ?? false,
+    secure: getEnv().APP_URL.startsWith("https:"),
     path: "/",
     maxAge: 365 * 86400,
   });

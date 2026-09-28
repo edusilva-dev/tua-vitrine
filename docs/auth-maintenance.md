@@ -20,13 +20,13 @@ causar falha.
 O modo padrão apenas lista os candidatos no log estruturado:
 
 ```sh
-bun --env-file=.env.local --conditions=react-server scripts/cleanup-auth.ts
+bun --conditions=react-server scripts/cleanup-auth.ts
 ```
 
 Para excluir os candidatos elegíveis:
 
 ```sh
-bun --env-file=.env.local --conditions=react-server scripts/cleanup-auth.ts --apply
+bun --conditions=react-server scripts/cleanup-auth.ts --apply
 ```
 
 Agende a execução diária fora do processo web. Em produção, envie o log estruturado para o destino
@@ -36,5 +36,5 @@ receber a mesma `DATABASE_URL` da aplicação e ser executado uma vez por ambien
 Script sugerido para `package.json`:
 
 ```json
-"auth:cleanup": "bun --env-file=.env.local --conditions=react-server scripts/cleanup-auth.ts"
+"auth:cleanup": "bun --conditions=react-server scripts/cleanup-auth.ts"
 ```

@@ -37,12 +37,8 @@ export default defineConfig({
     timeout: 240000,
     env: {
       DATABASE_URL: databaseUrl,
-      APP_ENV: "test",
       APP_URL: "http://localhost:3200",
-      AUTH_MODE: "session",
-      LOCAL_ONLY: "true",
       BETTER_AUTH_SECRET: "test-only-auth-secret-7c35f6d4b8298ce2a1f0928713fce017",
-      MAIL_TRANSPORT: "file",
       MAIL_OUTBOX_DIR: authOutbox,
       STORAGE_DIR: authStorage,
       HOSTNAME: "127.0.0.1",

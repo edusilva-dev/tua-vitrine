@@ -6,7 +6,7 @@ test.describe("vitrine pública", () => {
     await page.goto(`/${fixtures.firstSlug}`);
 
     await expect(
-      page.getByRole("heading", { name: "Café fresco e boas conversas." })
+      page.getByRole("heading", { name: "Encontre seu próximo favorito." })
     ).toBeVisible();
     await page.getByRole("button", { name: "Ver Cookie com chocolate" }).click();
     await expect(page.getByRole("heading", { name: /Cookie com chocolate/ })).toBeVisible();

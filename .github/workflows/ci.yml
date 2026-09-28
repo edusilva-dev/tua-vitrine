@@ -17,10 +17,7 @@ jobs:
           --health-cmd "pg_isready -U tuavitrine -d tuavitrine_test"
           --health-interval 5s --health-timeout 3s --health-retries 10
     env:
-      APP_ENV: test
       APP_URL: http://localhost:3000
-      LOCAL_ONLY: "true"
-      AUTH_MODE: local
       DATABASE_URL: postgresql://tuavitrine:tuavitrine_local@localhost:55432/tuavitrine_test
       E2E_DATABASE_URL: postgresql://tuavitrine:tuavitrine_local@localhost:55432/tuavitrine_test
       STORAGE_DIR: ./work/test-storage

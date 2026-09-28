@@ -29,7 +29,7 @@ export function getStripe(): Stripe {
 }
 
 export function assertBillingEnabled(): void {
-  if (getEnv().BILLING_MODE !== "stripe") {
+  if (!getEnv().BILLING_ENABLED) {
     throw new AppError(
       503,
       "BILLING_UNAVAILABLE",

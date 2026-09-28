@@ -5,11 +5,9 @@ funções Next.js executam no runtime Node.js gerenciado da plataforma.
 
 ## Cobrança
 
-Use `BILLING_MODE=disabled` enquanto as credenciais Stripe não estiverem completas. Nesse modo, o
-painel mostra a cobrança como indisponível e os endpoints de checkout, portal e webhook recusam a
-operação de forma controlada. Para ativar, configure `STRIPE_SECRET_KEY`,
-`STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_BASIC_MONTHLY` e `STRIPE_PRICE_PRO_MONTHLY`; depois altere
-`BILLING_MODE` para `stripe` e faça um novo deploy.
+A cobrança permanece indisponível enquanto as credenciais Stripe não estiverem completas. Para
+ativar, configure juntas `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+`STRIPE_PRICE_BASIC_MONTHLY` e `STRIPE_PRICE_PRO_MONTHLY` e faça um novo deploy.
 
 Os segredos devem ser variáveis Sensitive na Vercel. Prefira uma chave restrita com somente as
 permissões necessárias para Customers, Checkout Sessions, Billing Portal e Subscriptions.
@@ -20,10 +18,10 @@ No painel do Neon, copie duas conexões do mesmo banco e branch:
 
 - `DATABASE_URL`: conexão com pooling; o hostname contém `-pooler`;
 - `DATABASE_URL_UNPOOLED`: conexão direta, sem `-pooler`, usada exclusivamente pelo operador ou CI
-  de migrações. `DIRECT_URL` continua aceito como alias manual.
+  de migrações.
 
-As duas URLs precisam de TLS (`sslmode=require`). O runtime usa `DATABASE_POOL_MAX=1` para limitar
-as conexões mantidas por cada instância serverless. Não cadastre a URL direta na Vercel quando a
+As duas URLs precisam de TLS (`sslmode=require`). O runtime limita automaticamente o pool a uma
+conexão por instância na Vercel. Não cadastre a URL direta na Vercel quando a
 plataforma não executa migrações; mantenha-a num secret do CI ou no ambiente seguro do operador.
 O pool é registrado com o ciclo de vida do Fluid Compute pela integração `@vercel/functions`.
 
@@ -44,27 +42,25 @@ Variables**. Segredos devem ser marcados como sensíveis e nunca copiados para a
 
 Para produção:
 
-- `APP_ENV=production`;
 - `APP_URL=https://SEU-SUBDOMINIO.fyweb.com.br`;
 - `DATABASE_URL` pooled; a URL direta fica no ambiente que executa as migrações;
-- `DATABASE_POOL_MAX=1`;
-- `AUTH_MODE=session`, `LOCAL_ONLY=false` e um `BETTER_AUTH_SECRET` aleatório;
-- `STORAGE_DRIVER=vercel-blob`; conecte um Blob store público e confirme `BLOB_READ_WRITE_TOKEN`.
+- um `BETTER_AUTH_SECRET` aleatório com pelo menos 32 caracteres;
+- conecte um Blob store público e confirme `BLOB_READ_WRITE_TOKEN`.
 
-Para previews, use um branch Neon separado quando houver dados reais. Defina `APP_ENV=staging`,
-omita `APP_URL` para que o endereço do deployment seja usado e nunca conecte previews ao banco de
+Para previews, use um branch Neon separado quando houver dados reais. Omita `APP_URL` para que o
+endereço do deployment seja usado e nunca conecte previews ao banco de
 produção.
 
 ## 3. E-mail e imagens
 
 O cadastro exige confirmação de e-mail e a recuperação de senha depende de entrega real. Enquanto o
-provedor não estiver escolhido, use `MAIL_TRANSPORT=disabled`: login de contas existentes continua
+provedor não estiver configurado, o envio fica desabilitado: login de contas existentes continua
 disponível, enquanto cadastro, reenvio de verificação e recuperação respondem `503` explicitamente.
-Para liberar essas operações, configure `MAIL_TRANSPORT=smtp`, remetente e credenciais válidas.
+Para liberar essas operações, configure `MAIL_FROM` e `RESEND_API_KEY`, ou as credenciais SMTP.
 
 O filesystem das funções da Vercel é efêmero. Crie um **Blob store público** no mesmo projeto,
-defina `STORAGE_DRIVER=vercel-blob` e mantenha `BLOB_READ_WRITE_TOKEN` somente nos ambientes da
-Vercel. O app valida a imagem, converte para WebP e grava sob `stores/{storeId}/`; a URL retornada
+mantenha `BLOB_READ_WRITE_TOKEN` somente nos ambientes da Vercel. Sua presença ativa o Blob
+automaticamente. O app valida a imagem, converte para WebP e grava sob `stores/{storeId}/`; a URL retornada
 pelo Blob é persistida e entregue diretamente pelo CDN. A rota `/api/assets/[id]` permanece para
 arquivos locais e registros legados.
 

@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Aplicação | Bun no WSL | Vercel |
 | PostgreSQL | Compose em localhost:55432 | Neon |
-| Imagens | STORAGE_DRIVER=local | Vercel Blob |
+| Imagens | filesystem local automático | Vercel Blob quando o token está presente |
 | E-mail | arquivo local | Resend |
 | Cobrança | desabilitada ou Stripe test | Stripe |
 

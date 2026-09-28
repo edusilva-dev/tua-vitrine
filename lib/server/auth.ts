@@ -10,7 +10,7 @@ import { sendAccountEmail } from "./mail";
 function createAuth() {
   const env = getEnv();
 
-  if (env.AUTH_MODE !== "session" || !env.BETTER_AUTH_SECRET) {
+  if (!env.AUTH_ENABLED || !env.BETTER_AUTH_SECRET) {
     throw new Error("Autenticação por sessão não configurada.");
   }
 
