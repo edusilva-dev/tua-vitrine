@@ -46,7 +46,6 @@ const plans = [
     price: "0",
     description: "Para conhecer a Tua Vitrine e colocar seus primeiros produtos no ar.",
     features: [
-      "1 vitrine online",
       "Até 10 produtos",
       "Pedidos pelo WhatsApp",
       "Logo da sua marca",
@@ -60,7 +59,6 @@ const plans = [
     price: "19",
     description: "Para ganhar tempo e acompanhar o interesse dos clientes.",
     features: [
-      "1 vitrine online",
       "Até 50 produtos",
       "Importação de produtos por Excel",
       "Pedidos pelo WhatsApp",
@@ -75,7 +73,6 @@ const plans = [
     price: "39",
     description: "Para catálogos maiores e campanhas que destacam seus produtos.",
     features: [
-      "1 vitrine online",
       "Produtos ilimitados*",
       "Importação de produtos por Excel",
       "Pedidos pelo WhatsApp",

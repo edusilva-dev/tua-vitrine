@@ -226,8 +226,12 @@ export function StoreSettings({
                   className="mt-2"
                   placeholder="Feito com carinho, escolhido para você."
                   disabled={!entitlements.canUseFullCustomization}
+                  maxLength={160}
                   {...form.register("customization.tagline")}
                 />
+                <small className="text-xs text-muted-foreground">
+                  {form.watch("customization.tagline")?.length ?? 0}/160 caracteres
+                </small>
                 {form.formState.errors.customization?.tagline && (
                   <p className="field-error">Use no máximo 160 caracteres.</p>
                 )}
