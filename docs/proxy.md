@@ -1,13 +1,12 @@
 # Proteção antecipada do painel
 
-O `proxy.ts` atua somente nas páginas sob `/admin`. Quando `BETTER_AUTH_SECRET` está configurado,
-uma requisição sem cookie de sessão do Better Auth é redirecionada para `/entrar`, com o caminho interno original no
+O `proxy.ts` atua somente nas páginas sob `/admin`. Uma requisição sem cookie de sessão do Better
+Auth é redirecionada para `/entrar`, com o caminho interno original no
 parâmetro `callbackURL`. Esse destino é construído exclusivamente a partir de `pathname` e `search`
 da requisição recebida; URLs externas fornecidas pelo cliente nunca são usadas como destino do
 redirecionamento.
 
-Sem `BETTER_AUTH_SECRET`, o proxy mantém o acesso simplificado exclusivamente em localhost. O matcher não
-inclui `/api/admin`: consumidores da API continuam recebendo a resposta JSON `401` produzida pelos
+O matcher não inclui `/api/admin`: consumidores da API continuam recebendo a resposta JSON `401` produzida pelos
 Route Handlers, em vez de HTML ou redirecionamento. Arquivos estáticos, rotas públicas e vitrines
 também não passam pelo proxy.
 

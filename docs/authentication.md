@@ -17,22 +17,22 @@ A API fica no Route Handler curinga `app/api/auth/[...all]/route.ts`. Better Aut
 - `POST /api/auth/request-password-reset`
 - `POST /api/auth/reset-password`
 
-Sem `BETTER_AUTH_SECRET`, esses endpoints retornam 404 de propósito e o painel simplificado fica disponível apenas em localhost. Configurar o segredo ativa contas e autorização.
+`BETTER_AUTH_SECRET` é obrigatório em todos os ambientes. O painel não possui mais um modo local sem contas.
 
 `StoreMember` vincula usuário à loja. Nesta versão somente OWNER existe. O servidor calcula o contexto pela sessão; o cookie `tv-store` apenas seleciona entre lojas autorizadas. Seleção inválida retorna 404, nunca uma loja de outro usuário. Login, logout e confirmação limpam a seleção anterior. Criação da loja e vínculo ocorrem na mesma operação transacional. Nenhum endpoint público permite atribuir proprietários.
 
 ## Experimentar localmente
 
 1. Use Bun 1.3.14, instale com lock congelado e execute `bun run db:generate` e `bun run db:deploy`.
-2. Gere `BETTER_AUTH_SECRET` com `bun -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))'` e salve somente essa variável em `.env.local`.
+2. Copie `.env.example` para `.env.local`, mantenha a URL do PostgreSQL local e gere `BETTER_AUTH_SECRET` com `bun -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))'`.
 3. Execute `bun run dev` e abra `/cadastro`. Em desenvolvimento, os e-mails são gravados automaticamente em `./work/mail-outbox`.
 5. Em desenvolvimento, os e-mails são JSON nesse diretório (permissão 0600); abra localmente o link do e-mail da conta criada. Não há endpoint que exponha essa caixa. Não versionar, publicar ou compartilhar esses arquivos: contêm links de acesso temporário.
 
-Sem o segredo, o protótipo continua acessível somente em localhost e sem contas. A migração não reivindica lojas existentes automaticamente. Para associar uma loja antiga a uma conta já verificada, o operador executa `bun run store:assign-owner SLUG EMAIL` para conferir e acrescenta `--apply` para efetivar. O comando não transfere lojas com outro proprietário.
+A migração não reivindica lojas existentes automaticamente. Para associar uma loja antiga a uma conta já verificada, o operador executa `bun run store:assign-owner SLUG EMAIL` para conferir e acrescenta `--apply` para efetivar. O comando não transfere lojas com outro proprietário.
 
 ## Staging e produção
 
-Exigem `APP_URL` HTTPS, `BETTER_AUTH_SECRET` forte e único por ambiente e um provedor de e-mail. Configure `MAIL_FROM` com `RESEND_API_KEY` ou com `SMTP_HOST`, `SMTP_USER` e `SMTP_PASSWORD`; a porta SMTP é 587 por padrão. Nunca use o segredo público dos testes. Antes de liberar clientes, valide entrega de confirmação/recuperação no domínio real, restauração de backup e operação do provedor escolhido.
+Exigem `APP_URL` HTTPS, `BETTER_AUTH_SECRET` forte e único por ambiente, `MAIL_FROM` e `RESEND_API_KEY`. Nunca use o segredo público dos testes. Antes de liberar clientes, valide entrega de confirmação/recuperação no domínio real, restauração de backup e operação do Resend.
 
 Limites de autenticação são armazenados no PostgreSQL. Better Auth identifica IP pelos cabeçalhos encaminhados; o proxy de produção deve sobrescrever cabeçalhos de IP e impedir acesso direto ao processo Next. A configuração desse proxy e os limites de borda continuam sendo parte obrigatória da implantação. Os limites das métricas públicas ainda são locais ao processo.
 

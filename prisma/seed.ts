@@ -1,8 +1,10 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 
-const url =
-  process.env.DATABASE_URL ?? "postgresql://tuavitrine:tuavitrine_local@localhost:55432/tuavitrine";
+const url = process.env.DATABASE_URL;
+
+if (!url) throw new Error("DATABASE_URL é obrigatória.");
+
 const database = new URL(url);
 
 if (process.env.VERCEL === "1" || !["localhost", "127.0.0.1", "db"].includes(database.hostname))

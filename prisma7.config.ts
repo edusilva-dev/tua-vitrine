@@ -1,7 +1,8 @@
-import "dotenv/config";
-import { defineConfig } from "prisma/config";
+import { config } from "dotenv";
+import { defineConfig, env } from "prisma/config";
 
-const localDatabaseUrl = "postgresql://tuavitrine:tuavitrine_local@localhost:55432/tuavitrine";
+config({ path: ".env.local", quiet: true });
+config({ path: ".env", quiet: true });
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -9,6 +10,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || localDatabaseUrl,
+    url: process.env.DATABASE_URL_UNPOOLED || env("DATABASE_URL"),
   },
 });

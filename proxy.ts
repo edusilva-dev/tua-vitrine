@@ -7,7 +7,7 @@ function getSafeCallbackUrl(request: NextRequest): string {
 }
 
 export function proxy(request: NextRequest) {
-  if (!process.env.BETTER_AUTH_SECRET) return NextResponse.next();
+  if (process.env.E2E_AUTH_BYPASS === "1") return NextResponse.next();
 
   if (getSessionCookie(request)) return NextResponse.next();
 

@@ -7,7 +7,7 @@ export default async function SupportPage() {
   if (!(await getCurrentStore())) redirect("/admin/onboarding");
 
   const env = getEnv();
-  const enabled = Boolean(env.SUPPORT_EMAIL && env.MAIL_TRANSPORT !== "disabled");
+  const enabled = Boolean(env.SUPPORT_EMAIL);
 
   return (
     <div className="space-y-6">

@@ -2,21 +2,21 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { NextRequest } from "next/server";
 import { proxy } from "@/proxy";
 
-const originalSecret = process.env.BETTER_AUTH_SECRET;
+const originalBypass = process.env.E2E_AUTH_BYPASS;
 
 afterEach(() => {
-  if (originalSecret === undefined) {
-    delete process.env.BETTER_AUTH_SECRET;
+  if (originalBypass === undefined) {
+    delete process.env.E2E_AUTH_BYPASS;
 
     return;
   }
 
-  process.env.BETTER_AUTH_SECRET = originalSecret;
+  process.env.E2E_AUTH_BYPASS = originalBypass;
 });
 
 describe("proxy do painel", () => {
-  test("mantém o acesso local sem autenticação configurada", () => {
-    delete process.env.BETTER_AUTH_SECRET;
+  test("mantém o acesso no fluxo isolado de interface", () => {
+    process.env.E2E_AUTH_BYPASS = "1";
 
     const response = proxy(new NextRequest("http://localhost:3000/admin/products"));
 
@@ -24,7 +24,7 @@ describe("proxy do painel", () => {
   });
 
   test("redireciona navegação sem sessão e preserva somente o destino interno", () => {
-    process.env.BETTER_AUTH_SECRET = "test-only-secret-with-more-than-32-characters";
+    delete process.env.E2E_AUTH_BYPASS;
 
     const response = proxy(
       new NextRequest("https://tuavitrine.com.br/admin/products?page=2&next=https://evil.example")
@@ -40,7 +40,7 @@ describe("proxy do painel", () => {
   });
 
   test("permite a antecipação quando o cookie de sessão está presente", () => {
-    process.env.BETTER_AUTH_SECRET = "test-only-secret-with-more-than-32-characters";
+    delete process.env.E2E_AUTH_BYPASS;
 
     const response = proxy(
       new NextRequest("https://tuavitrine.com.br/admin", {

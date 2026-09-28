@@ -10,24 +10,6 @@ async function handler(request: Request) {
   if (!getEnv().AUTH_ENABLED) return new Response(null, { status: 404 });
 
   const path = new URL(request.url).pathname;
-  const emailRequired = [
-    "/api/auth/sign-up/email",
-    "/api/auth/request-password-reset",
-    "/api/auth/send-verification-email",
-  ].includes(path);
-
-  if (emailRequired && getEnv().MAIL_TRANSPORT === "disabled") {
-    return Response.json(
-      {
-        error: {
-          code: "EMAIL_UNAVAILABLE",
-          message: "Cadastro e recuperação estarão disponíveis após a configuração do e-mail.",
-        },
-      },
-      { status: 503 }
-    );
-  }
-
   const handlers = toNextJsHandler(getAuth());
 
   const response = await (request.method === "GET"

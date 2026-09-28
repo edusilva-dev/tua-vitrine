@@ -14,8 +14,8 @@ if (
 
 process.env.DATABASE_URL = databaseUrl;
 process.env.APP_URL = "http://localhost:3000";
+process.env.BETTER_AUTH_SECRET = "test-only-secret-with-more-than-32-characters";
 process.env.STORAGE_DIR = "./work/test-storage";
-delete process.env.BETTER_AUTH_SECRET;
 delete process.env.BLOB_READ_WRITE_TOKEN;
 delete process.env.STRIPE_SECRET_KEY;
 delete process.env.STRIPE_WEBHOOK_SECRET;

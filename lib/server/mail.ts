@@ -2,7 +2,6 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import nodemailer from "nodemailer";
 import { Resend } from "resend";
 import { getEnv } from "./env";
 
@@ -17,10 +16,6 @@ type EmailMessage = {
 async function sendEmail(message: EmailMessage): Promise<void> {
   const env = getEnv();
 
-  if (env.MAIL_TRANSPORT === "disabled") {
-    throw new Error("O envio de e-mail ainda não está configurado.");
-  }
-
   if (env.MAIL_TRANSPORT === "file") {
     const directory = resolve(env.MAIL_OUTBOX_DIR);
 
@@ -33,31 +28,17 @@ async function sendEmail(message: EmailMessage): Promise<void> {
     return;
   }
 
-  if (env.MAIL_TRANSPORT === "resend") {
-    const { error } = await new Resend(env.RESEND_API_KEY).emails.send({
-      from: message.from,
-      to: message.to,
-      subject: message.subject,
-      text: message.text,
-      ...(message.replyTo ? { replyTo: message.replyTo } : {}),
-    });
+  if (!env.RESEND_API_KEY) throw new Error("RESEND_API_KEY não configurada.");
 
-    if (error) throw new Error(`Falha no Resend: ${error.message}`);
-
-    return;
-  }
-
-  const transport = nodemailer.createTransport({
-    host: env.SMTP_HOST,
-    port: env.SMTP_PORT,
-    secure: env.SMTP_PORT === 465,
-    requireTLS: env.SMTP_PORT !== 465,
-    auth: { user: env.SMTP_USER, pass: env.SMTP_PASSWORD },
-    connectionTimeout: 10000,
-    socketTimeout: 15000,
+  const { error } = await new Resend(env.RESEND_API_KEY).emails.send({
+    from: message.from,
+    to: message.to,
+    subject: message.subject,
+    text: message.text,
+    ...(message.replyTo ? { replyTo: message.replyTo } : {}),
   });
 
-  await transport.sendMail(message);
+  if (error) throw new Error(`Falha no Resend: ${error.message}`);
 }
 
 export async function sendAccountEmail(to: string, subject: string, url: string) {

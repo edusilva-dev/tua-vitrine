@@ -18,6 +18,7 @@ jobs:
           --health-interval 5s --health-timeout 3s --health-retries 10
     env:
       APP_URL: http://localhost:3000
+      BETTER_AUTH_SECRET: test-only-secret-with-more-than-32-characters
       DATABASE_URL: postgresql://tuavitrine:tuavitrine_local@localhost:55432/tuavitrine_test
       E2E_DATABASE_URL: postgresql://tuavitrine:tuavitrine_local@localhost:55432/tuavitrine_test
       STORAGE_DIR: ./work/test-storage

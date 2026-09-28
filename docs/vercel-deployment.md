@@ -5,9 +5,8 @@ funções Next.js executam no runtime Node.js gerenciado da plataforma.
 
 ## Cobrança
 
-A cobrança permanece indisponível enquanto as credenciais Stripe não estiverem completas. Para
-ativar, configure juntas `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
-`STRIPE_PRICE_BASIC_MONTHLY` e `STRIPE_PRICE_PRO_MONTHLY` e faça um novo deploy.
+A produção só inicia com `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+`STRIPE_PRICE_BASIC_MONTHLY` e `STRIPE_PRICE_PRO_MONTHLY` configuradas.
 
 Os segredos devem ser variáveis Sensitive na Vercel. Prefira uma chave restrita com somente as
 permissões necessárias para Customers, Checkout Sessions, Billing Portal e Subscriptions.
@@ -54,9 +53,9 @@ produção.
 ## 3. E-mail e imagens
 
 O cadastro exige confirmação de e-mail e a recuperação de senha depende de entrega real. Enquanto o
-provedor não estiver configurado, o envio fica desabilitado: login de contas existentes continua
-disponível, enquanto cadastro, reenvio de verificação e recuperação respondem `503` explicitamente.
-Para liberar essas operações, configure `MAIL_FROM` e `RESEND_API_KEY`, ou as credenciais SMTP.
+O envio de e-mail é parte obrigatória do ambiente de produção. Configure `MAIL_FROM` e
+`RESEND_API_KEY`; a aplicação recusa a configuração antes de atender requisições se algum deles
+estiver ausente.
 
 O filesystem das funções da Vercel é efêmero. Crie um **Blob store público** no mesmo projeto,
 mantenha `BLOB_READ_WRITE_TOKEN` somente nos ambientes da Vercel. Sua presença ativa o Blob

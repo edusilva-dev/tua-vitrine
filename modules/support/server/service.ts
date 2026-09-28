@@ -14,7 +14,7 @@ export async function sendSupportRequest(
   const values = supportRequestSchema.parse(input);
   const env = getEnv();
 
-  if (!env.SUPPORT_EMAIL || env.MAIL_TRANSPORT === "disabled")
+  if (!env.SUPPORT_EMAIL)
     throw new AppError(
       503,
       "SUPPORT_UNAVAILABLE",

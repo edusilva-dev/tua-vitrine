@@ -28,6 +28,6 @@ O arquivo prisma7.config.ts é reconhecido pela versão instalada; scripts passa
 
 Decisão original da fundação. A implementação de contas e os requisitos atuais substituem o bloqueio absoluto de staging/produção; consulte ADR 006 em [autenticação](authentication.md). O modo sem contas continua estritamente local.
 
-A versão sem autenticação só funciona quando `BETTER_AUTH_SECRET` está ausente e `APP_URL` aponta para localhost. O Compose vincula portas ao loopback. A Vercel exige autenticação configurada.
+O painel sempre usa autenticação. `DATABASE_URL` e `BETTER_AUTH_SECRET` são obrigatórios também no desenvolvimento. O Compose vincula o PostgreSQL ao loopback, e produção exige ainda Blob, Resend e Stripe completos.
 
 A mesma imagem deve ser promovida entre ambientes. A configuração privada é validada no runtime. `NEXT_PUBLIC_*` é congelado no build, portanto `APP_URL` permanece configuração de servidor.

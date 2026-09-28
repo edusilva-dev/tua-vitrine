@@ -18,6 +18,7 @@ integração. A aplicação roda diretamente com Bun.
 
 ~~~sh
 bun install --frozen-lockfile
+cp -n .env.example .env.local
 bun run db:up
 docker compose exec db createdb -U tuavitrine tuavitrine_test
 bun run db:generate
@@ -27,9 +28,9 @@ bun run db:seed
 bun run dev
 ~~~
 
-Abra http://localhost:3000. Se tuavitrine_test já existir, ignore o erro de criação. Nenhum arquivo
-`.env` é necessário para o fluxo local padrão. Use `.env.local` apenas para sobrescrever os defaults
-documentados em `.env.example`; arquivos reais são ignorados pelo Git.
+Antes de iniciar, substitua `BETTER_AUTH_SECRET` em `.env.local` por um segredo aleatório com pelo
+menos 32 caracteres. Abra http://localhost:3000. Se `tuavitrine_test` já existir, ignore o erro de
+criação. Arquivos reais de ambiente são ignorados pelo Git.
 
 ## Qualidade
 
