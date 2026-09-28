@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { isAllowedAdminRequest } from "@/lib/server/request-origin";
+import { getTrustedOrigins, isAllowedAdminRequest } from "@/lib/server/request-origin";
 
 describe("proteção de origem do painel", () => {
   test("permite navegação GET após retorno de um provedor externo", () => {
@@ -31,5 +31,35 @@ describe("proteção de origem do painel", () => {
         appUrl: "https://tua-vitrine.vercel.app",
       })
     ).toBe(true);
+  });
+
+  test("trata localhost e endereços de loopback como a mesma origem local", () => {
+    expect(getTrustedOrigins("http://localhost:3000")).toEqual([
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://[::1]:3000",
+    ]);
+
+    expect(
+      isAllowedAdminRequest({
+        mutation: true,
+        secFetchSite: "same-site",
+        origin: "http://127.0.0.1:3000",
+        appUrl: "http://localhost:3000",
+      })
+    ).toBe(true);
+  });
+
+  test("não amplia as origens confiáveis de uma URL pública", () => {
+    expect(getTrustedOrigins("https://app.fyweb.com.br")).toEqual(["https://app.fyweb.com.br"]);
+
+    expect(
+      isAllowedAdminRequest({
+        mutation: true,
+        secFetchSite: "same-site",
+        origin: "https://outro.fyweb.com.br",
+        appUrl: "https://app.fyweb.com.br",
+      })
+    ).toBe(false);
   });
 });

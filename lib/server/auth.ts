@@ -6,6 +6,7 @@ import { db } from "./db";
 import { getEnv } from "./env";
 import { logger } from "./logger";
 import { sendAccountEmail } from "./mail";
+import { getTrustedOrigins } from "./request-origin";
 
 function createAuth() {
   const env = getEnv();
@@ -18,7 +19,7 @@ function createAuth() {
     appName: "tua vitrine",
     baseURL: env.APP_URL,
     secret: env.BETTER_AUTH_SECRET,
-    trustedOrigins: [new URL(env.APP_URL).origin],
+    trustedOrigins: getTrustedOrigins(env.APP_URL),
     database: prismaAdapter(db, { provider: "postgresql", transaction: true }),
     emailAndPassword: {
       enabled: true,
