@@ -179,6 +179,7 @@ model ProductLike {
  product Product @relation(fields:[storeId,productId], references:[storeId,id])
  session AnonymousSession @relation(fields:[sessionId], references:[id], onDelete:Cascade)
  @@unique([storeId,productId,sessionId])
+ @@index([storeId,createdAt])
 }
 model Idempotency {
  id String @id @default(uuid()) @db.Uuid

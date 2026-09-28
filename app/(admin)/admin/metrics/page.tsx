@@ -4,12 +4,16 @@ import { MetricsOverview } from "@/modules/analytics/components/overview";
 import { getMetrics } from "@/modules/analytics/server/service";
 import { getCurrentStore } from "@/modules/stores/server/service";
 
-export default async function MetricsPage() {
+export default async function MetricsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string }>;
+}) {
   const store = await getCurrentStore();
 
   if (!store) redirect("/admin/onboarding");
 
-  const metrics = await getMetrics(await getAdminContext());
+  const metrics = await getMetrics(await getAdminContext(), await searchParams);
 
   return <MetricsOverview metrics={metrics} store={store} detailed />;
 }
