@@ -1,8 +1,9 @@
-import { ArrowRight, Eye, Heart, Package, ShoppingBag, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowRight, Eye, Heart, Package, ShoppingBag, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { MetricsDTO } from "@/modules/analytics/contracts";
 import type { StoreDTO } from "@/modules/stores/contracts";
+import { MetricsEvolutionChart } from "./metrics-evolution-chart";
 import { MetricsPeriodFilter } from "./metrics-period-filter";
 
 function formatPeriodDate(date: string): string {
@@ -51,10 +52,6 @@ export function MetricsOverview({
       detail: "Seu catálogo em um só lugar",
     },
   ];
-  const maximumTimelineValue = Math.max(
-    1,
-    ...metrics.timeline.flatMap((item) => [item.impressions, item.productViews])
-  );
   const freeHistory = metrics.period.metricsHistoryDays !== null;
 
   return (
@@ -122,58 +119,7 @@ export function MetricsOverview({
         ))}
       </section>
       {detailed && (
-        <section className="min-w-0 overflow-hidden rounded-xl border bg-card p-5 sm:p-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <TrendingUp size={18} className="text-primary" />
-                <h2 className="font-semibold">Evolução no período</h2>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {metrics.period.interval === "DAY"
-                  ? "Acompanhamento diário das visitas e visualizações."
-                  : "Acompanhamento mensal para períodos mais longos."}
-              </p>
-            </div>
-            <div className="flex gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full bg-primary" /> Visitas
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full bg-brand-sage" /> Produtos
-              </span>
-            </div>
-          </div>
-          <div className="mt-7 overflow-x-auto pb-2">
-            <div className="flex h-56 min-w-max items-end gap-2 border-b px-1">
-              {metrics.timeline.map((item) => (
-                <div key={item.key} className="flex w-12 shrink-0 flex-col items-center gap-2">
-                  <div
-                    className="flex h-44 w-full items-end justify-center gap-1"
-                    role="img"
-                    aria-label={`${item.label}: ${item.impressions} visitas e ${item.productViews} visualizações de produtos`}
-                  >
-                    <span
-                      className="w-3 rounded-t bg-primary"
-                      style={{
-                        height: `${Math.max(2, (item.impressions / maximumTimelineValue) * 100)}%`,
-                      }}
-                    />
-                    <span
-                      className="w-3 rounded-t bg-brand-sage"
-                      style={{
-                        height: `${Math.max(2, (item.productViews / maximumTimelineValue) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="whitespace-nowrap text-[10px] text-muted-foreground">
-                    {item.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <MetricsEvolutionChart timeline={metrics.timeline} interval={metrics.period.interval} />
       )}
       <div className="grid gap-6 lg:grid-cols-2">
         {[
