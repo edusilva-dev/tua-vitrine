@@ -2,7 +2,7 @@
 
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { useState } from "react";
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import {
   type ChartConfig,
@@ -92,16 +92,17 @@ export function MetricsEvolutionChart({
 
       <div className="mt-5 grid gap-2 sm:grid-cols-2">
         {metrics.map((metric) => {
-          const selected = activeMetric === metric.key;
+          const focused = activeMetric === metric.key;
+          const visible = activeMetric === "all" || focused;
 
           return (
             <Button
               key={metric.key}
               type="button"
               variant="outline"
-              aria-pressed={selected}
-              onClick={() => setActiveMetric(selected ? "all" : metric.key)}
-              className="h-auto min-w-0 justify-start px-4 py-3 text-left"
+              aria-pressed={visible}
+              onClick={() => setActiveMetric(focused ? "all" : metric.key)}
+              className="h-auto min-w-0 justify-start px-4 py-3 text-left aria-pressed:border-primary/40 aria-pressed:bg-muted"
             >
               <span className="min-w-0">
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -124,7 +125,13 @@ export function MetricsEvolutionChart({
       </div>
 
       <ChartContainer config={chartConfig} className="mt-6 h-72 w-full aspect-auto">
-        <LineChart data={timeline} margin={{ left: -14, right: 12, top: 8 }} accessibilityLayer>
+        <BarChart
+          data={timeline}
+          margin={{ left: -14, right: 12, top: 8 }}
+          barCategoryGap="24%"
+          barGap={4}
+          accessibilityLayer
+        >
           <CartesianGrid vertical={false} strokeDasharray="3 3" />
           <XAxis
             dataKey="label"
@@ -135,35 +142,30 @@ export function MetricsEvolutionChart({
           />
           <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={42} />
           <ChartTooltip
-            cursor={{ stroke: "var(--border)", strokeDasharray: "4 4" }}
+            cursor={{ fill: "var(--muted)", opacity: 0.65 }}
             content={
-              <ChartTooltipContent
-                indicator="line"
-                labelFormatter={(label) => `Período: ${String(label)}`}
-              />
+              <ChartTooltipContent labelFormatter={(label) => `Período: ${String(label)}`} />
             }
           />
           {(activeMetric === "all" || activeMetric === "impressions") && (
-            <Line
+            <Bar
               dataKey="impressions"
-              type="monotone"
-              stroke="var(--color-impressions)"
-              strokeWidth={2.5}
-              dot={{ r: 3, fill: "var(--color-impressions)" }}
-              activeDot={{ r: 6 }}
+              fill="var(--color-impressions)"
+              radius={[6, 6, 0, 0]}
+              maxBarSize={38}
+              activeBar={{ fillOpacity: 0.75 }}
             />
           )}
           {(activeMetric === "all" || activeMetric === "productViews") && (
-            <Line
+            <Bar
               dataKey="productViews"
-              type="monotone"
-              stroke="var(--color-productViews)"
-              strokeWidth={2.5}
-              dot={{ r: 3, fill: "var(--color-productViews)" }}
-              activeDot={{ r: 6 }}
+              fill="var(--color-productViews)"
+              radius={[6, 6, 0, 0]}
+              maxBarSize={38}
+              activeBar={{ fillOpacity: 0.75 }}
             />
           )}
-        </LineChart>
+        </BarChart>
       </ChartContainer>
     </section>
   );
