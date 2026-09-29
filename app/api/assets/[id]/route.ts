@@ -18,7 +18,9 @@ export async function GET(_request: Request, route: { params: Promise<{ id: stri
       headers: {
         "Content-Type": asset.mime,
         "Content-Length": String(asset.data.length),
-        "Cache-Control": "private, no-store",
+        "Cache-Control": asset.publiclyVisible
+          ? "public, max-age=3600, s-maxage=2592000, immutable"
+          : "private, no-store",
         "X-Content-Type-Options": "nosniff",
       },
     });

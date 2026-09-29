@@ -24,7 +24,10 @@ const schema = z.object({
   SUPPORT_EMAIL: optionalString(z.string().email()),
   RESEND_API_KEY: optionalString(z.string().startsWith("re_")),
   STORAGE_DIR: z.string().min(1).default("./work/storage"),
-  BLOB_READ_WRITE_TOKEN: optionalString(z.string().min(20)),
+  R2_ACCOUNT_ID: optionalString(z.string().regex(/^[a-f0-9]{32}$/)),
+  R2_ACCESS_KEY_ID: optionalString(z.string().min(16)),
+  R2_SECRET_ACCESS_KEY: optionalString(z.string().min(32)),
+  R2_BUCKET_NAME: optionalString(z.string().regex(/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/)),
   STRIPE_SECRET_KEY: optionalString(z.string().regex(/^[sr]k_(test|live)_/)),
   STRIPE_WEBHOOK_SECRET: optionalString(z.string().startsWith("whsec_")),
   STRIPE_PRICE_BASIC_MONTHLY: optionalString(z.string().startsWith("price_")),
@@ -48,7 +51,10 @@ export function parseEnv(input: Record<string, string | undefined>) {
   if (isProduction) {
     const missing = [
       ["APP_URL", input.APP_URL],
-      ["BLOB_READ_WRITE_TOKEN", env.BLOB_READ_WRITE_TOKEN],
+      ["R2_ACCOUNT_ID", env.R2_ACCOUNT_ID],
+      ["R2_ACCESS_KEY_ID", env.R2_ACCESS_KEY_ID],
+      ["R2_SECRET_ACCESS_KEY", env.R2_SECRET_ACCESS_KEY],
+      ["R2_BUCKET_NAME", env.R2_BUCKET_NAME],
       ["MAIL_FROM", input.MAIL_FROM],
       ["RESEND_API_KEY", env.RESEND_API_KEY],
       ["STRIPE_SECRET_KEY", env.STRIPE_SECRET_KEY],
@@ -78,16 +84,26 @@ export function parseEnv(input: Record<string, string | undefined>) {
     env.STRIPE_PRICE_PRO_MONTHLY,
   ];
   const configuredStripeValues = stripeValues.filter(Boolean).length;
+  const r2Values = [
+    env.R2_ACCOUNT_ID,
+    env.R2_ACCESS_KEY_ID,
+    env.R2_SECRET_ACCESS_KEY,
+    env.R2_BUCKET_NAME,
+  ];
+  const configuredR2Values = r2Values.filter(Boolean).length;
 
   if (configuredStripeValues > 0 && configuredStripeValues < stripeValues.length)
     throw new Error("Configure todas as quatro variáveis do Stripe juntas.");
+
+  if (configuredR2Values > 0 && configuredR2Values < r2Values.length)
+    throw new Error("Configure todas as quatro variáveis do R2 juntas.");
 
   return {
     ...env,
     DATABASE_POOL_MAX: env.DATABASE_POOL_MAX ?? (isVercel ? 1 : 10),
     AUTH_ENABLED: !authBypass,
     MAIL_TRANSPORT: env.RESEND_API_KEY ? ("resend" as const) : ("file" as const),
-    STORAGE_DRIVER: env.BLOB_READ_WRITE_TOKEN ? ("vercel-blob" as const) : ("local" as const),
+    STORAGE_DRIVER: configuredR2Values === r2Values.length ? ("r2" as const) : ("local" as const),
     BILLING_ENABLED: configuredStripeValues === stripeValues.length,
   };
 }

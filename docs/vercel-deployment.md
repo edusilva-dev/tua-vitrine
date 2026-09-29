@@ -44,7 +44,7 @@ Para produção:
 - `APP_URL=https://SEU-SUBDOMINIO.fyweb.com.br`;
 - `DATABASE_URL` pooled; a URL direta fica no ambiente que executa as migrações;
 - um `BETTER_AUTH_SECRET` aleatório com pelo menos 32 caracteres;
-- conecte um Blob store público e confirme `BLOB_READ_WRITE_TOKEN`.
+- crie um token R2 restrito ao bucket `tua-vitrine` e configure as quatro variáveis `R2_*`.
 
 Para previews, use um branch Neon separado quando houver dados reais. Omita `APP_URL` para que o
 endereço do deployment seja usado e nunca conecte previews ao banco de
@@ -57,16 +57,16 @@ O envio de e-mail é parte obrigatória do ambiente de produção. Configure `MA
 `RESEND_API_KEY`; a aplicação recusa a configuração antes de atender requisições se algum deles
 estiver ausente.
 
-O filesystem das funções da Vercel é efêmero. Crie um **Blob store público** no mesmo projeto,
-mantenha `BLOB_READ_WRITE_TOKEN` somente nos ambientes da Vercel. Sua presença ativa o Blob
-automaticamente. O app valida a imagem, converte para WebP e grava sob `stores/{storeId}/`; a URL retornada
-pelo Blob é persistida e entregue diretamente pelo CDN. A rota `/api/assets/[id]` permanece para
-arquivos locais e registros legados.
+O filesystem das funções da Vercel é efêmero. Configure `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY` e `R2_BUCKET_NAME` somente no servidor. A presença do conjunto completo ativa
+o R2 automaticamente. O app valida a imagem, converte para WebP e grava sob `stores/{storeId}/` no
+bucket privado. A rota `/api/assets/[id]` controla a leitura e permite que o CDN da Vercel armazene
+imagens pertencentes a vitrines ativas.
 
 O limite atual é 5 MB e o upload passa pela função para validar o conteúdo real com Sharp. Confirme o
 limite de corpo do plano antes do lançamento; se ele for menor, migre o fluxo para upload temporário
-direto e finalize a validação no servidor. URLs do store público continuam acessíveis para quem as
-conhece, comportamento adequado às fotos públicas da vitrine.
+direto e finalize a validação no servidor. As imagens publicadas continuam acessíveis pela rota
+estável da aplicação; objetos do bucket não ficam diretamente públicos.
 
 ## 4. Domínio e validação
 

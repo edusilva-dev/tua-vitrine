@@ -28,7 +28,9 @@ function isCandidate(value: unknown): value is Candidate {
     typeof candidate.storeId === "string" &&
     uuid.test(candidate.storeId) &&
     typeof candidate.storageKey === "string" &&
-    (/^[a-f0-9-]+\.webp$/.test(candidate.storageKey) || isVercelBlobReference(candidate.storageKey))
+    (/^[a-f0-9-]+\.webp$/.test(candidate.storageKey) ||
+      /^stores\/[a-f0-9-]+\/[a-f0-9-]+\.webp$/.test(candidate.storageKey) ||
+      isVercelBlobReference(candidate.storageKey))
   );
 }
 

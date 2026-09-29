@@ -1,7 +1,13 @@
 import "server-only";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { del, get, put } from "@vercel/blob";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+  S3ServiceException,
+} from "@aws-sdk/client-s3";
 import { getEnv } from "./env";
 
 export interface AssetStorage {
@@ -45,26 +51,95 @@ export const localStorageAdapter: AssetStorage = {
   },
 };
 
-export const vercelBlobStorageAdapter: AssetStorage = {
-  async put(key, data) {
-    const blob = await put(key, Buffer.from(data), {
-      access: "public",
-      addRandomSuffix: false,
-      cacheControlMaxAge: 60 * 60 * 24 * 30,
-      contentType: "image/webp",
-    });
+let r2Client: S3Client | undefined;
 
-    return blob.url;
+function r2Key(reference: string) {
+  if (!/^stores\/[a-f0-9-]+\/[a-f0-9-]+\.webp$/.test(reference)) {
+    throw new Error("Chave R2 inválida.");
+  }
+
+  return reference;
+}
+
+function getR2Client() {
+  if (r2Client) return r2Client;
+
+  const env = getEnv();
+
+  if (!env.R2_ACCOUNT_ID || !env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY) {
+    throw new Error("As credenciais do R2 não estão configuradas.");
+  }
+
+  r2Client = new S3Client({
+    region: "auto",
+    endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId: env.R2_ACCESS_KEY_ID,
+      secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+    },
+  });
+
+  return r2Client;
+}
+
+function getR2Bucket() {
+  const bucket = getEnv().R2_BUCKET_NAME;
+
+  if (!bucket) throw new Error("R2_BUCKET_NAME não está configurada.");
+
+  return bucket;
+}
+
+async function readLegacyBlob(reference: string) {
+  const response = await fetch(reference, { cache: "no-store" });
+
+  if (response.status === 404) return null;
+
+  if (!response.ok) throw new Error(`Falha ao ler imagem legada (${response.status}).`);
+
+  return Buffer.from(await response.arrayBuffer());
+}
+
+export const r2StorageAdapter: AssetStorage = {
+  async put(key, data) {
+    const objectKey = r2Key(key);
+
+    await getR2Client().send(
+      new PutObjectCommand({
+        Bucket: getR2Bucket(),
+        Key: objectKey,
+        Body: data,
+        ContentType: "image/webp",
+        CacheControl: "public, max-age=2592000, immutable",
+      })
+    );
+
+    return objectKey;
   },
   async get(reference) {
-    const result = await get(reference, { access: "public" });
+    if (isVercelBlobReference(reference)) return readLegacyBlob(reference);
 
-    if (result?.statusCode !== 200) return null;
+    try {
+      const result = await getR2Client().send(
+        new GetObjectCommand({ Bucket: getR2Bucket(), Key: r2Key(reference) })
+      );
 
-    return Buffer.from(await new Response(result.stream).arrayBuffer());
+      if (!result.Body) return null;
+
+      return Buffer.from(await result.Body.transformToByteArray());
+    } catch (error) {
+      if (error instanceof S3ServiceException && error.$metadata.httpStatusCode === 404)
+        return null;
+
+      throw error;
+    }
   },
   async remove(reference) {
-    await del(reference);
+    if (isVercelBlobReference(reference)) return;
+
+    await getR2Client().send(
+      new DeleteObjectCommand({ Bucket: getR2Bucket(), Key: r2Key(reference) })
+    );
   },
 };
 
@@ -73,7 +148,7 @@ export function getAssetStorage(): AssetStorage {
 
   if (driver === "local") return localStorageAdapter;
 
-  if (driver === "vercel-blob") return vercelBlobStorageAdapter;
+  if (driver === "r2") return r2StorageAdapter;
 
   throw new Error("O armazenamento de imagens está desabilitado.");
 }

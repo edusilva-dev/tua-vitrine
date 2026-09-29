@@ -12,7 +12,10 @@ const production = {
   VERCEL: "1",
   VERCEL_ENV: "production",
   APP_URL: "https://vitrine.example",
-  BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_test_token",
+  R2_ACCOUNT_ID: "181a7469c4086eff988a76d87857df70",
+  R2_ACCESS_KEY_ID: "test-r2-access-key",
+  R2_SECRET_ACCESS_KEY: "test-r2-secret-access-key-with-32-characters",
+  R2_BUCKET_NAME: "tua-vitrine",
   MAIL_FROM: "conta@vitrine.example",
   RESEND_API_KEY: "re_test_only",
   STRIPE_SECRET_KEY: "rk_test_example",
@@ -39,18 +42,21 @@ describe("configuração dos ambientes", () => {
     expect(env.BILLING_ENABLED).toBe(false);
   });
 
-  test("produção exige URL, Blob, Resend e Stripe completos", () => {
+  test("produção exige URL, R2, Resend e Stripe completos", () => {
     expect(parseEnv(production)).toMatchObject({
       AUTH_ENABLED: true,
       MAIL_TRANSPORT: "resend",
-      STORAGE_DRIVER: "vercel-blob",
+      STORAGE_DRIVER: "r2",
       BILLING_ENABLED: true,
       DATABASE_POOL_MAX: 1,
     });
 
     for (const name of [
       "APP_URL",
-      "BLOB_READ_WRITE_TOKEN",
+      "R2_ACCOUNT_ID",
+      "R2_ACCESS_KEY_ID",
+      "R2_SECRET_ACCESS_KEY",
+      "R2_BUCKET_NAME",
       "MAIL_FROM",
       "RESEND_API_KEY",
       "STRIPE_SECRET_KEY",
@@ -77,6 +83,12 @@ describe("configuração dos ambientes", () => {
   test("configuração parcial do Stripe é recusada em qualquer ambiente", () => {
     expect(() => parseEnv({ ...local, STRIPE_SECRET_KEY: "rk_test_example" })).toThrow(
       /quatro variáveis do Stripe/
+    );
+  });
+
+  test("configuração parcial do R2 é recusada em qualquer ambiente", () => {
+    expect(() => parseEnv({ ...local, R2_BUCKET_NAME: "tua-vitrine" })).toThrow(
+      /quatro variáveis do R2/
     );
   });
 

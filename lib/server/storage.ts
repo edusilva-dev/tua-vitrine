@@ -83,7 +83,9 @@ export async function saveAsset(context: StoreContext, file: File) {
   }
 }
 
-export async function readAsset(id: string): Promise<{ data: Buffer; mime: string } | null> {
+export async function readAsset(
+  id: string
+): Promise<{ data: Buffer; mime: string; publiclyVisible: boolean } | null> {
   const asset = await db.asset.findUnique({
     where: { id },
     include: { store: true, images: { where: { product: { archivedAt: null } }, take: 1 } },
@@ -106,5 +108,5 @@ export async function readAsset(id: string): Promise<{ data: Buffer; mime: strin
 
   const data = await getAssetStorage().get(asset.storageKey);
 
-  return data ? { data, mime: asset.mime } : null;
+  return data ? { data, mime: asset.mime, publiclyVisible } : null;
 }
