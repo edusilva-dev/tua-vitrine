@@ -156,5 +156,13 @@ export function getAssetStorageForReference(reference: string): AssetStorage {
 }
 
 export function assetUrl(asset: { id: string; storageKey: string }) {
+  if (isR2StorageReference(asset.storageKey)) {
+    const publicUrl = getEnv().R2_PUBLIC_URL;
+
+    if (!publicUrl) throw new Error("R2_PUBLIC_URL não está configurada.");
+
+    return `${publicUrl}/${asset.storageKey}`;
+  }
+
   return `/api/assets/${asset.id}`;
 }

@@ -16,6 +16,7 @@ const production = {
   R2_ACCESS_KEY_ID: "test-r2-access-key",
   R2_SECRET_ACCESS_KEY: "test-r2-secret-access-key-with-32-characters",
   R2_BUCKET_NAME: "tua-vitrine",
+  R2_PUBLIC_URL: "https://assets.vitrine.example",
   MAIL_FROM: "conta@vitrine.example",
   RESEND_API_KEY: "re_test_only",
   STRIPE_SECRET_KEY: "rk_test_example",
@@ -57,6 +58,7 @@ describe("configuração dos ambientes", () => {
       "R2_ACCESS_KEY_ID",
       "R2_SECRET_ACCESS_KEY",
       "R2_BUCKET_NAME",
+      "R2_PUBLIC_URL",
       "MAIL_FROM",
       "RESEND_API_KEY",
       "STRIPE_SECRET_KEY",
@@ -88,8 +90,15 @@ describe("configuração dos ambientes", () => {
 
   test("configuração parcial do R2 é recusada em qualquer ambiente", () => {
     expect(() => parseEnv({ ...local, R2_BUCKET_NAME: "tua-vitrine" })).toThrow(
-      /quatro variáveis do R2/
+      /cinco variáveis do R2/
     );
+  });
+
+  test("URL pública do R2 aceita somente uma origem HTTPS", () => {
+    expect(() => parseEnv({ ...production, R2_PUBLIC_URL: "http://assets.example" })).toThrow();
+    expect(() =>
+      parseEnv({ ...production, R2_PUBLIC_URL: "https://assets.example/pasta" })
+    ).toThrow(/somente uma origem/);
   });
 
   test("bypass dos testes não pode sair do banco local isolado", () => {

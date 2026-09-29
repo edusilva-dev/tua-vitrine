@@ -58,15 +58,14 @@ O envio de e-mail é parte obrigatória do ambiente de produção. Configure `MA
 estiver ausente.
 
 O filesystem das funções da Vercel é efêmero. Configure `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
-`R2_SECRET_ACCESS_KEY` e `R2_BUCKET_NAME` somente no servidor. A presença do conjunto completo ativa
-o R2 automaticamente. O app valida a imagem, converte para WebP e grava sob `stores/{storeId}/` no
-bucket privado. A rota `/api/assets/[id]` controla a leitura e permite que o CDN da Vercel armazene
-imagens pertencentes a vitrines ativas.
+`R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` e `R2_PUBLIC_URL` somente no servidor. A presença do conjunto
+completo ativa o R2 automaticamente. O app valida a imagem, converte para WebP e grava sob
+`stores/{storeId}/`; o navegador lê a imagem diretamente pela URL pública da Cloudflare.
 
 O limite atual é 5 MB e o upload passa pela função para validar o conteúdo real com Sharp. Confirme o
 limite de corpo do plano antes do lançamento; se ele for menor, migre o fluxo para upload temporário
-direto e finalize a validação no servidor. As imagens publicadas continuam acessíveis pela rota
-estável da aplicação; objetos do bucket não ficam diretamente públicos.
+direto e finalize a validação no servidor. Antes do lançamento, use um domínio customizado do R2 em
+vez do endereço `r2.dev`, que é destinado apenas a desenvolvimento.
 
 ## 4. Domínio e validação
 

@@ -1,18 +1,20 @@
 # Armazenamento de imagens
 
-Em desenvolvimento, o app grava fora de `public/`, em `./work/storage`. Quando as quatro variáveis
-`R2_*` estão presentes, usa o bucket privado Cloudflare R2 pela API compatível com S3. O banco guarda
+Em desenvolvimento, o app grava fora de `public/`, em `./work/storage`. Quando as cinco variáveis
+`R2_*` estão presentes, usa o Cloudflare R2 pela API compatível com S3. O banco guarda
 a chave do objeto; não armazena os bytes.
 
 ## Upload e entrega
 
 O app aceita JPEG, PNG e WebP de até 5 MB, valida o conteúdo com Sharp, converte para WebP e grava em
-`stores/{storeId}/{id}.webp`. O bucket permanece privado. A rota `/api/assets/[id]` verifica se a
-imagem pertence a uma vitrine ativa ou ao lojista autenticado antes de buscá-la no R2. Imagens
-públicas recebem cache no CDN da Vercel; rascunhos usam `private, no-store`.
+`stores/{storeId}/{id}.webp`. Assets do R2 são exibidos diretamente por `R2_PUBLIC_URL`, sem passar
+pela aplicação ou pelo otimizador de imagens do Next.js. A rota `/api/assets/[id]` atende somente o
+armazenamento local de desenvolvimento.
 
 As credenciais `R2_ACCESS_KEY_ID` e `R2_SECRET_ACCESS_KEY` ficam somente no servidor. Gere um token
-com permissão de leitura e escrita restrito ao bucket `tua-vitrine`.
+com permissão de leitura e escrita restrito ao bucket `tua-vitrine`. A URL `r2.dev` serve para testes;
+antes do lançamento, substitua `R2_PUBLIC_URL` por um domínio customizado conectado ao bucket para
+usar cache e controles de produção da Cloudflare.
 
 ## Limpeza
 

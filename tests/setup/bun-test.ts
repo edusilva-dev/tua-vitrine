@@ -20,6 +20,7 @@ delete process.env.R2_ACCOUNT_ID;
 delete process.env.R2_ACCESS_KEY_ID;
 delete process.env.R2_SECRET_ACCESS_KEY;
 delete process.env.R2_BUCKET_NAME;
+delete process.env.R2_PUBLIC_URL;
 delete process.env.STRIPE_SECRET_KEY;
 delete process.env.STRIPE_WEBHOOK_SECRET;
 delete process.env.STRIPE_PRICE_BASIC_MONTHLY;

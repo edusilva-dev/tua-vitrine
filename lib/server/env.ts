@@ -28,6 +28,7 @@ const schema = z.object({
   R2_ACCESS_KEY_ID: optionalString(z.string().min(16)),
   R2_SECRET_ACCESS_KEY: optionalString(z.string().min(32)),
   R2_BUCKET_NAME: optionalString(z.string().regex(/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/)),
+  R2_PUBLIC_URL: optionalString(z.string().url().startsWith("https://")),
   STRIPE_SECRET_KEY: optionalString(z.string().regex(/^[sr]k_(test|live)_/)),
   STRIPE_WEBHOOK_SECRET: optionalString(z.string().startsWith("whsec_")),
   STRIPE_PRICE_BASIC_MONTHLY: optionalString(z.string().startsWith("price_")),
@@ -55,6 +56,7 @@ export function parseEnv(input: Record<string, string | undefined>) {
       ["R2_ACCESS_KEY_ID", env.R2_ACCESS_KEY_ID],
       ["R2_SECRET_ACCESS_KEY", env.R2_SECRET_ACCESS_KEY],
       ["R2_BUCKET_NAME", env.R2_BUCKET_NAME],
+      ["R2_PUBLIC_URL", env.R2_PUBLIC_URL],
       ["MAIL_FROM", input.MAIL_FROM],
       ["RESEND_API_KEY", env.RESEND_API_KEY],
       ["STRIPE_SECRET_KEY", env.STRIPE_SECRET_KEY],
@@ -89,14 +91,28 @@ export function parseEnv(input: Record<string, string | undefined>) {
     env.R2_ACCESS_KEY_ID,
     env.R2_SECRET_ACCESS_KEY,
     env.R2_BUCKET_NAME,
+    env.R2_PUBLIC_URL,
   ];
   const configuredR2Values = r2Values.filter(Boolean).length;
 
   if (configuredStripeValues > 0 && configuredStripeValues < stripeValues.length)
     throw new Error("Configure todas as quatro variáveis do Stripe juntas.");
 
+  if (env.R2_PUBLIC_URL) {
+    const publicUrl = new URL(env.R2_PUBLIC_URL);
+
+    if (
+      publicUrl.username ||
+      publicUrl.password ||
+      publicUrl.pathname !== "/" ||
+      publicUrl.search ||
+      publicUrl.hash
+    )
+      throw new Error("R2_PUBLIC_URL deve conter somente uma origem HTTPS.");
+  }
+
   if (configuredR2Values > 0 && configuredR2Values < r2Values.length)
-    throw new Error("Configure todas as quatro variáveis do R2 juntas.");
+    throw new Error("Configure todas as cinco variáveis do R2 juntas.");
 
   return {
     ...env,
@@ -104,6 +120,7 @@ export function parseEnv(input: Record<string, string | undefined>) {
     AUTH_ENABLED: !authBypass,
     MAIL_TRANSPORT: env.RESEND_API_KEY ? ("resend" as const) : ("file" as const),
     STORAGE_DRIVER: configuredR2Values === r2Values.length ? ("r2" as const) : ("local" as const),
+    R2_PUBLIC_URL: env.R2_PUBLIC_URL?.replace(/\/$/, ""),
     BILLING_ENABLED: configuredStripeValues === stripeValues.length,
   };
 }

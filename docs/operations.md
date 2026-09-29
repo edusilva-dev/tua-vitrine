@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Aplicação | Bun no WSL | Vercel |
 | PostgreSQL | Compose em localhost:55432 | Neon |
-| Imagens | filesystem local automático | Cloudflare R2 privado |
+| Imagens | filesystem local automático | Cloudflare R2 público com URL direta |
 | E-mail | arquivo local | Resend |
 | Cobrança | desabilitada ou Stripe test | Stripe |
 
