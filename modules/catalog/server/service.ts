@@ -441,10 +441,29 @@ export async function saveProduct(
 }
 
 export async function archiveProduct(context: StoreContext, id: string): Promise<void> {
-  await getProduct(context, id);
-  await db.product.update({
-    where: { storeId_id: { storeId: context.storeId, id } },
-    data: { archivedAt: new Date(), available: false },
+  await archiveProducts(context, { productIds: [id] });
+}
+
+export async function archiveProducts(
+  context: StoreContext,
+  input: unknown
+): Promise<{ archived: number }> {
+  const { productIds } = z
+    .object({ productIds: z.array(z.string().uuid()).min(1).max(100) })
+    .parse(input);
+  const ids = [...new Set(productIds)];
+
+  return db.$transaction(async (tx) => {
+    const result = await tx.product.updateMany({
+      where: { storeId: context.storeId, id: { in: ids }, archivedAt: null },
+      data: { archivedAt: new Date(), available: false, published: false },
+    });
+
+    if (result.count !== ids.length) {
+      throw new AppError(404, "NOT_FOUND", "Um ou mais produtos não foram encontrados.");
+    }
+
+    return { archived: result.count };
   });
 }
 

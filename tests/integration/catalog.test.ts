@@ -5,6 +5,7 @@ import { getMetrics, recordEvent, setLike } from "@/modules/analytics/server/ser
 import type { ProductInput } from "@/modules/catalog/contracts";
 import {
   archiveProduct,
+  archiveProducts,
   getProduct,
   listCategories,
   listProductOptionFilters,
@@ -123,6 +124,23 @@ describe("Catálogo e isolamento real PostgreSQL", () => {
     await expect(archiveProduct({ storeId: otherStoreId }, product.id)).rejects.toThrow();
     expect(await listProductsByIds({ storeId: otherStoreId }, [product.id])).toEqual([]);
     expect((await getProduct({ storeId }, product.id)).name).toBe("Isolado");
+  });
+  test("arquiva produtos em lote de forma atômica e isolada por loja", async () => {
+    const first = await saveProduct({ storeId }, input("Lote um"));
+    const second = await saveProduct({ storeId }, input("Lote dois"));
+    const preserved = await saveProduct({ storeId }, input("Fora do lote"));
+    const foreign = await saveProduct({ storeId: otherStoreId }, input("Outra loja"));
+
+    expect(await archiveProducts({ storeId }, { productIds: [first.id, second.id] })).toEqual({
+      archived: 2,
+    });
+    expect(await listProductsByIds({ storeId }, [first.id, second.id])).toEqual([]);
+    expect((await getProduct({ storeId }, preserved.id)).name).toBe("Fora do lote");
+
+    await expect(
+      archiveProducts({ storeId }, { productIds: [preserved.id, foreign.id] })
+    ).rejects.toThrow("Um ou mais produtos não foram encontrados.");
+    expect((await getProduct({ storeId }, preserved.id)).name).toBe("Fora do lote");
   });
   test("ordena categorias e aplica a mesma sequência aos produtos", async () => {
     await saveProduct({ storeId }, { ...input("Camiseta"), categoryName: "Camisas" });

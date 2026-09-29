@@ -1,6 +1,6 @@
 import { assertAdminAccess, getAdminContext } from "@/lib/server/context";
 import { handle, jsonBody } from "@/lib/server/http";
-import { listProducts, saveProduct } from "@/modules/catalog/server/service";
+import { archiveProducts, listProducts, saveProduct } from "@/modules/catalog/server/service";
 
 export async function GET(request: Request) {
   return handle(async () => {
@@ -32,5 +32,15 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
+  });
+}
+
+export async function DELETE(request: Request) {
+  return handle(async () => {
+    await assertAdminAccess(true);
+
+    return Response.json({
+      data: await archiveProducts(await getAdminContext(), await jsonBody(request)),
+    });
   });
 }

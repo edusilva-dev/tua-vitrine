@@ -544,6 +544,8 @@ export function ProductManager({
   const [dirty, setDirty] = useState(false);
   const [discard, setDiscard] = useState(false);
   const [deleting, setDeleting] = useState<ProductDTO | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState(initialCategory || "all");
@@ -557,7 +559,19 @@ export function ProductManager({
 
     if (page > 1) params.set("page", String(page));
 
+    setSelectedIds(new Set());
     router.push(`/admin/products?${params.toString()}`);
+  }
+
+  function selectProduct(id: string, selected: boolean) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+
+      if (selected) next.add(id);
+      else next.delete(id);
+
+      return next;
+    });
   }
 
   async function removeProduct() {
@@ -568,6 +582,7 @@ export function ProductManager({
     try {
       await api(`/api/admin/products/${deleting.id}`, { method: "DELETE" });
       toast.success("Produto excluído.");
+      selectProduct(deleting.id, false);
       setDeleting(null);
       router.refresh();
     } catch (cause) {
@@ -577,8 +592,34 @@ export function ProductManager({
     }
   }
 
+  async function removeSelectedProducts() {
+    const productIds = [...selectedIds];
+
+    if (!productIds.length) return;
+
+    setBusy(true);
+
+    try {
+      const result = await api<{ archived: number }>("/api/admin/products", {
+        method: "DELETE",
+        body: JSON.stringify({ productIds }),
+      });
+
+      toast.success(
+        `${result.archived} ${result.archived === 1 ? "produto excluído" : "produtos excluídos"}.`
+      );
+      setSelectedIds(new Set());
+      setBulkDeleteOpen(false);
+      router.refresh();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Não foi possível excluir os produtos.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <div className="space-y-7">
+    <div className={`space-y-7 ${selectedIds.size ? "pb-36 sm:pb-24" : ""}`}>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">O QUE SUA LOJA TEM DE MELHOR</p>
@@ -646,7 +687,10 @@ export function ProductManager({
       {products.data.length ? (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {products.data.map((product) => (
-            <article key={product.id} className="group overflow-hidden rounded-xl border bg-card">
+            <article
+              key={product.id}
+              className={`group overflow-hidden rounded-xl border bg-card transition-shadow ${selectedIds.has(product.id) ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+            >
               <div className="relative aspect-[4/3] bg-brand-product-surface">
                 {product.images[0] ? (
                   <Image
@@ -672,6 +716,15 @@ export function ProductManager({
                       ? "Publicado"
                       : "Publicado · indisponível"}
                 </Badge>
+                <div
+                  className={`absolute right-3 top-3 z-10 grid size-9 place-items-center rounded-lg border bg-background/95 shadow-sm transition-opacity ${selectedIds.has(product.id) ? "opacity-100" : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"}`}
+                >
+                  <Checkbox
+                    checked={selectedIds.has(product.id)}
+                    onCheckedChange={(checked) => selectProduct(product.id, checked === true)}
+                    aria-label={`Selecionar ${product.name}`}
+                  />
+                </div>
               </div>
               <div className="p-5">
                 <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -762,6 +815,44 @@ export function ProductManager({
           </Button>
         </div>
       )}
+      {selectedIds.size > 0 && (
+        <div className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-2xl flex-wrap items-center gap-2 rounded-xl border bg-background/95 p-3 shadow-xl backdrop-blur sm:flex-nowrap">
+          <p className="mr-auto min-w-fit text-sm font-medium" aria-live="polite">
+            {selectedIds.size}{" "}
+            {selectedIds.size === 1 ? "produto selecionado" : "produtos selecionados"}
+          </p>
+          {products.data.some((product) => !selectedIds.has(product.id)) && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setSelectedIds((current) => {
+                  const next = new Set(current);
+
+                  for (const product of products.data) next.add(product.id);
+
+                  return next;
+                })
+              }
+            >
+              Selecionar página
+            </Button>
+          )}
+          <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+            Limpar
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => setBulkDeleteOpen(true)}
+          >
+            <Trash2 size={15} />
+            Excluir
+          </Button>
+        </div>
+      )}
       <Dialog
         open={editing !== undefined}
         onOpenChange={(open) => {
@@ -837,6 +928,35 @@ export function ProductManager({
             <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
             <Button variant="destructive" disabled={busy} onClick={() => void removeProduct()}>
               {busy && <Loader2 className="animate-spin" size={16} />}Excluir produto
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={bulkDeleteOpen}
+        onOpenChange={(open) => {
+          if (!busy) setBulkDeleteOpen(open);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Excluir {selectedIds.size} {selectedIds.size === 1 ? "produto" : "produtos"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Os produtos selecionados serão removidos da sua vitrine. Esta ação não pode ser
+              desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={busy}
+              onClick={() => void removeSelectedProducts()}
+            >
+              {busy && <Loader2 className="animate-spin" size={16} />}
+              {selectedIds.size === 1 ? "Excluir produto" : "Excluir produtos"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
