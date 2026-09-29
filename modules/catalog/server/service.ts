@@ -5,7 +5,8 @@ import { Prisma } from "@/generated/prisma/client";
 import type { StoreContext } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { AppError } from "@/lib/server/http";
-import { assetUrl } from "@/lib/server/storage-adapter";
+import { logger } from "@/lib/server/logger";
+import { assetUrl, getAssetStorageForReference } from "@/lib/server/storage-adapter";
 import { PLAN_CAPABILITIES } from "@/modules/billing/contracts";
 import { getEntitlements } from "@/modules/billing/server/entitlements";
 import { normalizeSlug } from "@/modules/stores/contracts";
@@ -452,19 +453,67 @@ export async function archiveProducts(
     .object({ productIds: z.array(z.string().uuid()).min(1).max(100) })
     .parse(input);
   const ids = [...new Set(productIds)];
-
-  return db.$transaction(async (tx) => {
-    const result = await tx.product.updateMany({
+  const result = await db.$transaction(async (tx) => {
+    const products = await tx.product.findMany({
       where: { storeId: context.storeId, id: { in: ids }, archivedAt: null },
-      data: { archivedAt: new Date(), available: false, published: false },
+      select: { id: true, images: { select: { assetId: true } } },
     });
 
-    if (result.count !== ids.length) {
+    if (products.length !== ids.length) {
       throw new AppError(404, "NOT_FOUND", "Um ou mais produtos não foram encontrados.");
     }
 
-    return { archived: result.count };
+    const assetIds = [
+      ...new Set(products.flatMap((product) => product.images.map(({ assetId }) => assetId))),
+    ];
+
+    await tx.productImage.deleteMany({
+      where: { storeId: context.storeId, productId: { in: ids } },
+    });
+    const archived = await tx.product.updateMany({
+      where: { storeId: context.storeId, id: { in: ids }, archivedAt: null },
+      data: { archivedAt: new Date(), available: false, published: false },
+    });
+    const protectedLogo = await tx.store.findUnique({
+      where: { id: context.storeId },
+      select: { logoAssetId: true },
+    });
+    const removableAssets = await tx.asset.findMany({
+      where: {
+        storeId: context.storeId,
+        id: {
+          in: assetIds.filter((assetId) => assetId !== protectedLogo?.logoAssetId),
+        },
+        images: { none: {} },
+        promotionBanners: { none: {} },
+      },
+      select: { id: true, storageKey: true },
+    });
+
+    if (removableAssets.length) {
+      await tx.asset.deleteMany({
+        where: { id: { in: removableAssets.map(({ id }) => id) } },
+      });
+    }
+
+    return { archived: archived.count, removableAssets };
   });
+  const removals = await Promise.allSettled(
+    result.removableAssets.map(({ storageKey }) =>
+      getAssetStorageForReference(storageKey).remove(storageKey)
+    )
+  );
+
+  removals.forEach((removal, index) => {
+    if (removal.status === "fulfilled") return;
+
+    logger.error(
+      { err: removal.reason, storageKey: result.removableAssets[index]?.storageKey },
+      "Falha ao remover imagem de produto excluído do storage."
+    );
+  });
+
+  return { archived: result.archived };
 }
 
 export async function selectPublishedProducts(

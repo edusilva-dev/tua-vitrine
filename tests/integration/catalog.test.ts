@@ -130,12 +130,43 @@ describe("Catálogo e isolamento real PostgreSQL", () => {
     const second = await saveProduct({ storeId }, input("Lote dois"));
     const preserved = await saveProduct({ storeId }, input("Fora do lote"));
     const foreign = await saveProduct({ storeId: otherStoreId }, input("Outra loja"));
+    const exclusiveAsset = await db.asset.create({
+      data: {
+        storeId,
+        storageKey: `${randomUUID()}.webp`,
+        mime: "image/webp",
+        bytes: 1,
+        width: 1,
+        height: 1,
+      },
+    });
+    const sharedAsset = await db.asset.create({
+      data: {
+        storeId,
+        storageKey: `${randomUUID()}.webp`,
+        mime: "image/webp",
+        bytes: 1,
+        width: 1,
+        height: 1,
+      },
+    });
+
+    await db.productImage.createMany({
+      data: [
+        { storeId, productId: first.id, assetId: exclusiveAsset.id, position: 0 },
+        { storeId, productId: second.id, assetId: sharedAsset.id, position: 0 },
+        { storeId, productId: preserved.id, assetId: sharedAsset.id, position: 0 },
+      ],
+    });
 
     expect(await archiveProducts({ storeId }, { productIds: [first.id, second.id] })).toEqual({
       archived: 2,
     });
     expect(await listProductsByIds({ storeId }, [first.id, second.id])).toEqual([]);
     expect((await getProduct({ storeId }, preserved.id)).name).toBe("Fora do lote");
+    expect(await db.asset.findUnique({ where: { id: exclusiveAsset.id } })).toBeNull();
+    expect(await db.asset.findUnique({ where: { id: sharedAsset.id } })).not.toBeNull();
+    expect(await db.productImage.count({ where: { productId: preserved.id } })).toBe(1);
 
     await expect(
       archiveProducts({ storeId }, { productIds: [preserved.id, foreign.id] })
