@@ -15,7 +15,7 @@
     "test:e2e": "bun --bun playwright test",
     "test:auth": "bun --bun playwright test --config playwright.auth.config.ts",
     "assets:cleanup": "bun --conditions=react-server scripts/cleanup-assets.ts",
-    "assets:migrate-r2": "bun --conditions=react-server scripts/migrate-assets-to-r2.ts",
+    "assets:check-r2": "bun --conditions=react-server scripts/check-r2.ts",
     "auth:cleanup": "bun --conditions=react-server scripts/cleanup-auth.ts",
     "store:assign-owner": "bun --conditions=react-server scripts/assign-store-owner.ts",
     "check": "bun run lint && bun run typecheck && bun run test",

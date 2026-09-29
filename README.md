@@ -9,7 +9,7 @@ pelo WhatsApp e assinaturas Stripe.
 - Next.js 16, React 19 e TypeScript strict
 - Prisma 7 e PostgreSQL
 - shadcn/ui
-- Vercel, Neon e Vercel Blob
+- Vercel, Neon e Cloudflare R2
 
 ## Desenvolvimento local
 
@@ -47,7 +47,7 @@ lint, TypeScript, testes, build e Playwright.
 
 ## Produção
 
-A produção oficial usa Vercel, Neon PostgreSQL, Vercel Blob, Resend e Stripe. Consulte:
+A produção oficial usa Vercel, Neon PostgreSQL, Cloudflare R2, Resend e Stripe. Consulte:
 
 - [Arquitetura](docs/architecture.md)
 - [Deploy na Vercel](docs/vercel-deployment.md)

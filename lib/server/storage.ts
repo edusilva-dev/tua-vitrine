@@ -5,7 +5,7 @@ import { getAdminContext, type StoreContext } from "./context";
 import { db } from "./db";
 import { getEnv } from "./env";
 import { AppError } from "./http";
-import { assetUrl, getAssetStorage } from "./storage-adapter";
+import { assetUrl, getAssetStorage, getAssetStorageForReference } from "./storage-adapter";
 
 export async function saveAsset(context: StoreContext, file: File) {
   if (
@@ -106,7 +106,7 @@ export async function readAsset(
     }
   }
 
-  const data = await getAssetStorage().get(asset.storageKey);
+  const data = await getAssetStorageForReference(asset.storageKey).get(asset.storageKey);
 
   return data ? { data, mime: asset.mime, publiclyVisible } : null;
 }

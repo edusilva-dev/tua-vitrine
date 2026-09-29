@@ -90,16 +90,6 @@ function getR2Bucket() {
   return bucket;
 }
 
-async function readLegacyBlob(reference: string) {
-  const response = await fetch(reference, { cache: "no-store" });
-
-  if (response.status === 404) return null;
-
-  if (!response.ok) throw new Error(`Falha ao ler imagem legada (${response.status}).`);
-
-  return Buffer.from(await response.arrayBuffer());
-}
-
 export const r2StorageAdapter: AssetStorage = {
   async put(key, data) {
     const objectKey = r2Key(key);
@@ -117,8 +107,6 @@ export const r2StorageAdapter: AssetStorage = {
     return objectKey;
   },
   async get(reference) {
-    if (isVercelBlobReference(reference)) return readLegacyBlob(reference);
-
     try {
       const result = await getR2Client().send(
         new GetObjectCommand({ Bucket: getR2Bucket(), Key: r2Key(reference) })
@@ -135,8 +123,6 @@ export const r2StorageAdapter: AssetStorage = {
     }
   },
   async remove(reference) {
-    if (isVercelBlobReference(reference)) return;
-
     await getR2Client().send(
       new DeleteObjectCommand({ Bucket: getR2Bucket(), Key: r2Key(reference) })
     );
@@ -153,16 +139,22 @@ export function getAssetStorage(): AssetStorage {
   throw new Error("O armazenamento de imagens está desabilitado.");
 }
 
-export function isVercelBlobReference(reference: string) {
-  try {
-    const url = new URL(reference);
+export function isLocalStorageReference(reference: string) {
+  return /^[a-f0-9-]+\.webp$/.test(reference);
+}
 
-    return url.protocol === "https:" && url.hostname.endsWith(".blob.vercel-storage.com");
-  } catch {
-    return false;
-  }
+export function isR2StorageReference(reference: string) {
+  return /^stores\/[a-f0-9-]+\/[a-f0-9-]+\.webp$/.test(reference);
+}
+
+export function getAssetStorageForReference(reference: string): AssetStorage {
+  if (isLocalStorageReference(reference)) return localStorageAdapter;
+
+  if (isR2StorageReference(reference)) return r2StorageAdapter;
+
+  throw new Error("Referência de imagem inválida.");
 }
 
 export function assetUrl(asset: { id: string; storageKey: string }) {
-  return isVercelBlobReference(asset.storageKey) ? asset.storageKey : `/api/assets/${asset.id}`;
+  return `/api/assets/${asset.id}`;
 }

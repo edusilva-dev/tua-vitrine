@@ -4,7 +4,11 @@ import { join } from "node:path";
 import { Prisma } from "@/generated/prisma/client";
 import { db } from "./db";
 import { getEnv } from "./env";
-import { type AssetStorage, getAssetStorage, isVercelBlobReference } from "./storage-adapter";
+import {
+  type AssetStorage,
+  getAssetStorageForReference,
+  isR2StorageReference,
+} from "./storage-adapter";
 
 type Candidate = { id: string; storeId: string; storageKey: string };
 type CleanupOptions = {
@@ -28,9 +32,7 @@ function isCandidate(value: unknown): value is Candidate {
     typeof candidate.storeId === "string" &&
     uuid.test(candidate.storeId) &&
     typeof candidate.storageKey === "string" &&
-    (/^[a-f0-9-]+\.webp$/.test(candidate.storageKey) ||
-      /^stores\/[a-f0-9-]+\/[a-f0-9-]+\.webp$/.test(candidate.storageKey) ||
-      isVercelBlobReference(candidate.storageKey))
+    (/^[a-f0-9-]+\.webp$/.test(candidate.storageKey) || isR2StorageReference(candidate.storageKey))
   );
 }
 
@@ -48,7 +50,6 @@ export async function cleanupAssets(options: CleanupOptions = {}) {
   }
 
   const cutoff = new Date(Date.now() - graceHours * 3600000);
-  const storage = options.storage ?? getAssetStorage();
   const directory = options.journalDirectory ?? join(getEnv().STORAGE_DIR, ".cleanup");
   const scope = options.storeId
     ? Prisma.sql`AND a."storeId" = ${options.storeId}::uuid`
@@ -74,6 +75,8 @@ export async function cleanupAssets(options: CleanupOptions = {}) {
   await mkdir(directory, { recursive: true });
 
   async function removeFile(candidate: Candidate, manifest: string) {
+    const storage = options.storage ?? getAssetStorageForReference(candidate.storageKey);
+
     await storage.remove(candidate.storageKey);
     await unlink(manifest).catch((error: unknown) => {
       if (error instanceof Error && "code" in error && error.code === "ENOENT") return;

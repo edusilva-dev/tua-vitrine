@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Aplicação | Bun no WSL | Vercel |
 | PostgreSQL | Compose em localhost:55432 | Neon |
-| Imagens | filesystem local automático | Vercel Blob quando o token está presente |
+| Imagens | filesystem local automático | Cloudflare R2 privado |
 | E-mail | arquivo local | Resend |
 | Cobrança | desabilitada ou Stripe test | Stripe |
 
@@ -26,11 +26,11 @@ vitrine pública, checkout e portal de cobrança. Consulte os logs da Vercel par
 
 ## Backup e restauração
 
-O Neon é a fonte do catálogo e o Vercel Blob é a fonte das imagens. A política de recuperação deve
+O Neon é a fonte do catálogo e o Cloudflare R2 é a fonte das imagens. A política de recuperação deve
 cobrir os dois serviços:
 
 1. confirme a retenção e o point-in-time restore do branch de produção no Neon;
-2. mantenha inventário dos objetos do Blob e uma rotina de exportação independente;
+2. mantenha inventário dos objetos do R2 e uma rotina de exportação independente;
 3. ensaie a restauração em um branch Neon e ambiente Vercel separados;
 4. valide contagens, variantes, campanhas e renderização das imagens antes de considerar o ensaio
    concluído.

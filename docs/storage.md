@@ -14,21 +14,6 @@ públicas recebem cache no CDN da Vercel; rascunhos usam `private, no-store`.
 As credenciais `R2_ACCESS_KEY_ID` e `R2_SECRET_ACCESS_KEY` ficam somente no servidor. Gere um token
 com permissão de leitura e escrita restrito ao bucket `tua-vitrine`.
 
-## Migração do Vercel Blob
-
-Referências antigas `*.blob.vercel-storage.com` continuam funcionando enquanto a migração não for
-executada. Com as variáveis do R2 configuradas no ambiente que acessa o banco de produção:
-
-~~~sh
-bun run assets:migrate-r2
-bun run assets:migrate-r2 --apply
-~~~
-
-O primeiro comando informa quantos registros serão migrados. `--apply` baixa cada imagem pública,
-envia ao R2 e só então troca a referência no banco. Falhas permanecem apontando para o Blob e podem
-ser repetidas com segurança. Depois de confirmar que não restam candidatos e validar a vitrine, o
-store antigo pode ser removido pelo painel da Vercel.
-
 ## Limpeza
 
 ~~~sh
