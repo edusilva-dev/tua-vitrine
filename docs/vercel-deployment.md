@@ -41,14 +41,24 @@ Variables**. Segredos devem ser marcados como sensíveis e nunca copiados para a
 
 Para produção:
 
-- `APP_URL=https://SEU-SUBDOMINIO.fyweb.com.br`;
+- `APP_URL=https://usetuavitrine.com.br`;
 - `DATABASE_URL` pooled; a URL direta fica no ambiente que executa as migrações;
 - um `BETTER_AUTH_SECRET` aleatório com pelo menos 32 caracteres;
 - crie um token R2 restrito ao bucket `tua-vitrine` e configure as quatro variáveis `R2_*`.
 
-Para previews, use um branch Neon separado quando houver dados reais. Omita `APP_URL` para que o
-endereço do deployment seja usado e nunca conecte previews ao banco de
-produção.
+Para previews comuns, use um branch Neon separado quando houver dados reais. Omita `APP_URL` para
+que o endereço do deployment seja usado e nunca conecte previews ao banco de produção.
+
+A branch `staging` é a exceção: ela possui o domínio estável
+`https://staging.usetuavitrine.com.br` e deve receber uma variável `APP_URL` limitada a essa branch:
+
+```sh
+vercel env add APP_URL preview --git-branch staging \
+  --value https://staging.usetuavitrine.com.br --force --no-sensitive --yes
+```
+
+Essa separação é necessária porque `APP_URL` define a origem confiável do Better Auth, os cookies e
+os links enviados por e-mail. Produção e staging não devem confiar automaticamente uma na outra.
 
 ## 3. E-mail e imagens
 
@@ -67,11 +77,19 @@ limite de corpo do plano antes do lançamento; se ele for menor, migre o fluxo p
 direto e finalize a validação no servidor. Antes do lançamento, use um domínio customizado do R2 em
 vez do endereço `r2.dev`, que é destinado apenas a desenvolvimento.
 
-## 4. Domínio e validação
+## 4. Domínios e validação
 
-Adicione o subdomínio escolhido em **Settings → Domains** e crie no DNS da `fyweb.com.br` o registro
-mostrado pela Vercel. Atualize `APP_URL` para a origem exata, sem caminho nem barra final. A troca de
-domínio exige novo deploy porque o Better Auth usa essa origem para cookies e links de e-mail.
+O projeto usa estes domínios:
+
+| Ambiente | Domínio | Vínculo |
+|---|---|---|
+| Produção | `usetuavitrine.com.br` | deployment de produção |
+| Staging | `staging.usetuavitrine.com.br` | branch Git `staging` |
+| Redirecionamento | `www.usetuavitrine.com.br` | `308` para o domínio raiz |
+
+Mantenha o domínio raiz como origem canônica. `APP_URL` deve conter somente a origem HTTPS, sem
+caminho nem barra final. Toda alteração dessa variável exige um novo deploy porque o Better Auth a
+usa nos cookies, na proteção de origem e nos links enviados por e-mail.
 
 Após o deploy:
 

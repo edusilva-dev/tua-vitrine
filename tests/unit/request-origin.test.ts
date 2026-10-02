@@ -51,14 +51,16 @@ describe("proteção de origem do painel", () => {
   });
 
   test("não amplia as origens confiáveis de uma URL pública", () => {
-    expect(getTrustedOrigins("https://app.fyweb.com.br")).toEqual(["https://app.fyweb.com.br"]);
+    expect(getTrustedOrigins("https://usetuavitrine.com.br")).toEqual([
+      "https://usetuavitrine.com.br",
+    ]);
 
     expect(
       isAllowedAdminRequest({
         mutation: true,
         secFetchSite: "same-site",
-        origin: "https://outro.fyweb.com.br",
-        appUrl: "https://app.fyweb.com.br",
+        origin: "https://staging.usetuavitrine.com.br",
+        appUrl: "https://usetuavitrine.com.br",
       })
     ).toBe(false);
   });
