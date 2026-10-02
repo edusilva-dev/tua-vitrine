@@ -130,4 +130,24 @@ test.describe("vitrine pública", () => {
       await db.$disconnect();
     }
   });
+
+  test("envia uma avaliação da vitrine sem dados pessoais", async ({ page }, testInfo) => {
+    const db = testDatabase();
+    const message = `Feedback da vitrine ${testInfo.project.name}`;
+
+    try {
+      await page.goto(`/${fixtures.firstSlug}`);
+      await page.getByRole("button", { name: "Avaliar experiência" }).click();
+      await page.getByRole("radio", { name: "Encontrei o que procurava", exact: true }).click();
+      await page.getByRole("radio", { name: "5 estrelas" }).click();
+      await page.getByLabel("Comentário opcional").fill(message);
+      await page.getByRole("button", { name: "Enviar opinião" }).click();
+
+      await expect(page.getByText("Obrigado! Sua opinião foi enviada para a loja.")).toBeVisible();
+      await expect.poll(() => db.feedback.count({ where: { message } })).toBe(1);
+    } finally {
+      await db.feedback.deleteMany({ where: { message } });
+      await db.$disconnect();
+    }
+  });
 });

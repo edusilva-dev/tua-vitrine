@@ -24,6 +24,18 @@ enum SubscriptionStatus {
  UNPAID
  PAUSED
 }
+enum FeedbackSource {
+ PLATFORM
+ STOREFRONT
+}
+enum FeedbackKind {
+ SUGGESTION
+ ISSUE
+ PRAISE
+ FOUND
+ NOT_FOUND
+ PROBLEM
+}
 model Store {
  id String @id @default(uuid()) @db.Uuid
  name String
@@ -49,6 +61,7 @@ model Store {
  members StoreMember[]
  subscription StoreSubscription?
  promotionCampaign PromotionCampaign?
+ feedbacks Feedback[]
 }
 model StoreSubscription {
  id String @id @default(uuid()) @db.Uuid
@@ -153,6 +166,7 @@ model AnonymousSession {
  expiresAt DateTime
  events MetricEvent[]
  likes ProductLike[]
+ feedbacks Feedback[]
 }
 model MetricEvent {
  id String @id @default(uuid()) @db.Uuid
@@ -235,6 +249,7 @@ model User {
  sessions Session[]
  accounts Account[]
  memberships StoreMember[]
+ feedbacks Feedback[]
 }
 
 model Session {
@@ -322,4 +337,22 @@ model PromotionCampaignProduct {
  product Product @relation(fields: [storeId, productId], references: [storeId, id], onDelete: Cascade)
  @@id([campaignId, productId])
  @@index([storeId, position])
+}
+
+model Feedback {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @db.Uuid
+ sessionId String? @db.Uuid
+ userId String?
+ source FeedbackSource
+ kind FeedbackKind
+ rating Int
+ message String?
+ context String
+ createdAt DateTime @default(now())
+ store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+ session AnonymousSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+ user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+ @@index([storeId, source, createdAt])
+ @@index([userId, createdAt])
 }

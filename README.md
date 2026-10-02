@@ -55,3 +55,4 @@ A produção oficial usa Vercel, Neon PostgreSQL, Cloudflare R2, Resend e Stripe
 - [Armazenamento](docs/storage.md)
 - [Autenticação](docs/authentication.md)
 - [Planos](docs/plans.md)
+- [Feedback](docs/feedback.md)

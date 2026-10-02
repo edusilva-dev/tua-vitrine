@@ -89,4 +89,4 @@ Comandos principais: `bun run dev`, `bun run db:deploy`, `bun run lint`, `bun ru
 
 Integração usa PostgreSQL real no banco isolado `tuavitrine_test`; nunca aponte testes/seed para produção. Migração de produção é separada do build.
 
-Referências: `docs/architecture.md`, `docs/plans.md`, `docs/authentication.md`, `docs/storage.md`, `docs/operations.md` e `docs/vercel-deployment.md`. Se código e documentação divergirem, confirme o comportamento nos testes e atualize a documentação junto com a correção.
+Referências: `docs/architecture.md`, `docs/plans.md`, `docs/authentication.md`, `docs/storage.md`, `docs/feedback.md`, `docs/operations.md` e `docs/vercel-deployment.md`. Se código e documentação divergirem, confirme o comportamento nos testes e atualize a documentação junto com a correção.

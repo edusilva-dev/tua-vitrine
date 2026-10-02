@@ -7,6 +7,7 @@ import {
   Heart,
   ListFilter,
   MessageCircle,
+  MessageSquareHeart,
   Search,
   ShoppingBag,
   Store,
@@ -39,6 +40,7 @@ import type {
 } from "@/modules/catalog/contracts";
 import { encodeVariantFilter } from "@/modules/catalog/contracts";
 import { productPrice } from "@/modules/catalog/pricing";
+import { StorefrontFeedbackDialog } from "@/modules/feedback/components/storefront-feedback-dialog";
 import type { PublicPromotionCampaignDTO } from "@/modules/promotions/contracts";
 import type { StoreDTO } from "@/modules/stores/contracts";
 import { type CartLine, lineKey } from "../selection";
@@ -567,6 +569,18 @@ export function Storefront({
                 ? "Toque no coração dos produtos que você gostar."
                 : "Experimente outra busca ou volte em breve."}
             </p>
+            {!favoritesOnly && !preview ? (
+              <StorefrontFeedbackDialog
+                slug={store.slug}
+                context="SEARCH_EMPTY"
+                initialKind="NOT_FOUND"
+                trigger={
+                  <Button variant="outline" size="sm" className="mt-5">
+                    Não encontrou? Conte para a loja
+                  </Button>
+                }
+              />
+            ) : null}
           </div>
         ) : null}
         <div
@@ -753,6 +767,18 @@ export function Storefront({
             <Check className="size-3" />
             Atendimento direto com {store.name}
           </span>
+          {!preview ? (
+            <StorefrontFeedbackDialog
+              slug={store.slug}
+              context="GENERAL"
+              trigger={
+                <Button variant="ghost" size="sm">
+                  <MessageSquareHeart />
+                  Avaliar experiência
+                </Button>
+              }
+            />
+          ) : null}
           {showFreeBranding ? (
             <span>
               Criado com{" "}
