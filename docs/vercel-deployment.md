@@ -17,6 +17,17 @@ No Dashboard da Stripe, cadastre um endpoint de webhook para cada modo usado pel
 https://usetuavitrine.com.br/api/webhooks/stripe
 ```
 
+Staging usa outro endpoint e outro `STRIPE_WEBHOOK_SECRET`, limitado à branch `staging`. Como os
+previews são protegidos pela Vercel, a URL deve incluir um segredo de **Protection Bypass for
+Automation** criado exclusivamente para a Stripe:
+
+```text
+https://staging.usetuavitrine.com.br/api/webhooks/stripe?x-vercel-protection-bypass=SEGREDO
+```
+
+Nunca reutilize o segredo de assinatura do webhook de produção em staging. Quando produção migrar
+para o modo live da Stripe, mantenha staging no modo de teste com preços e endpoint próprios.
+
 Assine os eventos `customer.subscription.*`, `checkout.session.completed`,
 `checkout.session.async_payment_succeeded`, `invoice.paid` e `invoice.payment_failed`. O valor de
 `STRIPE_WEBHOOK_SECRET` deve ser o segredo `whsec_...` desse endpoint no mesmo modo das chaves e dos

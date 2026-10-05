@@ -140,8 +140,11 @@ async function resolveStripeSubscription(
     if (session.subscription) return retrieveSubscription(stripe, session.subscription);
   }
 
-  if (billing.stripeSubscriptionId)
-    return stripe.subscriptions.retrieve(billing.stripeSubscriptionId);
+  if (billing.stripeSubscriptionId) {
+    const currentSubscription = await stripe.subscriptions.retrieve(billing.stripeSubscriptionId);
+
+    if (RECOVERABLE_STRIPE_STATUSES.has(currentSubscription.status)) return currentSubscription;
+  }
 
   const subscriptions = await stripe.subscriptions.list({
     customer: billing.stripeCustomerId,
@@ -187,6 +190,17 @@ export async function createCheckout(context: StoreContext, input: unknown) {
   assertBillingEnabled();
   const plan = paidBillingPlanSchema.parse(input);
   const billing = await ensureCustomer(context);
+  const stripe = getStripe();
+  const liveSubscription = await resolveStripeSubscription(stripe, billing);
+
+  if (liveSubscription) {
+    await synchronizeStripeSubscription(liveSubscription);
+    throw new AppError(
+      409,
+      "SUBSCRIPTION_EXISTS",
+      "Esta loja já possui uma assinatura. Use o portal para gerenciá-la."
+    );
+  }
 
   if (billing.status && ACTIVE_STATUSES.has(billing.status)) {
     throw new AppError(
@@ -196,16 +210,19 @@ export async function createCheckout(context: StoreContext, input: unknown) {
     );
   }
 
-  const stripe = getStripe();
   const appUrl = getEnv().APP_URL;
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    customer: billing.stripeCustomerId,
-    line_items: [{ price: getStripePriceIds()[plan], quantity: 1 }],
-    success_url: `${appUrl}/admin/billing?billing=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl}/#planos`,
-    integration_identifier: `tua_vitrine_${randomBytes(4).toString("hex")}`,
-  });
+  const checkoutWindow = Math.floor(Date.now() / (5 * 60 * 1000));
+  const session = await stripe.checkout.sessions.create(
+    {
+      mode: "subscription",
+      customer: billing.stripeCustomerId,
+      line_items: [{ price: getStripePriceIds()[plan], quantity: 1 }],
+      success_url: `${appUrl}/admin/billing?billing=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/#planos`,
+      integration_identifier: `tua_vitrine_${randomBytes(4).toString("hex")}`,
+    },
+    { idempotencyKey: `checkout-${context.storeId}-${plan}-${checkoutWindow}` }
+  );
 
   if (!session.url)
     throw new AppError(502, "STRIPE_SESSION", "O Stripe não retornou o endereço do checkout.");
