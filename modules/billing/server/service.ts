@@ -6,6 +6,7 @@ import type { StoreContext } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { getEnv } from "@/lib/server/env";
 import { AppError } from "@/lib/server/http";
+import { logger } from "@/lib/server/logger";
 import { assertBillingEnabled, getStripe, getStripePriceIds } from "@/lib/server/stripe";
 import {
   type BillingPlan,
@@ -16,6 +17,14 @@ import {
 import { getEntitlements } from "./entitlements";
 
 const ACTIVE_STATUSES = new Set(["ACTIVE", "TRIALING", "PAST_DUE", "UNPAID", "PAUSED"]);
+const RECOVERABLE_STRIPE_STATUSES = new Set([
+  "active",
+  "trialing",
+  "past_due",
+  "unpaid",
+  "paused",
+  "incomplete",
+]);
 
 function toDate(timestamp: number | null | undefined) {
   return timestamp ? new Date(timestamp * 1000) : null;
@@ -57,6 +66,94 @@ function subscriptionData(subscription: Stripe.Subscription) {
     trialEnd: toDate(subscription.trial_end),
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
   };
+}
+
+async function applyStripeSubscription(
+  tx: Prisma.TransactionClient,
+  subscription: Stripe.Subscription
+) {
+  const stripeCustomerId = customerId(subscription.customer);
+  const nextSubscription = subscriptionData(subscription);
+
+  await tx.storeSubscription.updateMany({
+    where: { stripeCustomerId },
+    data: nextSubscription,
+  });
+
+  const billing = await tx.storeSubscription.findUnique({
+    where: { stripeCustomerId },
+    select: { storeId: true },
+  });
+  const resetProfessionalFeatures =
+    nextSubscription.plan === "ESSENTIAL" &&
+    (nextSubscription.status === "ACTIVE" || nextSubscription.status === "TRIALING");
+  const resetToFree = ["CANCELED", "INCOMPLETE_EXPIRED"].includes(nextSubscription.status);
+
+  if (billing && (resetProfessionalFeatures || resetToFree)) {
+    await tx.store.update({
+      where: { id: billing.storeId },
+      data: {
+        template: "grid",
+        customization: { version: 1, tagline: "" },
+        ...(resetToFree ? { primaryColor: "#2563eb" } : {}),
+      },
+    });
+    await tx.promotionCampaign.deleteMany({ where: { storeId: billing.storeId } });
+  }
+
+  if (subscription.status === "trialing" || subscription.status === "active") {
+    await tx.storeSubscription.updateMany({
+      where: { stripeCustomerId, trialUsedAt: null },
+      data: { trialUsedAt: new Date() },
+    });
+  }
+}
+
+export async function synchronizeStripeSubscription(subscription: Stripe.Subscription) {
+  await db.$transaction((tx) => applyStripeSubscription(tx, subscription));
+}
+
+async function retrieveSubscription(
+  stripe: Stripe,
+  reference: string | Stripe.Subscription
+): Promise<Stripe.Subscription> {
+  return typeof reference === "string" ? stripe.subscriptions.retrieve(reference) : reference;
+}
+
+async function resolveStripeSubscription(
+  stripe: Stripe,
+  billing: { stripeCustomerId: string; stripeSubscriptionId: string | null },
+  checkoutSessionId?: string
+): Promise<Stripe.Subscription | null> {
+  if (checkoutSessionId) {
+    if (!checkoutSessionId.startsWith("cs_"))
+      throw new AppError(400, "INVALID_CHECKOUT_SESSION", "Sessão de checkout inválida.");
+
+    const session = await stripe.checkout.sessions.retrieve(checkoutSessionId, {
+      expand: ["subscription"],
+    });
+    const sessionCustomerId = session.customer ? customerId(session.customer) : null;
+
+    if (sessionCustomerId !== billing.stripeCustomerId)
+      throw new AppError(404, "CHECKOUT_NOT_FOUND", "Sessão de checkout não encontrada.");
+
+    if (session.subscription) return retrieveSubscription(stripe, session.subscription);
+  }
+
+  if (billing.stripeSubscriptionId)
+    return stripe.subscriptions.retrieve(billing.stripeSubscriptionId);
+
+  const subscriptions = await stripe.subscriptions.list({
+    customer: billing.stripeCustomerId,
+    status: "all",
+    limit: 10,
+  });
+
+  return (
+    subscriptions.data.find((subscription) =>
+      RECOVERABLE_STRIPE_STATUSES.has(subscription.status)
+    ) ?? null
+  );
 }
 
 async function ensureCustomer(context: StoreContext) {
@@ -105,7 +202,7 @@ export async function createCheckout(context: StoreContext, input: unknown) {
     mode: "subscription",
     customer: billing.stripeCustomerId,
     line_items: [{ price: getStripePriceIds()[plan], quantity: 1 }],
-    success_url: `${appUrl}/admin/billing?billing=success`,
+    success_url: `${appUrl}/admin/billing?billing=success&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/#planos`,
     integration_identifier: `tua_vitrine_${randomBytes(4).toString("hex")}`,
   });
@@ -288,7 +385,7 @@ export async function changePlan(context: StoreContext, input: unknown) {
   return { url: null };
 }
 
-export async function getBillingStatus(context: StoreContext) {
+export async function getBillingStatus(context: StoreContext, checkoutSessionId?: string) {
   let billing = await db.storeSubscription.findUnique({
     where: { storeId: context.storeId },
     select: {
@@ -297,25 +394,31 @@ export async function getBillingStatus(context: StoreContext) {
       currentPeriodEnd: true,
       trialEnd: true,
       cancelAtPeriodEnd: true,
+      stripeCustomerId: true,
       stripeSubscriptionId: true,
     },
   });
   const billingEnabled = getEnv().BILLING_ENABLED;
 
-  if (billingEnabled && billing?.stripeSubscriptionId) {
+  if (billingEnabled && billing) {
     try {
-      const liveSubscription = await getStripe().subscriptions.retrieve(
-        billing.stripeSubscriptionId
+      const liveSubscription = await resolveStripeSubscription(
+        getStripe(),
+        billing,
+        checkoutSessionId
       );
-      const liveData = subscriptionData(liveSubscription);
 
-      await db.storeSubscription.update({
-        where: { storeId: context.storeId },
-        data: liveData,
-      });
-      billing = { ...billing, ...liveData };
-    } catch {
-      // Webhooks remain the source of truth if Stripe is temporarily unavailable.
+      if (liveSubscription) {
+        const liveData = subscriptionData(liveSubscription);
+
+        await synchronizeStripeSubscription(liveSubscription);
+        billing = { ...billing, ...liveData };
+      }
+    } catch (error) {
+      logger.warn(
+        { err: error, storeId: context.storeId },
+        "Falha ao reconciliar assinatura com o Stripe."
+      );
     }
   }
 
@@ -400,44 +503,7 @@ export async function processStripeEvent(event: Stripe.Event) {
 
       if (!subscription) return;
 
-      const stripeCustomerId = customerId(subscription.customer);
-      const nextSubscription = subscriptionData(subscription);
-
-      await tx.storeSubscription.updateMany({
-        where: { stripeCustomerId },
-        data: nextSubscription,
-      });
-
-      const billing = await tx.storeSubscription.findUnique({
-        where: { stripeCustomerId },
-        select: { storeId: true },
-      });
-      const resetProfessionalFeatures =
-        nextSubscription.plan === "ESSENTIAL" &&
-        (nextSubscription.status === "ACTIVE" || nextSubscription.status === "TRIALING");
-      const resetToFree = ["CANCELED", "INCOMPLETE_EXPIRED"].includes(nextSubscription.status);
-
-      if (billing && (resetProfessionalFeatures || resetToFree)) {
-        await tx.store.update({
-          where: { id: billing.storeId },
-          data: {
-            template: "grid",
-            customization: { version: 1, tagline: "" },
-            ...(resetToFree ? { primaryColor: "#2563eb" } : {}),
-          },
-        });
-        await tx.promotionCampaign.deleteMany({ where: { storeId: billing.storeId } });
-      }
-
-      if (subscription.status === "trialing" || subscription.status === "active") {
-        await tx.storeSubscription.updateMany({
-          where: {
-            stripeCustomerId: customerId(subscription.customer),
-            trialUsedAt: null,
-          },
-          data: { trialUsedAt: new Date() },
-        });
-      }
+      await applyStripeSubscription(tx, subscription);
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return;

@@ -8,14 +8,16 @@ import { getCurrentStore } from "@/modules/stores/server/service";
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ billing?: string }>;
+  searchParams: Promise<{ billing?: string; session_id?: string }>;
 }) {
   const [store, params] = await Promise.all([getCurrentStore(), searchParams]);
 
   if (!store) redirect("/admin/onboarding");
 
-  const status = await getBillingStatus(await getAdminContext());
+  const checkoutSessionId = params.billing === "success" ? params.session_id : undefined;
+  const status = await getBillingStatus(await getAdminContext(), checkoutSessionId);
   const billingUpdated = params.billing === "success" || params.billing === "updated";
+  const billingConfirmed = params.billing !== "success" || status.canManage;
 
   return (
     <div className="space-y-6">
@@ -27,7 +29,7 @@ export default async function BillingPage({
           assinatura.
         </p>
       </div>
-      {billingUpdated ? (
+      {billingUpdated && billingConfirmed ? (
         <div
           role="status"
           className="flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950"
@@ -37,6 +39,20 @@ export default async function BillingPage({
             <p className="font-medium">Assinatura atualizada</p>
             <p className="mt-1 text-emerald-800">
               O Stripe confirmou a solicitação. A atualização do plano pode levar alguns segundos.
+            </p>
+          </div>
+        </div>
+      ) : billingUpdated ? (
+        <div
+          role="status"
+          className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950"
+        >
+          <CheckCircle2 className="mt-0.5 size-5 shrink-0" />
+          <div>
+            <p className="font-medium">Pagamento recebido, confirmação pendente</p>
+            <p className="mt-1 text-amber-800">
+              O Stripe concluiu o checkout, mas ainda não confirmou a assinatura. Atualize a página
+              em alguns instantes. Você não precisa pagar novamente.
             </p>
           </div>
         </div>

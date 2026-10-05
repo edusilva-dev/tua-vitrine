@@ -11,6 +11,22 @@ A produção só inicia com `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
 Os segredos devem ser variáveis Sensitive na Vercel. Prefira uma chave restrita com somente as
 permissões necessárias para Customers, Checkout Sessions, Billing Portal e Subscriptions.
 
+No Dashboard da Stripe, cadastre um endpoint de webhook para cada modo usado pelo ambiente:
+
+```text
+https://usetuavitrine.com.br/api/webhooks/stripe
+```
+
+Assine os eventos `customer.subscription.*`, `checkout.session.completed`,
+`checkout.session.async_payment_succeeded`, `invoice.paid` e `invoice.payment_failed`. O valor de
+`STRIPE_WEBHOOK_SECRET` deve ser o segredo `whsec_...` desse endpoint no mesmo modo das chaves e dos
+preços configurados. Enquanto produção usar dados de teste, o endpoint e o segredo também precisam
+pertencer ao modo de teste.
+
+O retorno do Checkout inclui o identificador da sessão e reconcilia a assinatura imediatamente.
+Isso evita manter a loja no plano Free quando a entrega do webhook atrasar, mas não substitui o
+webhook: renovações, cancelamentos e falhas de cobrança chegam de forma assíncrona.
+
 ## 1. Preparar o Neon
 
 No painel do Neon, copie duas conexões do mesmo banco e branch:
@@ -97,7 +113,9 @@ Após o deploy:
 2. crie e confirme uma conta real;
 3. valide login, logout e recuperação de senha;
 4. crie uma loja sem imagem e abra a vitrine pelo slug;
-5. confira nos logs que não há erros de conexão, autenticação ou envio de e-mail.
+5. conclua um Checkout e confirme que o plano muda sem liberar novamente o trial;
+6. confira na Stripe que a entrega do webhook recebeu `2xx`;
+7. confira nos logs que não há erros de conexão, autenticação, cobrança ou envio de e-mail.
 
 Se uma migração incompatível já tiver sido aplicada, fazer rollback apenas do deployment não desfaz o
 banco. Prefira migrações compatíveis com a versão anterior e só remova estruturas antigas numa etapa

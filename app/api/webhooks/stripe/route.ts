@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { handle } from "@/lib/server/http";
+import { logger } from "@/lib/server/logger";
 import { getStripe, getStripeWebhookSecret } from "@/lib/server/stripe";
 import { processStripeEvent } from "@/modules/billing/server/service";
 
@@ -20,11 +21,17 @@ export async function POST(request: Request) {
         signature,
         getStripeWebhookSecret()
       );
-    } catch {
+    } catch (error) {
+      logger.warn({ err: error }, "Webhook do Stripe rejeitado por assinatura inválida.");
+
       return Response.json({ error: "Invalid signature" }, { status: 400 });
     }
 
     await processStripeEvent(event);
+    logger.info(
+      { stripeEventId: event.id, stripeEventType: event.type },
+      "Webhook Stripe processado."
+    );
 
     return Response.json({ received: true });
   });

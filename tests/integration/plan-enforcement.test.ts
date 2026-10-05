@@ -3,7 +3,11 @@ import { randomUUID } from "node:crypto";
 import type Stripe from "stripe";
 import { db } from "@/lib/server/db";
 import { getEntitlements } from "@/modules/billing/server/entitlements";
-import { activateInternalTrial, processStripeEvent } from "@/modules/billing/server/service";
+import {
+  activateInternalTrial,
+  processStripeEvent,
+  synchronizeStripeSubscription,
+} from "@/modules/billing/server/service";
 import {
   listProducts,
   saveProduct,
@@ -233,6 +237,59 @@ test("Free ativa o trial sob demanda uma única vez", async () => {
     );
   } finally {
     await db.store.delete({ where: { id: freeStoreId } });
+  }
+});
+
+test("retorno do checkout reconcilia a assinatura e encerra a oferta de trial", async () => {
+  const checkoutStoreId = randomUUID();
+  const checkoutContext = { storeId: checkoutStoreId };
+  const stripeCustomerId = `cus_${checkoutStoreId}`;
+
+  await db.store.create({
+    data: {
+      id: checkoutStoreId,
+      name: "Checkout sem webhook",
+      slug: `checkout-${checkoutStoreId}`,
+      whatsapp: "+5511999999999",
+      status: "ACTIVE",
+      onboardingCompletedAt: new Date(),
+    },
+  });
+  await db.storeSubscription.create({
+    data: { storeId: checkoutStoreId, stripeCustomerId },
+  });
+
+  try {
+    await synchronizeStripeSubscription({
+      id: `sub_${checkoutStoreId}`,
+      customer: stripeCustomerId,
+      status: "active",
+      cancel_at_period_end: false,
+      trial_end: null,
+      items: {
+        data: [
+          {
+            current_period_end: Math.floor(Date.now() / 1000) + 86400,
+            price: { id: process.env.STRIPE_PRICE_BASIC_MONTHLY },
+          },
+        ],
+      },
+    } as unknown as Stripe.Subscription);
+
+    expect(
+      await db.storeSubscription.findUniqueOrThrow({ where: { storeId: checkoutStoreId } })
+    ).toMatchObject({
+      plan: "ESSENTIAL",
+      status: "ACTIVE",
+      stripeSubscriptionId: `sub_${checkoutStoreId}`,
+    });
+    expect(await getEntitlements(checkoutContext)).toMatchObject({
+      plan: "ESSENTIAL",
+      source: "SUBSCRIPTION",
+      trialAvailable: false,
+    });
+  } finally {
+    await db.store.delete({ where: { id: checkoutStoreId } });
   }
 });
 
