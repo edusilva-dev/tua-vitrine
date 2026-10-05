@@ -438,6 +438,38 @@ export async function getBillingStatus(context: StoreContext, checkoutSessionId?
 }
 
 export async function activateInternalTrial(context: StoreContext): Promise<void> {
+  if (getEnv().BILLING_ENABLED) {
+    const billing = await db.storeSubscription.findUnique({
+      where: { storeId: context.storeId },
+      select: {
+        status: true,
+        stripeCustomerId: true,
+        stripeSubscriptionId: true,
+        trialUsedAt: true,
+      },
+    });
+    const needsStripeValidation =
+      billing && !billing.trialUsedAt && (!billing.status || !ACTIVE_STATUSES.has(billing.status));
+
+    if (needsStripeValidation) {
+      try {
+        const liveSubscription = await resolveStripeSubscription(getStripe(), billing);
+
+        if (liveSubscription) await synchronizeStripeSubscription(liveSubscription);
+      } catch (error) {
+        logger.error(
+          { err: error, storeId: context.storeId },
+          "Falha ao validar assinatura antes de ativar o trial."
+        );
+        throw new AppError(
+          503,
+          "BILLING_UNAVAILABLE",
+          "Não foi possível validar sua assinatura. Tente novamente em instantes."
+        );
+      }
+    }
+  }
+
   await db.$transaction(async (tx) => {
     const store = await tx.store.findUnique({
       where: { id: context.storeId },

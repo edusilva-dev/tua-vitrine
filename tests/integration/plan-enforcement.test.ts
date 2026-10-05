@@ -288,6 +288,9 @@ test("retorno do checkout reconcilia a assinatura e encerra a oferta de trial", 
       source: "SUBSCRIPTION",
       trialAvailable: false,
     });
+    await expect(activateInternalTrial(checkoutContext)).rejects.toMatchObject({
+      code: "TRIAL_UNAVAILABLE",
+    });
   } finally {
     await db.store.delete({ where: { id: checkoutStoreId } });
   }
