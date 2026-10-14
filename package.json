@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "prepare": "husky",
     "dev": "bun --bun next dev --webpack --hostname 127.0.0.1",
     "build": "bunx prisma generate && bun --bun next build --webpack",
     "start": "bun --bun next start --hostname 127.0.0.1",
@@ -72,6 +73,7 @@
     "@typescript-eslint/parser": "8.70.1",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "10.11.0",
+    "husky": "9.1.7",
     "prisma": "7.10.0",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3"
