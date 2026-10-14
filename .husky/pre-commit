@@ -1,0 +1,3 @@
+DATABASE_URL="${DATABASE_URL:-postgresql://tuavitrine:tuavitrine_local@localhost:55432/tuavitrine_test}" bun run db:generate
+bun run lint
+bun run typecheck

@@ -4,10 +4,14 @@ O projeto usa PostgreSQL por meio de `pg` e `@prisma/adapter-pg`. O pacote `mysq
 lockfile não é usado pela aplicação: ele é instalado transitivamente pelo ecossistema Prisma e
 também aparece como integração opcional do Better Auth.
 
-O override de `mysql2` em `package.json` mantém essa dependência indireta em uma versão corrigida,
-mesmo sem existir banco ou serviço MySQL na arquitetura. O override de `deepmerge-ts` corrige outra
-dependência transitiva de configuração do Prisma. Ambos devem ser removidos quando as dependências
-diretas passarem a resolver versões igualmente seguras sem override.
+Os overrides em `package.json` mantêm dependências indiretas em versões corrigidas enquanto os
+pacotes de origem ainda permitem versões vulneráveis. `mysql2` e `deepmerge-ts` vêm do ecossistema
+Prisma e Better Auth; `@modelcontextprotocol/sdk` e `source-map-js` vêm das ferramentas de
+desenvolvimento; `uuid` vem do ExcelJS. Cada override deve ser removido quando a dependência direta
+passar a resolver uma versão igualmente segura sem intervenção.
 
-O CI executa `bun audit` logo após a instalação congelada. Uma atualização do lockfile só deve ser
-aceita quando auditoria, lint, TypeScript, testes e build continuarem passando.
+O CI executa `bun run audit` logo após a instalação congelada. A auditoria ignora apenas
+`GHSA-vfj7-8cjw-p6xm`, de `braces`, porque o registry ainda não oferece uma versão corrigida e o
+pacote chega exclusivamente pela CLI de desenvolvimento do shadcn. Remova a exceção assim que uma
+versão segura estiver disponível. Uma atualização do lockfile só deve ser aceita quando auditoria,
+lint, TypeScript, testes e build continuarem passando.
