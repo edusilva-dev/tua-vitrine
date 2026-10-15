@@ -23,6 +23,7 @@ describe("entitlements", () => {
       imagesPerProductLimit: 1,
       metricsHistoryDays: 7,
       canImportProducts: false,
+      canUseBasicCustomization: false,
       needsProductSelection: false,
     });
   });
@@ -47,6 +48,7 @@ describe("entitlements", () => {
       productLimit: 1000,
       imagesPerProductLimit: 5,
       canUsePromotionCampaign: true,
+      canUseBasicCustomization: true,
     });
   });
 
@@ -99,6 +101,7 @@ describe("entitlements", () => {
       source: "SUBSCRIPTION",
       productLimit: 50,
       canImportProducts: true,
+      canUseBasicCustomization: true,
     });
     expect(resolveEntitlements({ ...base, subscriptionStatus: "PAST_DUE" }, now)).toMatchObject({
       plan: "FREE",

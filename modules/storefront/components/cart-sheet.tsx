@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageCircle, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,12 +24,14 @@ export function CartSheet({
   cart,
   setCart,
   store,
+  themeStyle,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   cart: CartLine[];
   setCart: (cart: CartLine[]) => void;
   store: StoreDTO;
+  themeStyle?: CSSProperties;
 }) {
   const [products, setProducts] = useState<ProductDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,7 +138,10 @@ export function CartSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col sm:max-w-md">
+      <SheetContent
+        style={themeStyle}
+        className="flex w-full flex-col bg-background text-foreground sm:max-w-md"
+      >
         <SheetHeader className="border-b pb-5">
           <SheetTitle className="flex items-center gap-2 text-xl">
             <ShoppingBag className="size-5" />

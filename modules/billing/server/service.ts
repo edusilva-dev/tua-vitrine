@@ -9,6 +9,11 @@ import { AppError } from "@/lib/server/http";
 import { logger } from "@/lib/server/logger";
 import { assertBillingEnabled, getStripe, getStripePriceIds } from "@/lib/server/stripe";
 import {
+  DEFAULT_PRIMARY_COLOR,
+  resetAdvancedCustomization,
+  resetPaidCustomization,
+} from "@/modules/stores/appearance";
+import {
   type BillingPlan,
   billingPlanSchema,
   type PaidBillingPlan,
@@ -93,9 +98,22 @@ async function applyStripeSubscription(
     await tx.store.update({
       where: { id: billing.storeId },
       data: {
-        template: "grid",
-        customization: { version: 1, tagline: "" },
-        ...(resetToFree ? { primaryColor: "#2563eb" } : {}),
+        ...(resetToFree
+          ? {
+              primaryColor: DEFAULT_PRIMARY_COLOR,
+              template: "grid" as const,
+              customization: resetPaidCustomization(),
+            }
+          : {
+              customization: resetAdvancedCustomization(
+                (
+                  await tx.store.findUniqueOrThrow({
+                    where: { id: billing.storeId },
+                    select: { customization: true },
+                  })
+                ).customization
+              ),
+            }),
       },
     });
     await tx.promotionCampaign.deleteMany({ where: { storeId: billing.storeId } });
@@ -391,9 +409,9 @@ export async function changePlan(context: StoreContext, input: unknown) {
     db.store.update({
       where: { id: context.storeId },
       data: {
-        primaryColor: "#2563eb",
+        primaryColor: DEFAULT_PRIMARY_COLOR,
         template: "grid",
-        customization: { version: 1, tagline: "" },
+        customization: resetPaidCustomization(),
       },
     }),
     db.promotionCampaign.deleteMany({ where: { storeId: context.storeId } }),

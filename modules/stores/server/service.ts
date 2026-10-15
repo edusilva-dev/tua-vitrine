@@ -14,7 +14,11 @@ import { getEntitlements } from "@/modules/billing/server/entitlements";
 import "server-only";
 import { assetUrl } from "@/lib/server/storage-adapter";
 import {
-  customizationSchema,
+  normalizeCustomization,
+  resolveAppearance,
+  validateCustomizationContrast,
+} from "../appearance";
+import {
   type StoreDTO,
   storeCreationSchema,
   storeIdentitySchema,
@@ -23,23 +27,15 @@ import {
 } from "../contracts";
 import { storeRepository } from "./repository";
 
-const DEFAULT_PRIMARY_COLOR = "#2563eb";
-const DEFAULT_CUSTOMIZATION = { version: 1 as const, tagline: "" };
-
 export function effectiveStoreAppearance(store: Store, entitlements: Entitlements) {
-  const customization = customizationSchema.safeParse(store.customization);
-
-  return {
-    primaryColor: entitlements.canCustomizeColors ? store.primaryColor : DEFAULT_PRIMARY_COLOR,
-    template:
-      entitlements.canUseFullCustomization && store.template === "list"
-        ? ("list" as const)
-        : ("grid" as const),
-    customization:
-      entitlements.canUseFullCustomization && customization.success
-        ? customization.data
-        : DEFAULT_CUSTOMIZATION,
-  };
+  return resolveAppearance(
+    {
+      primaryColor: store.primaryColor,
+      template: store.template === "list" ? "list" : "grid",
+      customization: store.customization,
+    },
+    entitlements
+  );
 }
 
 export async function toStoreDTO(store: Store): Promise<StoreDTO> {
@@ -160,14 +156,13 @@ export async function saveWhatsapp(context: StoreContext, input: unknown): Promi
 export async function saveSettings(context: StoreContext, input: unknown): Promise<StoreDTO> {
   const values = storeSettingsSchema.parse(input);
   const entitlements = await getEntitlements(context);
+  const customization = normalizeCustomization(values.customization);
+
+  if (entitlements.canUseFullCustomization) validateCustomizationContrast(customization);
 
   const settings = {
     ...values,
-    primaryColor: entitlements.canCustomizeColors ? values.primaryColor : DEFAULT_PRIMARY_COLOR,
-    template: entitlements.canUseFullCustomization ? values.template : "grid",
-    customization: entitlements.canUseFullCustomization
-      ? values.customization
-      : DEFAULT_CUSTOMIZATION,
+    ...resolveAppearance({ ...values, customization }, entitlements),
   };
 
   if (

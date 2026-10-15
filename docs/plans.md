@@ -8,7 +8,7 @@ Uma conta autenticada possui uma loja, uma vitrine pública e uma assinatura. O 
 | Produtos publicados | 10 | 50 | até 1.000 por uso justo |
 | Importação Excel | não | sim | sim |
 | Métricas | últimos 7 dias | histórico | histórico |
-| Personalização | logo | logo e cores | completa e campanha |
+| Personalização | logo e aparência padrão | logo, cor, frase e galeria/lista | todos os recursos anteriores, fundo, texto, fontes, cards e campanha |
 | Marca Tua Vitrine | sim | não | não |
 
 O primeiro produto ativa a loja e inicia 14 dias de Profissional sem cartão. Ao terminar o trial ou perder uma assinatura ativa, nenhum dado é apagado. Quando o catálogo excede o novo limite, o lojista escolhe quais produtos permanecem publicados; os demais ficam salvos como rascunho.
@@ -18,3 +18,13 @@ O campo available indica se um produto publicado pode ser comprado. O campo publ
 A importação aceita arquivos .xlsx de até 5 MB e 500 linhas, usando o modelo baixado no painel. Nome, descrição, preço, categoria e disponibilidade são aceitos; imagens e variantes são ajustadas depois. Linhas válidas entram como rascunho e erros podem ser baixados em CSV.
 
 O Profissional permite uma campanha ativa com título, descrição, banner, chamada e produtos selecionados. O banner filtra esses produtos dentro da vitrine existente.
+
+Na tela Minha vitrine, a edição é um único rascunho: logo, cor, frase e modelo ficam nos controles
+básicos; o Profissional pode abrir Ajustes avançados para escolher fundo, texto, uma combinação de
+fontes e o arredondamento dos cards. A prévia ilustrativa acompanha o rascunho localmente e não
+registra métricas, carrinho, favoritos ou WhatsApp. A prévia completa continua mostrando somente a
+aparência já salva.
+
+Ao passar de Profissional para Essencial, cor, frase e modelo permanecem e apenas os ajustes
+avançados são redefinidos. Ao passar para Free, a aparência paga volta aos padrões; logo, nome,
+WhatsApp, catálogo e categorias são preservados.

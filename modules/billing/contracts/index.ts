@@ -28,6 +28,7 @@ export const entitlementsSchema = z.object({
   metricsHistoryDays: z.number().int().positive().nullable(),
   canImportProducts: z.boolean(),
   canCustomizeColors: z.boolean(),
+  canUseBasicCustomization: z.boolean(),
   canUseFullCustomization: z.boolean(),
   canUsePromotionCampaign: z.boolean(),
 });
@@ -41,6 +42,7 @@ export const PLAN_CAPABILITIES = {
     metricsHistoryDays: 7,
     canImportProducts: false,
     canCustomizeColors: false,
+    canUseBasicCustomization: false,
     canUseFullCustomization: false,
     canUsePromotionCampaign: false,
   },
@@ -50,6 +52,7 @@ export const PLAN_CAPABILITIES = {
     metricsHistoryDays: null,
     canImportProducts: true,
     canCustomizeColors: true,
+    canUseBasicCustomization: true,
     canUseFullCustomization: false,
     canUsePromotionCampaign: false,
   },
@@ -59,6 +62,7 @@ export const PLAN_CAPABILITIES = {
     metricsHistoryDays: null,
     canImportProducts: true,
     canCustomizeColors: true,
+    canUseBasicCustomization: true,
     canUseFullCustomization: true,
     canUsePromotionCampaign: true,
   },
@@ -70,6 +74,7 @@ export const PLAN_CAPABILITIES = {
     metricsHistoryDays: number | null;
     canImportProducts: boolean;
     canCustomizeColors: boolean;
+    canUseBasicCustomization: boolean;
     canUseFullCustomization: boolean;
     canUsePromotionCampaign: boolean;
   }

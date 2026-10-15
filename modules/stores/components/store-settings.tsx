@@ -14,9 +14,10 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { type CSSProperties, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,7 @@ import { api } from "@/lib/client/http";
 import { cn } from "@/lib/utils";
 import type { Entitlements } from "@/modules/billing/contracts";
 import type { AssetDTO, CategoryDTO } from "@/modules/catalog/contracts";
+import { resolveAppearance, resolveStorefrontTokens } from "@/modules/stores/appearance";
 import {
   type StoreDTO,
   type StoreSettingsInput,
@@ -48,7 +50,7 @@ export function StoreSettings({
   const [qr, setQr] = useState("");
   const [categoryOrder, setCategoryOrder] = useState(categories);
   const [savingOrder, setSavingOrder] = useState(false);
-  const form = useForm<StoreSettingsInput>({
+  const form = useForm<z.input<typeof storeSettingsSchema>, unknown, StoreSettingsInput>({
     resolver: zodResolver(storeSettingsSchema),
     defaultValues: {
       name: store.name,
@@ -63,13 +65,27 @@ export function StoreSettings({
   const template = form.watch("template");
   const catalogGrouping = form.watch("catalogGrouping");
   const color = form.watch("primaryColor");
+  const draft = form.watch();
+  const previewTheme = resolveStorefrontTokens(resolveAppearance(draft, entitlements));
   const whatsappField = form.register("whatsapp");
 
   async function save(values: StoreSettingsInput) {
     setError("");
 
     try {
-      await api("/api/admin/store", { method: "PATCH", body: JSON.stringify(values) });
+      const saved = await api<StoreDTO>("/api/admin/store", {
+        method: "PATCH",
+        body: JSON.stringify(values),
+      });
+
+      form.reset({
+        ...values,
+        primaryColor: saved.primaryColor,
+        template: saved.template,
+        customization: saved.customization,
+        logoAssetId: saved.logo?.id ?? null,
+      });
+      setLogo(saved.logo);
       toast.success("Sua vitrine ganhou um novo visual.");
       router.refresh();
     } catch (cause) {
@@ -225,7 +241,7 @@ export function StoreSettings({
                   id="settings-tagline"
                   className="mt-2"
                   placeholder="Feito com carinho, escolhido para você."
-                  disabled={!entitlements.canUseFullCustomization}
+                  disabled={!entitlements.canUseBasicCustomization}
                   maxLength={160}
                   {...form.register("customization.tagline")}
                 />
@@ -309,7 +325,7 @@ export function StoreSettings({
                 <button
                   key={value}
                   type="button"
-                  disabled={!entitlements.canUseFullCustomization}
+                  disabled={!entitlements.canUseBasicCustomization}
                   aria-pressed={template === value}
                   onClick={() => form.setValue("template", value, { shouldDirty: true })}
                   className={cn(
@@ -327,6 +343,72 @@ export function StoreSettings({
                 </button>
               ))}
             </fieldset>
+            {entitlements.canUseFullCustomization ? (
+              <details className="mt-6 rounded-xl border bg-muted/30 p-4">
+                <summary className="cursor-pointer font-semibold">Ajustes avançados</summary>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Ajuste fundo, texto, fonte e arredondamento dos cards. O painel não muda.
+                </p>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="background-color">Cor de fundo</Label>
+                    <Input
+                      id="background-color"
+                      type="color"
+                      value={draft.customization.backgroundColor ?? "#f7f7f2"}
+                      onChange={(event) =>
+                        form.setValue("customization.backgroundColor", event.target.value, {
+                          shouldDirty: true,
+                        })
+                      }
+                      className="mt-2 h-10 w-full"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="text-color">Cor do texto</Label>
+                    <Input
+                      id="text-color"
+                      type="color"
+                      value={draft.customization.textColor ?? "#233c37"}
+                      onChange={(event) =>
+                        form.setValue("customization.textColor", event.target.value, {
+                          shouldDirty: true,
+                        })
+                      }
+                      className="mt-2 h-10 w-full"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="font-preset">Fonte</Label>
+                    <select
+                      id="font-preset"
+                      className="mt-2 h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      {...form.register("customization.fontPreset")}
+                    >
+                      <option value="brand">Marca (Montserrat + Inter)</option>
+                      <option value="simple">Simples (Inter)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="card-roundness">Arredondamento dos cards</Label>
+                    <select
+                      id="card-roundness"
+                      className="mt-2 h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      {...form.register("customization.cardRoundness")}
+                    >
+                      <option value="default">Atual</option>
+                      <option value="subtle">Discreto</option>
+                      <option value="square">Reto</option>
+                    </select>
+                  </div>
+                </div>
+              </details>
+            ) : (
+              <p className="mt-6 rounded-xl bg-muted/50 p-4 text-xs text-muted-foreground">
+                Ajustes avançados de fundo, texto, fontes e cards estão disponíveis no plano
+                Profissional.
+              </p>
+            )}
             <fieldset
               aria-label="Organização por categoria"
               className="mt-6 grid gap-3 sm:grid-cols-2"
@@ -438,6 +520,35 @@ export function StoreSettings({
           </Button>
         </form>
         <aside className="min-w-0 space-y-5">
+          <section
+            style={previewTheme.style as CSSProperties}
+            className={`${previewTheme.fontClass} overflow-hidden rounded-xl border bg-background p-4 text-foreground`}
+            aria-label="Prévia ilustrativa da vitrine"
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
+              Prévia ilustrativa
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <span className="grid size-8 place-items-center rounded-lg bg-primary text-xs text-primary-foreground">
+                {store.name.slice(0, 1)}
+              </span>
+              <span className="font-heading text-sm font-semibold">{draft.name}</span>
+            </div>
+            <p className="mt-4 font-heading text-lg font-semibold">
+              {draft.customization.tagline || "Encontre seu próximo favorito."}
+            </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {["Produto exemplo", "Mais um favorito"].map((name) => (
+                <div
+                  key={name}
+                  className="rounded-[var(--store-card-radius)] border bg-card p-3 text-xs"
+                >
+                  <div className="mb-2 h-12 rounded-md bg-primary/10" />
+                  <span className="font-semibold">{name}</span>
+                </div>
+              ))}
+            </div>
+          </section>
           <section className="rounded-xl border bg-card p-6">
             <span className="mb-4 inline-flex rounded-lg bg-brand-settings p-2 text-primary">
               <LinkIcon size={20} />

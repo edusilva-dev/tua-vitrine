@@ -170,7 +170,14 @@ test("Free bloqueia cor e campanha, e Profissional libera campanha", async () =>
     template: "list",
     catalogGrouping: "continuous",
     logoAssetId: null,
-    customization: { version: 1, tagline: "Profissional" },
+    customization: {
+      version: 1,
+      tagline: "Profissional",
+      backgroundColor: "#101010",
+      textColor: "#ffffff",
+      fontPreset: "simple",
+      cardRoundness: "square",
+    },
   });
   await processStripeEvent({
     id: `evt_${randomUUID()}`,
@@ -196,8 +203,15 @@ test("Free bloqueia cor e campanha, e Profissional libera campanha", async () =>
 
   expect(await db.store.findUniqueOrThrow({ where: { id: storeId } })).toMatchObject({
     primaryColor: "#ff0000",
-    template: "grid",
-    customization: { version: 1, tagline: "" },
+    template: "list",
+    customization: {
+      version: 1,
+      tagline: "Profissional",
+      backgroundColor: null,
+      textColor: null,
+      fontPreset: "brand",
+      cardRoundness: "default",
+    },
   });
   expect(await getPublicPromotionCampaign(context)).toBeNull();
 });

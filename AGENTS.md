@@ -72,9 +72,9 @@ Estado: banco para dados do negócio; React Hook Form para rascunhos; React para
 ## Invariantes do domínio
 
 - Better Auth controla senha (6–128 caracteres), confirmação, recuperação e sessão. `StoreMember` autoriza; cookies apenas selecionam uma loja já autorizada.
-- Free: 10 produtos, 1 imagem/produto, métricas de 7 dias, somente logo, sem importação.
-- Essencial: 50 produtos, importação, histórico, logo e cores.
-- Profissional: até 1.000 produtos, personalização completa e campanha.
+- Free: 10 produtos, 1 imagem/produto, métricas de 7 dias, logo e aparência padrão, sem importação.
+- Essencial: 50 produtos, importação, histórico, logo, cores, frase e galeria/lista.
+- Profissional: até 1.000 produtos, personalização avançada completa e campanha.
 - Permissões de plano são impostas no servidor. Trial Profissional dura 14 dias; entrada pelo Free não o inicia. Downgrade aplica limites e o reset de personalização existente.
 - `available` controla compra; `published` controla vitrine/limite; `archivedAt` representa exclusão.
 - Ao excluir produto, preserve registro/métricas, remova relações de imagem e apague do storage somente assets sem outro uso. Proteja logo, banner e imagens compartilhadas.

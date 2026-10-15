@@ -1,7 +1,7 @@
 "use client";
 
 import { Heart, MessageCircle, ShoppingBag } from "lucide-react";
-import { useState } from "react";
+import { type CSSProperties, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +36,7 @@ export function ProductDetail({
   onLike,
   onAdd,
   onClose,
+  themeStyle,
 }: {
   product: ProductDTO;
   store: StoreDTO;
@@ -44,6 +45,7 @@ export function ProductDetail({
   onLike: () => void;
   onAdd: (line: CartLine) => void;
   onClose: () => void;
+  themeStyle?: CSSProperties;
 }) {
   const [variantId, setVariantId] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -60,7 +62,10 @@ export function ProductDetail({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-hidden p-0 sm:max-w-4xl">
+      <DialogContent
+        style={themeStyle}
+        className="max-h-[calc(100dvh-1rem)] overflow-hidden bg-background p-0 text-foreground sm:max-w-4xl"
+      >
         <div className="max-h-[calc(100dvh-1rem)] overflow-y-auto sm:grid sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:overflow-hidden">
           <div className="bg-muted/25 p-5 sm:overflow-y-auto sm:p-6">
             <ProductImage

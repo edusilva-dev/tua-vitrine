@@ -43,11 +43,11 @@ const planDetails: Record<BillingPlan, { description: string; features: string[]
   },
   ESSENTIAL: {
     description: "Para lojas que precisam ganhar tempo e acompanhar resultados.",
-    features: ["Até 50 produtos", "Importação por planilha", "Cores, logo e métricas completas"],
+    features: ["Até 50 produtos", "Importação por planilha", "Logo, cores, frase e galeria/lista"],
   },
   PROFESSIONAL: {
     description: "Para catálogos maiores e campanhas promocionais.",
-    features: ["Até 1.000 produtos", "Personalização completa", "Campanhas promocionais"],
+    features: ["Até 1.000 produtos", "Ajustes avançados de aparência", "Campanhas promocionais"],
   },
 };
 
@@ -308,8 +308,8 @@ export function BillingPanel({ status }: { status: BillingStatus }) {
           </AlertDialogHeader>
           <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
             <p>
-              <strong>Profissional para Essencial:</strong> modelo da vitrine, frase personalizada e
-              campanha promocional serão resetados.
+              <strong>Profissional para Essencial:</strong> cor, modelo e frase permanecem; apenas
+              os ajustes avançados são redefinidos e a campanha deixa de estar disponível.
             </p>
             <p>
               <strong>Essencial ou Profissional para Free:</strong> a cor também volta ao padrão e

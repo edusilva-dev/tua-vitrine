@@ -42,6 +42,7 @@ import { encodeVariantFilter } from "@/modules/catalog/contracts";
 import { productPrice } from "@/modules/catalog/pricing";
 import { StorefrontFeedbackDialog } from "@/modules/feedback/components/storefront-feedback-dialog";
 import type { PublicPromotionCampaignDTO } from "@/modules/promotions/contracts";
+import { resolveStorefrontTokens } from "@/modules/stores/appearance";
 import type { StoreDTO } from "@/modules/stores/contracts";
 import { type CartLine, lineKey } from "../selection";
 import { useSelections } from "../use-selections";
@@ -269,19 +270,13 @@ export function Storefront({
   const products = favoritesOnly ? favoriteProducts : catalog.data;
   const list = store.template === "list";
   const totalItems = selection.cart.reduce((sum, line) => sum + line.quantity, 0);
-  const color = store.primaryColor;
-  const luminance =
-    parseInt(color.slice(1, 3), 16) * 0.299 +
-    parseInt(color.slice(3, 5), 16) * 0.587 +
-    parseInt(color.slice(5, 7), 16) * 0.114;
-  const theme = {
-    "--primary": color,
-    "--primary-foreground": luminance > 155 ? "#102b2b" : "#ffffff",
-    "--ring": color,
-  } as CSSProperties;
+  const theme = resolveStorefrontTokens(store);
 
   return (
-    <div style={theme} className="min-h-screen bg-background">
+    <div
+      style={theme.style as CSSProperties}
+      className={`${theme.fontClass} min-h-screen bg-background`}
+    >
       {preview ? (
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-foreground px-4 py-2 text-center text-xs text-background">
           <span>Prévia da sua vitrine · visitas e curtidas não entram nas métricas</span>
@@ -610,7 +605,7 @@ export function Storefront({
                   </div>
                 ) : null}
                 <article
-                  className={`group relative flex overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-md ${list ? "flex-row" : "flex-col"}`}
+                  className={`group relative flex overflow-hidden rounded-[var(--store-card-radius)] border bg-card transition-shadow hover:shadow-md ${list ? "flex-row" : "flex-col"}`}
                 >
                   <button
                     type="button"
@@ -799,6 +794,7 @@ export function Storefront({
           onLike={() => selection.toggleLike(selected.id)}
           onAdd={addToCart}
           onClose={() => setSelected(null)}
+          themeStyle={theme.style as CSSProperties}
         />
       ) : null}
       <CartSheet
@@ -807,6 +803,7 @@ export function Storefront({
         cart={selection.cart}
         setCart={selection.setCart}
         store={store}
+        themeStyle={theme.style as CSSProperties}
       />
     </div>
   );

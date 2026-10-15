@@ -61,6 +61,18 @@ export const whatsappSchema = z.object({
 export const customizationSchema = z.object({
   version: z.literal(1),
   tagline: z.string().trim().max(160),
+  backgroundColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .nullable()
+    .default(null),
+  textColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .nullable()
+    .default(null),
+  fontPreset: z.enum(["brand", "simple"]).default("brand"),
+  cardRoundness: z.enum(["square", "subtle", "default"]).default("default"),
 });
 
 export const storeSettingsSchema = z.object({
@@ -84,7 +96,14 @@ export type StoreDTO = {
   template: "grid" | "list";
   catalogGrouping: "continuous" | "sections";
   logo: AssetDTO | null;
-  customization: { version: 1; tagline: string };
+  customization: {
+    version: 1;
+    tagline: string;
+    backgroundColor: string | null;
+    textColor: string | null;
+    fontPreset: "brand" | "simple";
+    cardRoundness: "square" | "subtle" | "default";
+  };
   onboardingStep: 1 | 2 | 3 | 4;
   url: string;
 };
