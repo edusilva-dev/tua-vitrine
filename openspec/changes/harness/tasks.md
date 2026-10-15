@@ -9,8 +9,8 @@
 
 - [x] 2.1 Implementar checker e testes negativos de configuração; integrar no CI.
 - [x] 2.2 Documentar uso, ambiente isolado e limites; adicionar template de PR.
-- [ ] 2.3 Executar descoberta, cenários de delegação e validações integradas.
-- [ ] 2.4 Revisar independentemente o commit final e resolver achados.
+- [x] 2.3 Executar descoberta, cenários de delegação e validações integradas.
+- [x] 2.4 Revisar independentemente a implementação e resolver achados; revisar o delta final.
 - [ ] 2.5 Publicar branch e PR, registrar SHA/evidências e acompanhar CI; merge manual.
 
 ## Evidências da implementação
@@ -24,3 +24,8 @@
   `09a74af` trouxe correções e a exceção documentada de braces. Essa base foi integrada preservando
   seus hooks, versões e política de auditoria; a validação final usa `bun run audit`.
 - Playwright não foi executado localmente nesta alteração de ferramentas, sem mudança de UI.
+- Após integrar `09a74af`, auditoria conforme política existente, lint, typecheck, 99 testes,
+  checker, specs e build passaram novamente. A revisão independente não encontrou achados
+  substantivos; removeu-se uma linha vazia final da licença para passar diff-check.
+- Branch publicada. A criação de PR pelo conector retornou 403 (permissão da integração);
+  a publicação do PR e a confirmação de CI continuam pendentes até resolver o acesso.
