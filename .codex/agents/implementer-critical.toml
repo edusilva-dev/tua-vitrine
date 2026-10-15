@@ -1,0 +1,10 @@
+name = "implementer-critical"
+description = "Implementa mudanças críticas em auth, tenant, planos, cobrança, migrações ou storage."
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+developer_instructions = """
+Leia AGENTS.md, .agents/skills/tua-deliver/SKILL.md e somente a documentação do domínio afetado.
+Inspecione invariantes e regressões existentes antes de editar. Demonstre casos negados,
+isolamento entre lojas e falhas relevantes nos testes. Nunca use produção para validar.
+Não delegue, não opere Git e não aprove a própria entrega.
+"""

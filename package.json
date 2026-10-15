@@ -26,7 +26,9 @@
     "db:deploy": "bun --bun prisma migrate deploy --config prisma7.config.ts",
     "db:seed": "bun prisma/seed.ts",
     "db:up": "docker compose up -d --wait db",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "spec": "bun scripts/openspec.ts",
+    "harness:check": "bun scripts/check-harness.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1142.0",
@@ -60,6 +62,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
+    "@fission-ai/openspec": "1.14.2",
     "@playwright/test": "1.63.0",
     "@stylistic/eslint-plugin": "5.10.0",
     "@tailwindcss/postcss": "4.3.3",
