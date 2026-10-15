@@ -20,7 +20,7 @@
 - Codex 0.154.0 carregou configuração e descobriu as skills locais sem erros.
 - Avaliação independente de quatro cenários confirmou roteamento por risco, revisão obrigatória e
   serialização de contratos e banco compartilhados.
-- Auditoria pendente: 11 alertas (5 high, 5 moderate, 1 low), mesmos alertas no lockfile da base
-  `master`. OpenSpec adiciona caminho para braces, já presente via shadcn. Não houve atualização
-  incidental de versões da stack. CI deve permanecer bloqueado até correção separada; PR em draft.
+- A primeira validação encontrou 11 alertas já presentes na base local. A atualização remota
+  `09a74af` trouxe correções e a exceção documentada de braces. Essa base foi integrada preservando
+  seus hooks, versões e política de auditoria; a validação final usa `bun run audit`.
 - Playwright não foi executado localmente nesta alteração de ferramentas, sem mudança de UI.

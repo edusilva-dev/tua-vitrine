@@ -1,0 +1,2 @@
+DATABASE_URL="${DATABASE_URL:-postgresql://tuavitrine:tuavitrine_local@localhost:55432/tuavitrine_test}" bun run db:generate
+bun test tests/unit tests/integration
