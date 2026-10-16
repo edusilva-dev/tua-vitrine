@@ -7,16 +7,28 @@ rascunho e acesse ajustes adicionais de acordo com seu plano, sem precisar monta
 
 ## ADDED Requirements
 
-### Requirement: Edição progressiva em uma tela
+### Requirement: Edição em tabs em uma tela
 
-O sistema SHALL apresentar uma única tela de personalização com logo, cor da marca, galeria/lista
-e frase de apresentação, conforme o plano. Os Ajustes avançados SHALL iniciar recolhidos e abrir
-na mesma tela, sem escolha prévia de modo nem etapas obrigatórias adicionais.
+O sistema SHALL apresentar uma única tela de personalização com tabs “Básico” e “Avançado”.
+“Básico” SHALL iniciar ativa e reunir logo, cor da marca, galeria/lista e frase de apresentação,
+conforme o plano. “Avançado” SHALL reunir fundo, texto, fontes e arredondamento para o Profissional.
+Somente o painel ativo SHALL ser exibido, sem etapas obrigatórias adicionais. As tabs SHALL
+organizar o editor sem representar configurações ou modos de aparência persistidos.
 
 #### Scenario: Personalização rápida
 - **WHEN** o lojista abre Minha vitrine e altera somente o logo
-- **THEN** consegue salvar sem abrir Ajustes avançados ou preencher novos campos de aparência
+- **THEN** encontra “Básico” ativa e consegue salvar sem acessar “Avançado” ou preencher novos campos
 - **AND** os demais controles mantêm os valores salvos ou seus padrões
+
+#### Scenario: Separação dos controles
+- **WHEN** o lojista Profissional seleciona “Avançado”
+- **THEN** vê os controles avançados no lugar dos controles básicos
+- **AND** a prévia e o botão Salvar compartilhados permanecem disponíveis
+
+#### Scenario: Tab avançada sem permissão
+- **WHEN** o lojista Free ou Essencial seleciona “Avançado”
+- **THEN** vê uma indicação de que os recursos exigem Profissional, sem controles avançados utilizáveis
+- **AND** pode retornar a “Básico” sem perder alterações
 
 #### Scenario: Informações e recursos existentes
 - **WHEN** um lojista de qualquer plano acessa Minha vitrine
@@ -64,14 +76,20 @@ formulários avançados utilizáveis aos demais planos.
 
 ### Requirement: Rascunho único e salvamento explícito
 
-O sistema SHALL manter um único rascunho para controles básicos e avançados. Abrir ou recolher
-uma seção e editar um campo básico SHALL preservar os demais valores. A aparência publicada
+O sistema SHALL manter um único rascunho para controles básicos e avançados. Trocar de tab
+e editar um campo básico SHALL preservar os demais valores. O botão Salvar compartilhado SHALL
+salvar o rascunho completo, inclusive os campos da tab inativa. A aparência publicada
 SHALL mudar somente após salvar com sucesso, e falhas SHALL preservar o formulário e permitir
 nova tentativa sem envio duplicado.
 
-#### Scenario: Recolher ajustes não os apaga
-- **WHEN** o lojista altera a fonte, recolhe os ajustes avançados e altera a frase
+#### Scenario: Trocar de tab não apaga ajustes
+- **WHEN** o lojista altera a fonte em “Avançado”, volta a “Básico” e altera a frase
 - **THEN** o salvamento inclui ambas as alterações
+
+#### Scenario: Erro em outra tab
+- **WHEN** a validação local ou a resposta do servidor indica erro em um campo da tab inativa
+- **THEN** a interface ativa a tab do primeiro campo inválido antes de focá-lo e anunciar o erro
+- **AND** preserva os valores de ambas as tabs para correção e nova tentativa
 
 #### Scenario: Falha ao salvar
 - **WHEN** o salvamento falha por validação ou indisponibilidade
@@ -176,16 +194,17 @@ aparência legado inválido SHALL usar padrões seguros sem interromper o acesso
 
 ### Requirement: Edição acessível em celular e desktop
 
-O sistema SHALL manter controles rotulados, foco visível, estado de expansão anunciado e erros
+O sistema SHALL manter controles rotulados, foco visível, estado de seleção das tabs anunciado e erros
 acessíveis em 390 px e desktop. A prévia SHALL caber no layout sem overflow horizontal e sem
 impedir o acesso ao botão de salvar ou aos controles do formulário.
 
 #### Scenario: Uso pelo teclado e leitor de tela
-- **WHEN** o lojista percorre a tela pelo teclado e abre os Ajustes avançados
-- **THEN** alcança todos os controles permitidos, identifica seus nomes e o estado de expansão
+- **WHEN** o lojista percorre a tela pelo teclado e alterna entre “Básico” e “Avançado”
+- **THEN** identifica as tabs, a seleção e o painel associado, usando setas para navegar entre tabs
+- **AND** alcança os controles permitidos do painel ativo sem focar controles do painel inativo
 - **AND** consegue salvar e identificar os erros sem depender de cor ou uso do mouse
 
 #### Scenario: Uso em tela estreita
 - **WHEN** o lojista edita a aparência em uma tela de 390 px
 - **THEN** formulário e prévia permanecem utilizáveis sem rolagem horizontal da página
-- **AND** as alterações continuam disponíveis ao abrir ou recolher os ajustes
+- **AND** ambas as tabs continuam acessíveis e as alterações são preservadas ao alterná-las

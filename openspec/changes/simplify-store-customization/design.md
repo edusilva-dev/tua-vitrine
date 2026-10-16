@@ -6,7 +6,7 @@ Ver `proposal.md` para motivação e escopo. O design é necessário porque a mu
 contratos, edição, vitrine e enforcement de planos/downgrade.
 
 - `store-settings.tsx` já usa React Hook Form e o PATCH `/api/admin/store`, mas descarta o DTO de
-  sucesso e apenas chama `router.refresh()`. Recolher controles não pode criar outro formulário.
+  sucesso e apenas chama `router.refresh()`. Trocar de tab não pode criar outro formulário.
 - O contrato atual guarda `primaryColor` e `template` em colunas e `customization` como JSON
   `{ version: 1, tagline }`. A organização e ordenação de categorias já têm implementação própria.
 - `effectiveStoreAppearance` e `saveSettings` condicionam modelo/frase ao Profissional.
@@ -27,7 +27,7 @@ contratos, edição, vitrine e enforcement de planos/downgrade.
 - Compartilhar normalização e resolução visual entre servidor, formulário, prévia e vitrine.
 - Evoluir o JSON existente sem migração de dados obrigatória nem novos serviços.
 - Separar permissões de aparência básica e avançada sem alterar a resolução de assinatura/trial.
-- Manter a tela curta com controles avançados recolhidos e sem fluxo de publicação adicional.
+- Manter a tela organizada em tabs “Básico” e “Avançado”, sem fluxo de publicação adicional.
 
 **Non-Goals:**
 
@@ -108,18 +108,29 @@ o tema também aos conteúdos em portais que usem as novas cores, sem atingir os
 Alternativa descartada: alterar `:root` durante a edição, que mudaria o próprio painel e poderia
 vazar a aparência de uma loja para outra.
 
-### 4. Uma tela e um rascunho
+### 4. Uma tela, duas tabs e um rascunho
 
 Reorganizar `StoreSettings` preservando React Hook Form, upload, categorias, link e QR code.
-Usar uma divulgação acessível para Ajustes avançados (por exemplo, `details`/`summary` nativos),
-recolhida inicialmente, sem dependência nova. Planos sem acesso veem apenas uma indicação concisa
-do recurso Profissional; os controles básicos indisponíveis também informam o plano necessário.
+Usar o primitive Tabs no padrão shadcn, criando o wrapper em `components/ui` se ainda ausente
+com o `radix-ui` já instalado, sem nova dependência. Usar rótulos “Básico” e “Avançado” e “Básico” ativa
+inicialmente. Exibir somente o painel ativo, com semântica de tablist/tab/tabpanel, associação
+entre tab e painel, seleção anunciada e navegação por teclado. Não criar modos de aparência
+persistidos: as tabs apenas organizam o editor, sem alterar permissões ou configurações.
+Ambas ficam acessíveis em todos os planos; em “Avançado”, planos sem acesso veem apenas uma
+indicação concisa do recurso Profissional, sem controles utilizáveis. Os controles básicos
+indisponíveis também informam o plano necessário.
 
-Logo/cor/modelo/frase formam o caminho principal; nome e WhatsApp permanecem acessíveis. Organização
+Logo/cor/modelo/frase ficam em “Básico”; fundo/texto/fontes/arredondamento ficam em “Avançado”.
+Nome e WhatsApp permanecem acessíveis fora dos painéis de aparência. Organização
 e ordem de categorias ficam em um agrupamento secundário, mantendo o salvamento próprio da ordem.
-Link e QR code continuam como utilidades secundárias. Não adicionar onboarding, etapas ou abas.
+Link e QR code continuam como utilidades secundárias. Não adicionar onboarding ou etapas.
+Prévia e botão Salvar ficam fora dos painéis, compartilhados e disponíveis em ambas as tabs;
+salvar envia o rascunho completo, incluindo os campos da tab inativa.
 
-Recolher os avançados não deve desregistrar campos nem limpar o rascunho. Após sucesso, usar o DTO
+Trocar de tab não deve desregistrar campos nem limpar o rascunho. Campos do painel inativo não
+participam da navegação por teclado. Se a validação apontar um campo em outra tab, ativar essa
+tab antes de focar o primeiro campo inválido e anunciar seu erro, inclusive em erros do servidor.
+Após sucesso, usar o DTO
 normalizado retornado pelo PATCH para atualizar formulário, logo e prévia e executar o refresh
 necessário. Falhas preservam os valores e os erros de campo ficam associados aos controles.
 
@@ -129,7 +140,8 @@ Adicionar uma amostra identificada como prévia ilustrativa, contendo logo/nome,
 de exemplo suficientes para distinguir galeria/lista. Ela recebe o rascunho permitido e o mesmo
 resolvedor de aparência, reaproveitando apenas as peças visuais necessárias da vitrine.
 Não carregar o catálogo inteiro nem duplicar suas interações. Em desktop, amostra ao lado;
-em 390 px, abaixo do grupo principal, sem largura fixa que provoque overflow.
+em 390 px, abaixo do painel ativo, sem largura fixa que provoque overflow. Trocar de tab mantém
+a mesma amostra, refletindo os valores básicos e avançados do rascunho.
 
 A amostra é passiva: não instancia analytics, seleção persistente, curtidas, carrinho ou WhatsApp.
 Upload pode continuar gerando um asset provisório pelo fluxo atual, mas apenas Salvar associa

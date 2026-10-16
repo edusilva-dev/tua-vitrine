@@ -8,22 +8,26 @@ poucas diferenças de aparência; uma edição progressiva torna esse benefício
 
 ## What Changes
 
-- Manter uma única tela em Minha vitrine, começando por logo, cor da marca, galeria/lista e frase
-  de apresentação, com padrões preenchidos e um botão para salvar as alterações de aparência.
+- Manter uma única tela em Minha vitrine com tabs “Básico” e “Avançado”. “Básico” inicia ativa,
+  com logo, cor da marca, galeria/lista e frase de apresentação, padrões preenchidos e um botão
+  compartilhado para salvar as alterações de aparência.
 - Manter nome, WhatsApp e organização por categorias disponíveis em todos os planos; preservar
   a ordenação existente e seu salvamento próprio sem alongar o percurso principal.
 - Ampliar o Essencial para incluir frase personalizada e galeria/lista, além da cor da marca.
-- Reservar ao Profissional uma seção recolhida de Ajustes avançados, com cores de fundo e texto,
+- Reservar ao Profissional os controles da tab “Avançado”, com cores de fundo e texto,
   duas combinações de fontes e três opções de arredondamento dos cards.
 - Exibir uma prévia representativa que acompanha o rascunho, sem publicar nem gerar métricas.
-- Compartilhar as configurações entre os controles básicos e avançados: recolher a seção ou
+- Compartilhar as configurações entre os controles básicos e avançados: trocar de tab ou
   editar a cor da marca não apaga os demais ajustes.
 - Aplicar as permissões no servidor e atualizar downgrade, textos dos planos e documentação
   para a nova distribuição. Campanhas continuam exclusivas do Profissional.
 
 ### Critérios de aceite
 
-- O lojista consegue alterar logo e salvar sem abrir controles avançados ou escolher um modo.
+- A tab “Básico” abre por padrão e permite alterar logo e salvar sem acessar “Avançado”.
+- Apenas o painel da tab ativa é exibido; trocar de tab preserva alterações não salvas,
+  com prévia e salvamento compartilhados. Nos planos sem acesso, “Avançado” informa a exigência
+  do Profissional sem disponibilizar seus controles.
 - Essencial e Profissional podem salvar cor, frase e modelo; Free mantém aparência padrão e logo.
 - Somente Profissional pode persistir e exibir os novos ajustes avançados, inclusive via API.
 - A prévia mostra o rascunho antes de salvar; a vitrine pública só muda após o salvamento.

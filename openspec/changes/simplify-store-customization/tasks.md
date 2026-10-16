@@ -20,10 +20,10 @@
 
 ## 4. Editor conciso e comunicação
 
-- [ ] 4.1 Reorganizar `StoreSettings` em controles básicos e Ajustes avançados recolhidos, com indicação de plano, preservando nome, WhatsApp, categorias, ordem, link e QR code; verificar Playwright para os três planos e salvamento somente do logo sem abrir os avançados.
-- [ ] 4.2 Integrar a amostra ao rascunho único e atualizar formulário/logo com o DTO normalizado após sucesso; verificar Playwright de expandir/recolher sem perder ajustes, erro de contraste/rede preservando formulário, prevenção de envio duplicado e vitrine mudando somente após salvar.
-- [ ] 4.3 Validar e ajustar layout em 390 px e desktop, rótulos, foco, teclado e anúncio de erros/expansão; verificar ausência de overflow e conclusão do fluxo com teclado e conferência por leitor de tela, registrando as evidências efetivas.
-- [ ] 4.4 Documentar em `docs/plans.md` o fluxo de edição, os limites dos ajustes avançados e a diferença entre amostra de rascunho e prévia completa salva; verificar correspondência com a tela entregue e o escopo da especificação.
+- [ ] 4.1 Reorganizar `StoreSettings` com Tabs shadcn em “Básico” (inicial) e “Avançado”, exibindo apenas o painel ativo e indicação do Profissional sem controles avançados para Free/Essencial; preservar nome, WhatsApp, categorias, ordem, link e QR code e manter prévia/Salvar compartilhados fora dos painéis; verificar Playwright nos três planos, separação dos controles e salvamento somente do logo sem trocar de tab.
+- [ ] 4.2 Integrar a amostra ao rascunho único e atualizar formulário/logo com o DTO normalizado após sucesso; verificar Playwright de alternância entre tabs sem perder ajustes, salvamento incluindo a tab inativa, erro de contraste/rede preservando formulário, ativação e foco da tab com erro local ou do servidor, prevenção de envio duplicado e vitrine mudando somente após salvar.
+- [ ] 4.3 Validar e ajustar layout em 390 px e desktop, rótulos, foco, semântica tablist/tab/tabpanel, navegação por setas e anúncio de erros/seleção; verificar ausência de overflow, controles inativos fora da navegação e conclusão do fluxo com teclado e conferência por leitor de tela, registrando as evidências efetivas.
+- [ ] 4.4 Documentar em `docs/plans.md` o fluxo de edição nas tabs “Básico” e “Avançado”, o rascunho/salvamento compartilhado, os limites dos ajustes avançados e a diferença entre amostra de rascunho e prévia completa salva; verificar correspondência com a tela entregue e o escopo da especificação.
 
 ## 5. Integração e revisão independente
 
