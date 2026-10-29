@@ -150,11 +150,25 @@ describe("configuração dos ambientes", () => {
       APP_RELEASE: "commit-production",
     };
 
-    expect(parseEnv(configured).POSTHOG_SERVER_ENABLED).toBe(false);
+    expect(parseEnv(configured)).toMatchObject({
+      POSTHOG_BROWSER_ENABLED: false,
+      POSTHOG_SERVER_ENABLED: false,
+    });
     expect(
       parseEnv({ ...configured, NODE_ENV: "test", NEXT_PUBLIC_APP_ENV: "staging" })
         .POSTHOG_SERVER_ENABLED
     ).toBe(false);
+    expect(
+      parseEnv({
+        ...configured,
+        NEXT_PUBLIC_APP_ENV: "staging",
+        NEXT_PUBLIC_POSTHOG_DISABLED: "1",
+      })
+    ).toMatchObject({
+      POSTHOG_DISABLED: true,
+      POSTHOG_BROWSER_ENABLED: false,
+      POSTHOG_SERVER_ENABLED: false,
+    });
   });
 
   test("URL pública do R2 aceita somente uma origem HTTPS", () => {

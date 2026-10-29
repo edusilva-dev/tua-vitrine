@@ -6,7 +6,7 @@
 
 ## Estado do sprint
 
-- **Status:** documentação pronta para revisão; implementação não iniciada.
+- **Status:** implementação em andamento; tarefa 01 implementada com smoke test externo pendente.
 - **Tema:** product analytics e UX analytics com PostHog.
 - **Produto:** Tua Vitrine.
 - **Públicos observados:** lojistas autenticados e visitantes anônimos das vitrines públicas.

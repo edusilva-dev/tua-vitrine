@@ -39,6 +39,7 @@ export default defineConfig({
       DATABASE_URL: databaseUrl,
       APP_URL: "http://localhost:3200",
       BETTER_AUTH_SECRET: "test-only-auth-secret-7c35f6d4b8298ce2a1f0928713fce017",
+      NEXT_PUBLIC_POSTHOG_DISABLED: "1",
       MAIL_OUTBOX_DIR: authOutbox,
       STORAGE_DIR: authStorage,
       HOSTNAME: "127.0.0.1",

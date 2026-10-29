@@ -18,9 +18,11 @@ administrativa na aplicação.
 - `APP_RELEASE` deve receber o SHA ou a versão imutável do deployment;
 - browser e servidor devem apontar para o mesmo projeto e host regional.
 
-O SDK do browser não captura automaticamente pageviews, interações, heatmaps, exceções ou replay. Em
-produção ele inicia optado para fora e sem persistência em cookie/localStorage. A Tarefa 05 controlará
-o opt-in. O SDK do servidor permanece em `noop` na produção até a política server-side ser aprovada.
+O SDK do browser não captura automaticamente pageviews, interações, heatmaps, dead clicks, Web
+Vitals, exceções ou replay. Ele não é inicializado em produção até a Tarefa 05 entregar o controle de
+consentimento. O SDK do servidor permanece em `noop` na produção até a política server-side ser
+aprovada. `NEXT_PUBLIC_POSTHOG_DISABLED=1` funciona como kill switch para ambos os SDKs e é definido
+obrigatoriamente pelos servidores dos testes E2E.
 
 ## Rede e CSP
 

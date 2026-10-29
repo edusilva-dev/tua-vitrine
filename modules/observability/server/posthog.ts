@@ -17,6 +17,7 @@ export function getPostHogServer(): PostHogServerState | null {
   const environment = env.NEXT_PUBLIC_APP_ENV;
 
   if (
+    env.POSTHOG_DISABLED ||
     env.NODE_ENV === "test" ||
     (environment !== "development" && environment !== "staging") ||
     !env.POSTHOG_PROJECT_TOKEN ||

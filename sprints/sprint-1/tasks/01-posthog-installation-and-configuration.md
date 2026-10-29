@@ -66,7 +66,7 @@ recomendada pela versão instalada somente após conferir a documentação ofici
 
 ## Estado da implementação
 
-Implementação automatizada concluída em 29/10/2026. Lint, typecheck, 106 testes e builds com e sem as
+Implementação automatizada concluída em 29/10/2026. Lint, typecheck, 107 testes e builds com e sem as
 variáveis PostHog passaram. O bundle público contém somente o token de projeto deliberadamente
 público; release e credenciais server-side não foram incluídos.
 

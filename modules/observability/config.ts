@@ -88,8 +88,24 @@ export function createBrowserPostHogOptions(config: BrowserPostHogConfig) {
     disable_session_recording: true,
     disable_surveys: true,
     advanced_disable_feature_flags: true,
+    advanced_disable_flags: true,
+    capture_performance: false,
+    capture_dead_clicks: false,
+    mask_personal_data_properties: true,
     opt_out_capturing_by_default: config.environment === "production",
     persistence: "memory" as const,
     person_profiles: "identified_only" as const,
   };
+}
+
+export function shouldInitializeBrowserPostHog(
+  config: BrowserPostHogConfig | null,
+  runtime: { nodeEnv?: string | undefined; disabled?: string | undefined }
+) {
+  return Boolean(
+    config &&
+      config.environment !== "production" &&
+      runtime.nodeEnv !== "test" &&
+      runtime.disabled !== "1"
+  );
 }

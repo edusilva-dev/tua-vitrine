@@ -37,6 +37,7 @@ export default defineConfig({
       APP_URL: "http://localhost:3100",
       BETTER_AUTH_SECRET: "test-only-secret-with-more-than-32-characters",
       E2E_AUTH_BYPASS: "1",
+      NEXT_PUBLIC_POSTHOG_DISABLED: "1",
       STORAGE_DIR: "./work/test-storage",
     },
     timeout: 120000,

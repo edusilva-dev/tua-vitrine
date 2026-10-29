@@ -41,6 +41,7 @@ const schema = z.object({
   POSTHOG_PROJECT_TOKEN: optionalString(z.string().min(10).regex(/^\S+$/)),
   POSTHOG_HOST: optionalString(z.string().url()),
   APP_RELEASE: optionalString(z.string().min(1).max(200)),
+  NEXT_PUBLIC_POSTHOG_DISABLED: z.enum(["0", "1"]).optional(),
 });
 
 export function parseEnv(input: Record<string, string | undefined>) {
@@ -172,8 +173,13 @@ export function parseEnv(input: Record<string, string | undefined>) {
     STORAGE_DRIVER: configuredR2Values === r2Values.length ? ("r2" as const) : ("local" as const),
     R2_PUBLIC_URL: env.R2_PUBLIC_URL?.replace(/\/$/, ""),
     BILLING_ENABLED: configuredStripeValues === stripeValues.length,
-    POSTHOG_BROWSER_ENABLED: configuredBrowserPostHogValues === browserPostHogValues.length,
+    POSTHOG_DISABLED: env.NEXT_PUBLIC_POSTHOG_DISABLED === "1",
+    POSTHOG_BROWSER_ENABLED:
+      env.NEXT_PUBLIC_POSTHOG_DISABLED !== "1" &&
+      env.NEXT_PUBLIC_APP_ENV !== "production" &&
+      configuredBrowserPostHogValues === browserPostHogValues.length,
     POSTHOG_SERVER_ENABLED:
+      env.NEXT_PUBLIC_POSTHOG_DISABLED !== "1" &&
       env.NODE_ENV !== "test" &&
       env.NEXT_PUBLIC_APP_ENV !== "production" &&
       configuredServerPostHogValues === serverPostHogValues.length,

@@ -2,6 +2,7 @@ import posthog from "posthog-js";
 import {
   createBrowserPostHogOptions,
   parseBrowserPostHogConfig,
+  shouldInitializeBrowserPostHog,
 } from "@/modules/observability/config";
 
 try {
@@ -11,7 +12,13 @@ try {
     environment: process.env.NEXT_PUBLIC_APP_ENV,
   });
 
-  if (config && process.env.NODE_ENV !== "test") {
+  if (
+    config &&
+    shouldInitializeBrowserPostHog(config, {
+      nodeEnv: process.env.NODE_ENV,
+      disabled: process.env.NEXT_PUBLIC_POSTHOG_DISABLED,
+    })
+  ) {
     posthog.init(config.projectToken, createBrowserPostHogOptions(config));
     posthog.register({ environment: config.environment });
   }
