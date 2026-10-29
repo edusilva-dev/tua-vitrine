@@ -120,15 +120,17 @@ describe("configuração dos ambientes", () => {
       ...local,
       NEXT_PUBLIC_APP_ENV: "staging",
       NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_project_staging",
-      NEXT_PUBLIC_POSTHOG_HOST: "https://eu.i.posthog.com",
+      NEXT_PUBLIC_POSTHOG_HOST: "https://eu.i.posthog.com/",
       POSTHOG_PROJECT_TOKEN: "phc_project_staging",
-      POSTHOG_HOST: "https://eu.i.posthog.com",
+      POSTHOG_HOST: "https://eu.i.posthog.com/",
       APP_RELEASE: "commit-abc123",
     };
 
     expect(parseEnv(posthog)).toMatchObject({
       POSTHOG_BROWSER_ENABLED: true,
       POSTHOG_SERVER_ENABLED: true,
+      NEXT_PUBLIC_POSTHOG_HOST: "https://eu.i.posthog.com",
+      POSTHOG_HOST: "https://eu.i.posthog.com",
     });
     expect(() => parseEnv({ ...posthog, POSTHOG_HOST: "https://us.i.posthog.com" })).toThrow(
       /mesmo host/

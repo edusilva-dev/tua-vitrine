@@ -1,6 +1,6 @@
 ## Mudança e aceite
 
-<!-- Problema, comportamento resultante e critérios de aceite. Link para OpenSpec quando aplicável. -->
+<!-- Problema, comportamento resultante e critérios de aceite. Link para sprint/tarefa quando aplicável. -->
 
 ## Validação
 
