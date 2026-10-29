@@ -1,12 +1,14 @@
 import "server-only";
 import { z } from "zod";
+import { APP_ENVIRONMENTS, parsePostHogHost } from "@/modules/observability/config";
 
 const LOCAL_APP_URL = "http://localhost:3000";
 
-const optionalString = (schema: z.ZodString) =>
+const optionalString = <Schema extends z.ZodType<string>>(schema: Schema) =>
   z.preprocess((value) => (value === "" ? undefined : value), schema.optional());
 
 const schema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z
     .string({ error: "DATABASE_URL é obrigatória." })
     .url()
@@ -33,6 +35,12 @@ const schema = z.object({
   STRIPE_WEBHOOK_SECRET: optionalString(z.string().startsWith("whsec_")),
   STRIPE_PRICE_BASIC_MONTHLY: optionalString(z.string().startsWith("price_")),
   STRIPE_PRICE_PRO_MONTHLY: optionalString(z.string().startsWith("price_")),
+  NEXT_PUBLIC_APP_ENV: optionalString(z.enum(APP_ENVIRONMENTS)),
+  NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: optionalString(z.string().min(10).regex(/^\S+$/)),
+  NEXT_PUBLIC_POSTHOG_HOST: optionalString(z.string().url()),
+  POSTHOG_PROJECT_TOKEN: optionalString(z.string().min(10).regex(/^\S+$/)),
+  POSTHOG_HOST: optionalString(z.string().url()),
+  APP_RELEASE: optionalString(z.string().min(1).max(200)),
 });
 
 export function parseEnv(input: Record<string, string | undefined>) {
@@ -94,6 +102,23 @@ export function parseEnv(input: Record<string, string | undefined>) {
     env.R2_PUBLIC_URL,
   ];
   const configuredR2Values = r2Values.filter(Boolean).length;
+  const browserPostHogValues = [
+    env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN,
+    env.NEXT_PUBLIC_POSTHOG_HOST,
+    env.NEXT_PUBLIC_APP_ENV,
+  ];
+  const configuredBrowserPostHogValues = browserPostHogValues.filter(Boolean).length;
+  const serverPostHogValues = [
+    env.POSTHOG_PROJECT_TOKEN,
+    env.POSTHOG_HOST,
+    env.NEXT_PUBLIC_APP_ENV,
+    env.APP_RELEASE,
+  ];
+  const configuredServerPostHogValues = serverPostHogValues.filter(Boolean).length;
+  const browserPostHogConfigured = Boolean(
+    env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN || env.NEXT_PUBLIC_POSTHOG_HOST
+  );
+  const serverPostHogConfigured = Boolean(env.POSTHOG_PROJECT_TOKEN || env.POSTHOG_HOST);
 
   if (configuredStripeValues > 0 && configuredStripeValues < stripeValues.length)
     throw new Error("Configure todas as quatro variáveis do Stripe juntas.");
@@ -114,6 +139,31 @@ export function parseEnv(input: Record<string, string | undefined>) {
   if (configuredR2Values > 0 && configuredR2Values < r2Values.length)
     throw new Error("Configure todas as cinco variáveis do R2 juntas.");
 
+  if (browserPostHogConfigured && configuredBrowserPostHogValues < browserPostHogValues.length)
+    throw new Error("Configure token, host e ambiente do PostHog do browser juntos.");
+
+  if (serverPostHogConfigured && configuredServerPostHogValues < serverPostHogValues.length)
+    throw new Error("Configure token, host, ambiente e release do PostHog do servidor juntos.");
+
+  if (env.NEXT_PUBLIC_POSTHOG_HOST)
+    parsePostHogHost(env.NEXT_PUBLIC_POSTHOG_HOST, "NEXT_PUBLIC_POSTHOG_HOST");
+
+  if (env.POSTHOG_HOST) parsePostHogHost(env.POSTHOG_HOST, "POSTHOG_HOST");
+
+  if (
+    env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN &&
+    env.POSTHOG_PROJECT_TOKEN &&
+    env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN !== env.POSTHOG_PROJECT_TOKEN
+  )
+    throw new Error("Browser e servidor devem usar o mesmo projeto PostHog.");
+
+  if (
+    env.NEXT_PUBLIC_POSTHOG_HOST &&
+    env.POSTHOG_HOST &&
+    new URL(env.NEXT_PUBLIC_POSTHOG_HOST).origin !== new URL(env.POSTHOG_HOST).origin
+  )
+    throw new Error("Browser e servidor devem usar o mesmo host PostHog.");
+
   return {
     ...env,
     DATABASE_POOL_MAX: env.DATABASE_POOL_MAX ?? (isVercel ? 1 : 10),
@@ -122,6 +172,11 @@ export function parseEnv(input: Record<string, string | undefined>) {
     STORAGE_DRIVER: configuredR2Values === r2Values.length ? ("r2" as const) : ("local" as const),
     R2_PUBLIC_URL: env.R2_PUBLIC_URL?.replace(/\/$/, ""),
     BILLING_ENABLED: configuredStripeValues === stripeValues.length,
+    POSTHOG_BROWSER_ENABLED: configuredBrowserPostHogValues === browserPostHogValues.length,
+    POSTHOG_SERVER_ENABLED:
+      env.NODE_ENV !== "test" &&
+      env.NEXT_PUBLIC_APP_ENV !== "production" &&
+      configuredServerPostHogValues === serverPostHogValues.length,
   };
 }
 

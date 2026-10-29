@@ -39,14 +39,14 @@ Não habilitar replay, identificação ou eventos nesta tarefa.
 
 ## Critérios de aceite
 
-- [ ] dependências instaladas exclusivamente com Bun e lockfile atualizado;
-- [ ] app inicia e builda com PostHog configurado e sem configuração;
-- [ ] ausência de token resulta em noop, não em crash;
-- [ ] configuração parcial/inválida falha com mensagem clara onde apropriado;
-- [ ] testes, preview e ambiente local não enviam para produção;
-- [ ] `autocapture` está desabilitado;
-- [ ] nenhuma chave administrativa ou pessoal aparece no bundle/browser;
-- [ ] o SDK de servidor é importável somente em código server-only;
+- [x] dependências instaladas exclusivamente com Bun e lockfile atualizado;
+- [x] app inicia e builda com PostHog configurado e sem configuração;
+- [x] ausência de token resulta em noop, não em crash;
+- [x] configuração parcial/inválida falha com mensagem clara onde apropriado;
+- [x] testes, preview e ambiente local não enviam para produção;
+- [x] `autocapture` está desabilitado;
+- [x] nenhuma chave administrativa ou pessoal aparece no bundle/browser;
+- [x] o SDK de servidor é importável somente em código server-only;
 - [ ] um evento técnico temporário de smoke test pode ser visto no projeto não produtivo e depois é
   removido do código.
 
@@ -63,3 +63,13 @@ Não habilitar replay, identificação ou eventos nesta tarefa.
 
 Usar o host regional fornecido pelo projeto PostHog. Não assumir região. Fixar a opção `defaults`
 recomendada pela versão instalada somente após conferir a documentação oficial.
+
+## Estado da implementação
+
+Implementação automatizada concluída em 29/10/2026. Lint, typecheck, 106 testes e builds com e sem as
+variáveis PostHog passaram. O bundle público contém somente o token de projeto deliberadamente
+público; release e credenciais server-side não foram incluídos.
+
+Permanece pendente a validação externa, que exige acesso ao projeto PostHog não produtivo: executar o
+smoke test, confirmar a ingestão no host regional e verificar as regras de rede do ambiente. Nenhum
+evento temporário foi mantido no código.
