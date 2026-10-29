@@ -2,23 +2,24 @@ import "server-only";
 import { PostHog } from "posthog-node";
 import { getEnv } from "@/lib/server/env";
 
-type PostHogServerState = {
+interface PostHogServerState {
   client: PostHog;
   environment: "development" | "staging";
   release: string;
-};
+}
 
-const globalPostHog = globalThis as typeof globalThis & {
+interface PostHogGlobal {
   __tuaVitrinePostHog?: PostHogServerState;
-};
+}
+
+const globalPostHog = globalThis as typeof globalThis & PostHogGlobal;
 
 export function getPostHogServer(): PostHogServerState | null {
   const env = getEnv();
   const environment = env.NEXT_PUBLIC_APP_ENV;
 
   if (
-    env.POSTHOG_DISABLED ||
-    env.NODE_ENV === "test" ||
+    !env.POSTHOG_SERVER_ENABLED ||
     (environment !== "development" && environment !== "staging") ||
     !env.POSTHOG_PROJECT_TOKEN ||
     !env.POSTHOG_HOST ||

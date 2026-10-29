@@ -1,11 +1,26 @@
 import "server-only";
 import { z } from "zod";
-import { APP_ENVIRONMENTS, parsePostHogHost } from "@/modules/observability/config";
 
 const LOCAL_APP_URL = "http://localhost:3000";
 
 const optionalString = <Schema extends z.ZodType<string>>(schema: Schema) =>
   z.preprocess((value) => (value === "" ? undefined : value), schema.optional());
+
+function parsePostHogHost(value: string, variableName: string) {
+  const host = new URL(value);
+
+  if (
+    host.protocol !== "https:" ||
+    host.username ||
+    host.password ||
+    host.pathname !== "/" ||
+    host.search ||
+    host.hash
+  )
+    throw new Error(`${variableName} deve conter somente uma origem HTTPS.`);
+
+  return host.origin;
+}
 
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -35,7 +50,7 @@ const schema = z.object({
   STRIPE_WEBHOOK_SECRET: optionalString(z.string().startsWith("whsec_")),
   STRIPE_PRICE_BASIC_MONTHLY: optionalString(z.string().startsWith("price_")),
   STRIPE_PRICE_PRO_MONTHLY: optionalString(z.string().startsWith("price_")),
-  NEXT_PUBLIC_APP_ENV: optionalString(z.enum(APP_ENVIRONMENTS)),
+  NEXT_PUBLIC_APP_ENV: optionalString(z.enum(["development", "staging", "production"])),
   NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: optionalString(z.string().min(10).regex(/^\S+$/)),
   NEXT_PUBLIC_POSTHOG_HOST: optionalString(z.string().url()),
   POSTHOG_PROJECT_TOKEN: optionalString(z.string().min(10).regex(/^\S+$/)),
@@ -146,10 +161,12 @@ export function parseEnv(input: Record<string, string | undefined>) {
   if (serverPostHogConfigured && configuredServerPostHogValues < serverPostHogValues.length)
     throw new Error("Configure token, host, ambiente e release do PostHog do servidor juntos.");
 
-  if (env.NEXT_PUBLIC_POSTHOG_HOST)
-    parsePostHogHost(env.NEXT_PUBLIC_POSTHOG_HOST, "NEXT_PUBLIC_POSTHOG_HOST");
-
-  if (env.POSTHOG_HOST) parsePostHogHost(env.POSTHOG_HOST, "POSTHOG_HOST");
+  const browserPostHogHost = env.NEXT_PUBLIC_POSTHOG_HOST
+    ? parsePostHogHost(env.NEXT_PUBLIC_POSTHOG_HOST, "NEXT_PUBLIC_POSTHOG_HOST")
+    : undefined;
+  const serverPostHogHost = env.POSTHOG_HOST
+    ? parsePostHogHost(env.POSTHOG_HOST, "POSTHOG_HOST")
+    : undefined;
 
   if (
     env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN &&
@@ -158,11 +175,7 @@ export function parseEnv(input: Record<string, string | undefined>) {
   )
     throw new Error("Browser e servidor devem usar o mesmo projeto PostHog.");
 
-  if (
-    env.NEXT_PUBLIC_POSTHOG_HOST &&
-    env.POSTHOG_HOST &&
-    new URL(env.NEXT_PUBLIC_POSTHOG_HOST).origin !== new URL(env.POSTHOG_HOST).origin
-  )
+  if (browserPostHogHost && serverPostHogHost && browserPostHogHost !== serverPostHogHost)
     throw new Error("Browser e servidor devem usar o mesmo host PostHog.");
 
   return {
@@ -172,6 +185,8 @@ export function parseEnv(input: Record<string, string | undefined>) {
     MAIL_TRANSPORT: env.RESEND_API_KEY ? ("resend" as const) : ("file" as const),
     STORAGE_DRIVER: configuredR2Values === r2Values.length ? ("r2" as const) : ("local" as const),
     R2_PUBLIC_URL: env.R2_PUBLIC_URL?.replace(/\/$/, ""),
+    NEXT_PUBLIC_POSTHOG_HOST: browserPostHogHost,
+    POSTHOG_HOST: serverPostHogHost,
     BILLING_ENABLED: configuredStripeValues === stripeValues.length,
     POSTHOG_DISABLED: env.NEXT_PUBLIC_POSTHOG_DISABLED === "1",
     POSTHOG_BROWSER_ENABLED:

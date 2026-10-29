@@ -2,9 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
   createBrowserPostHogOptions,
   parseBrowserPostHogConfig,
-  parsePostHogHost,
   shouldInitializeBrowserPostHog,
-} from "@/modules/observability/config";
+} from "@/modules/observability/client/posthog";
 
 describe("configuração pública do PostHog", () => {
   test("ausência de token e host mantém o browser em noop", () => {
@@ -36,9 +35,13 @@ describe("configuração pública do PostHog", () => {
         environment: "preview",
       })
     ).toThrow(/NEXT_PUBLIC_APP_ENV/);
-    expect(() => parsePostHogHost("https://eu.i.posthog.com/capture", "HOST")).toThrow(
-      /origem HTTPS/
-    );
+    expect(() =>
+      parseBrowserPostHogConfig({
+        projectToken: "phc_project_staging",
+        host: "https://eu.i.posthog.com/capture",
+        environment: "staging",
+      })
+    ).toThrow(/origem HTTPS/);
   });
 
   test("desabilita captura automática e mantém produção optada para fora", () => {

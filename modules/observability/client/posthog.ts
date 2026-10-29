@@ -1,18 +1,19 @@
-export const APP_ENVIRONMENTS = ["development", "staging", "production"] as const;
-
-export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
-
-type BrowserPostHogInput = {
+export interface BrowserPostHogInput {
   projectToken?: string | undefined;
   host?: string | undefined;
   environment?: string | undefined;
-};
+}
 
-export type BrowserPostHogConfig = {
+export interface BrowserPostHogConfig {
   projectToken: string;
   host: string;
-  environment: AppEnvironment;
-};
+  environment: "development" | "staging" | "production";
+}
+
+export interface BrowserPostHogRuntime {
+  nodeEnv?: string | undefined;
+  disabled?: string | undefined;
+}
 
 function optionalValue(value: string | undefined) {
   const normalized = value?.trim();
@@ -20,14 +21,16 @@ function optionalValue(value: string | undefined) {
   return normalized || undefined;
 }
 
-function parseProjectToken(value: string, variableName: string) {
+function parseProjectToken(value: string) {
   if (value.length < 10 || /\s/.test(value))
-    throw new Error(`${variableName} deve conter um token de projeto PostHog válido.`);
+    throw new Error(
+      "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN deve conter um token de projeto PostHog válido."
+    );
 
   return value;
 }
 
-export function parsePostHogHost(value: string, variableName: string) {
+function parsePostHogHost(value: string) {
   const host = new URL(value);
 
   if (
@@ -38,16 +41,16 @@ export function parsePostHogHost(value: string, variableName: string) {
     host.search ||
     host.hash
   )
-    throw new Error(`${variableName} deve conter somente uma origem HTTPS.`);
+    throw new Error("NEXT_PUBLIC_POSTHOG_HOST deve conter somente uma origem HTTPS.");
 
   return host.origin;
 }
 
-export function parseAppEnvironment(value: string) {
-  if (!APP_ENVIRONMENTS.includes(value as AppEnvironment))
-    throw new Error(`NEXT_PUBLIC_APP_ENV deve ser um de: ${APP_ENVIRONMENTS.join(", ")}.`);
+function parseEnvironment(value: string) {
+  if (value !== "development" && value !== "staging" && value !== "production")
+    throw new Error("NEXT_PUBLIC_APP_ENV deve ser um de: development, staging, production.");
 
-  return value as AppEnvironment;
+  return value;
 }
 
 export function parseBrowserPostHogConfig(input: BrowserPostHogInput): BrowserPostHogConfig | null {
@@ -70,9 +73,9 @@ export function parseBrowserPostHogConfig(input: BrowserPostHogInput): BrowserPo
     throw new Error("Configuração PostHog do browser incompleta.");
 
   return {
-    projectToken: parseProjectToken(projectToken, "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN"),
-    host: parsePostHogHost(host, "NEXT_PUBLIC_POSTHOG_HOST"),
-    environment: parseAppEnvironment(environment),
+    projectToken: parseProjectToken(projectToken),
+    host: parsePostHogHost(host),
+    environment: parseEnvironment(environment),
   };
 }
 
@@ -100,7 +103,7 @@ export function createBrowserPostHogOptions(config: BrowserPostHogConfig) {
 
 export function shouldInitializeBrowserPostHog(
   config: BrowserPostHogConfig | null,
-  runtime: { nodeEnv?: string | undefined; disabled?: string | undefined }
+  runtime: BrowserPostHogRuntime
 ) {
   return Boolean(
     config &&

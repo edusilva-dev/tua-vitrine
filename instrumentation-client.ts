@@ -3,7 +3,7 @@ import {
   createBrowserPostHogOptions,
   parseBrowserPostHogConfig,
   shouldInitializeBrowserPostHog,
-} from "@/modules/observability/config";
+} from "@/modules/observability/client/posthog";
 
 try {
   const config = parseBrowserPostHogConfig({
@@ -23,6 +23,5 @@ try {
     posthog.register({ environment: config.environment });
   }
 } catch (error) {
-  // biome-ignore lint/suspicious/noConsole: instrumentation failures must remain visible without breaking hydration.
-  console.error("[observability] PostHog do browser não foi inicializado.", error);
+  globalThis.reportError(error);
 }
