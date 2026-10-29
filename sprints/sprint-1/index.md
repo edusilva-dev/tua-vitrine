@@ -192,7 +192,7 @@ aprovar e documentar uma base legal, finalidade, retenção e mecanismo de oposi
    captura server-side, inclusive em webhooks. Uma preferência apenas em cookie/localStorage não
    satisfaz este caminho.
 
-O caminho escolhido deve ser registrado neste documento antes da implementação das tarefas 05 e 06.
+O caminho escolhido deve ser registrado neste documento antes da implementação das tarefas 06 e 07.
 Até lá, o adaptador server-side opera em noop em produção. Esta é uma decisão de engenharia
 conservadora, não parecer jurídico. A política final, prazos de retenção e textos devem ser aprovados
 pelo responsável do produto.
