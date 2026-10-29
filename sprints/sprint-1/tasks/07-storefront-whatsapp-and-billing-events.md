@@ -1,4 +1,4 @@
-# 06 — Instrumentar vitrine, WhatsApp e billing
+# 07 — Instrumentar vitrine, WhatsApp e billing
 
 ## Objetivo
 
@@ -21,7 +21,10 @@ Instrumentar:
 - `subscription_cancelled` — após cancelamento confirmado ou agendado, com semântica explícita.
 
 Para WhatsApp, capturar antes da navegação com transporte apropriado, sem aguardar/bloquear a UX.
-Para Stripe, usar `event.id`/registro `StripeWebhookEvent` para impedir duplicidade.
+Para Stripe, usar `event.id`/registro `StripeWebhookEvent` para impedir duplicidade. O processamento
+deve informar se o webhook foi aplicado pela primeira vez antes de capturar, evitando que uma
+reentrega que retornou cedo em `P2002` repita o evento. Captura server-side de billing permanece noop
+em produção até a política definida no documento mestre ser aprovada e implementada.
 
 ## Arquivos/áreas afetadas
 
@@ -41,6 +44,7 @@ Para Stripe, usar `event.id`/registro `StripeWebhookEvent` para impedir duplicid
 - [ ] evento de WhatsApp não contém telefone, mensagem, nome, preço ou carrinho;
 - [ ] navegação para WhatsApp continua mesmo se analytics falhar;
 - [ ] reentrega do mesmo webhook não duplica assinatura;
+- [ ] o adaptador server-side respeita a política de habilitação/base legal aprovada;
 - [ ] mudança de plano/cancelamento informa plano e estado corretos;
 - [ ] falha de captura não faz o webhook retornar erro após a atualização ter sido aplicada;
 - [ ] eventos de vitrine mantêm visitante anônimo e grupo da loja.

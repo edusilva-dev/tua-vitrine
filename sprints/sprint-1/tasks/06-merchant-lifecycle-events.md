@@ -1,4 +1,4 @@
-# 05 — Instrumentar eventos do ciclo do lojista
+# 06 — Instrumentar eventos do ciclo do lojista
 
 ## Objetivo
 
@@ -14,7 +14,9 @@ de UI e permanece no browser.
 
 Instrumentar:
 
-- `account_created` — conforme decisão da tarefa 03;
+- `account_created` — conforme identidade da tarefa 03 e política da tarefa 05; preferir hook de
+  servidor autorizado ou, quando consentimento do browser for exigido, retorno de cadastro concluído
+  com UUID e idempotência documentada;
 - `store_created` — após a loja existir e o contexto ser definido;
 - `product_creation_started` — uma vez por abertura real do formulário de novo produto;
 - `product_created` — após criação, distinguindo `manual` e `import`;
@@ -24,7 +26,9 @@ Instrumentar:
 Preservar idempotência das rotas e não emitir sucesso em validação rejeitada, conflito, retry
 idempotente já processado ou edição de produto existente. Eventos server-side do onboarding devem
 receber o `distinct_id` do lojista responsável, além do grupo da loja, para alimentar os dois funis
-sem misturar identidades.
+sem misturar identidades. Uma importação emite um `product_created` por produto persistido, cada um
+com seu `product_id` e `creation_method = "import"`; o serviço deve disponibilizar internamente os IDs
+criados sem expô-los desnecessariamente na resposta pública.
 
 ## Arquivos/áreas afetadas
 
@@ -41,11 +45,12 @@ sem misturar identidades.
 ## Critérios de aceite
 
 - [ ] cada evento ocorre somente após o marco correspondente;
+- [ ] `account_created` ocorre uma vez por conta criada com sucesso e respeita a política aprovada;
 - [ ] edição não emite `product_created`;
 - [ ] primeiro produto emite `product_created` e uma única `store_published`;
 - [ ] produtos posteriores não repetem `store_published`;
-- [ ] importação informa `creation_method = "import"` sem evento por linha se isso gerar volume
-  desnecessário; a decisão fica documentada;
+- [ ] importação emite um `product_created` por produto, com `product_id` singular e sem lista de IDs
+  em uma propriedade agregada;
 - [ ] exclusão em lote não envia lista de IDs nem nomes;
 - [ ] retry com idempotency key não duplica eventos;
 - [ ] `store_created`, primeiro `product_created` e `store_published` preservam o `distinct_id` do

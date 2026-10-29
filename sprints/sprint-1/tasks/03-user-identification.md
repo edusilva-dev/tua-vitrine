@@ -18,7 +18,8 @@ anônimos. A identificação não deve enviar nome ou e-mail.
 - configurar perfis como `identified_only`;
 - resetar o PostHog após logout bem-sucedido e antes de redirecionar;
 - cobrir transições login, logout, nova conta e troca de pessoa no mesmo navegador;
-- emitir `account_created` no ponto confiável escolhido e documentar a decisão;
+- preparar o contexto de identidade necessário para que a tarefa 06 emita `account_created` conforme
+  a política definida na tarefa 05;
 - não identificar sessões locais com `AUTH_ENABLED = false` como uma pessoa real.
 
 ## Arquivos/áreas afetadas
@@ -37,20 +38,17 @@ anônimos. A identificação não deve enviar nome ou e-mail.
 - [ ] identify não dispara repetidamente a cada render;
 - [ ] logout chama reset e a próxima sessão recebe identidade independente;
 - [ ] visitante público continua anônimo;
-- [ ] `account_created` ocorre uma vez por conta criada com sucesso;
 - [ ] falha do PostHog não impede cadastro, login ou logout;
 - [ ] fluxo local sem auth não cria uma pessoa fictícia.
 
 ## Validação
 
 - teste unitário do componente com mudanças de identidade;
-- teste de integração do ponto de emissão de `account_created`;
 - E2E login → painel → logout → novo visitante;
 - inspeção no PostHog de uma pessoa de teste sem PII;
 - lint, typecheck e testes de autenticação relacionados.
 
 ## Observações
 
-Se o hook de criação do Better Auth disparar antes da transação estar confirmada ou não fornecer
-idempotência suficiente, registrar a limitação e escolher o próximo ponto confiável. Não capturar
-`account_created` apenas no clique do formulário.
+A emissão de `account_created` pertence à tarefa 06, depois da decisão de privacidade. Não capturar o
+evento apenas no clique do formulário.

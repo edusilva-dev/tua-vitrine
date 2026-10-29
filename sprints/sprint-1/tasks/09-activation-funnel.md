@@ -19,7 +19,9 @@ dados.
 - criar **Store Activation Funnel — Sprint 1**, agregado por loja, com `store_created` → primeiro
   `product_created` → `store_published` → `catalog_viewed` → `whatsapp_clicked`;
 - usar a janela de 14 dias definida no documento mestre;
-- no funil de loja, agregar por grupo `store` e usar `store_id` como fallback documentado;
+- no funil de loja, agregar por grupo `store`;
+- se Group Analytics não estiver disponível, criar e validar uma consulta HogQL que agregue a
+  sequência por `store_id`; breakdown/filtro por propriedade não é fallback válido;
 - filtrar `environment = production` na versão oficial;
 - configurar visualização de conversão geral e relativa;
 - adicionar breakdowns úteis por plano/origem;
@@ -40,6 +42,7 @@ dados.
 - [ ] janela de conversão de 14 dias;
 - [ ] ambiente de produção filtrado no insight oficial;
 - [ ] unidade de agregação de cada funil está documentada;
+- [ ] fallback, se usado, é HogQL agregado por `store_id` e foi validado contra coorte conhecida;
 - [ ] breakdown por plano funciona;
 - [ ] fluxo canônico aparece em ordem e sem duplicidade indevida;
 - [ ] drop-offs podem ser abertos para eventos/replays consentidos;
@@ -50,6 +53,7 @@ dados.
 - criar uma conta/loja sintética em staging e concluir toda a jornada;
 - conferir timestamps, pessoa, grupo, propriedades e contagem em cada passo;
 - repetir um passo e confirmar que o funil não infla a unidade agregada;
+- se usar HogQL, comparar o resultado com uma contagem manual por `store_id`;
 - testar filtro por plano e origem;
 - registrar capturas/evidências sem dados pessoais.
 
