@@ -16,6 +16,7 @@ funcional, de privacidade, custos e operação.
 - conferir nomes, propriedades, identidade, grupo, ambiente e release;
 - testar indisponibilidade do PostHog e ad blocker;
 - testar login/logout, troca de loja, preview e reentrega de webhook;
+- validar plano efetivo após trial, upgrade, downgrade e cancelamento;
 - concluir auditoria de payloads e replays;
 - validar funil e dashboard com dados conhecidos;
 - definir amostragem/retention e alertas de volume/custo disponíveis;
@@ -38,7 +39,8 @@ funcional, de privacidade, custos e operação.
 - [ ] os 11 eventos foram exercitados com resultado esperado;
 - [ ] eventos não duplicam em retries previstos;
 - [ ] PostHog indisponível não bloqueia fluxos;
-- [ ] rejeição/revogação de consentimento interrompe captura;
+- [ ] rejeição/revogação interrompe captura client-side/replay e a política server-side aprovada é
+  respeitada;
 - [ ] auditoria não encontra PII, segredo, query string ou conteúdo livre;
 - [ ] funil e dashboard refletem a coorte sintética;
 - [ ] retenção, acesso, owner e kill switch estão documentados;
@@ -53,7 +55,7 @@ Executar, no mínimo:
 2. criação, edição, importação e exclusão simples/em lote de produtos;
 3. vitrine → produto → WhatsApp por hero, card, detalhe e carrinho;
 4. assinatura iniciada, reentrega de webhook e cancelamento;
-5. consentimento aceito, rejeitado e revogado;
+5. consentimento aceito, rejeitado e revogado, mais oposição/política server-side;
 6. logout e nova conta no mesmo navegador;
 7. preview do admin;
 8. PostHog bloqueado/indisponível;

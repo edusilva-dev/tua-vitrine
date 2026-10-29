@@ -131,9 +131,10 @@ modules/observability/
 - **Eventos de resultado de negócio** (`store_created`, `store_published`, `product_created`,
   `product_deleted`, `subscription_started`, `subscription_cancelled`) nascem no servidor, após a
   operação persistir com sucesso.
-- `account_created` deve ser emitido pelo fluxo confiável de criação da conta. A implementação deve
-  preferir um hook de servidor do Better Auth; só usar o retorno do cliente se o hook não oferecer um
-  identificador e uma garantia adequados, registrando a decisão.
+- `account_created` deve ser emitido pelo fluxo confiável de criação da conta e obedecer à política da
+  tarefa 05. A implementação deve preferir um hook de servidor do Better Auth quando a captura
+  server-side estiver autorizada; se a política exigir consentimento do browser, usar o retorno de
+  sucesso do cliente com o UUID devolvido e idempotência documentada.
 - Falha de telemetria nunca desfaz nem bloqueia a operação do produto. A captura é best-effort e erros
   usam o `logger` sem dados sensíveis.
 
@@ -175,15 +176,26 @@ pessoais/administrativas nunca entram no browser nem no repositório.
 risco de coletar texto, URL ou valores de formulário. Pageviews genéricos não substituem
 `catalog_viewed`. Heatmaps serão avaliados em outro sprint.
 
-### 8. Consentimento antes da captura não essencial
+### 8. Base legal e consentimento por canal
 
-Analytics e replay só iniciam após consentimento válido no ambiente de produção. A interface deve
-oferecer aceitar, rejeitar e alterar a escolha posteriormente. A rejeição não pode impedir o uso da
-aplicação. Até a decisão jurídica sobre hipótese legal e política de privacidade ser registrada, o
-rollout de produção permanece bloqueado.
+Captura no browser e Session Replay só iniciam após consentimento válido no ambiente de produção. A
+interface deve oferecer aceitar, rejeitar e alterar a escolha posteriormente. A rejeição não pode
+impedir o uso da aplicação.
 
-Esta é uma decisão de engenharia conservadora, não parecer jurídico. A política final, prazos de
-retenção e textos devem ser aprovados pelo responsável do produto.
+Eventos server-side não conseguem inferir a escolha guardada apenas no navegador, especialmente em
+webhooks Stripe. Eles permanecem desabilitados em produção até o responsável por produto/privacidade
+aprovar e documentar uma base legal, finalidade, retenção e mecanismo de oposição. Há dois caminhos:
+
+1. **legítimo interesse aprovado:** registrar a avaliação correspondente e disponibilizar oposição;
+   eventos server-side mínimos podem ser capturados independentemente do consentimento do browser;
+2. **consentimento:** persistir a decisão por usuário/loja no servidor e consultá-la antes de cada
+   captura server-side, inclusive em webhooks. Uma preferência apenas em cookie/localStorage não
+   satisfaz este caminho.
+
+O caminho escolhido deve ser registrado neste documento antes da implementação das tarefas 05 e 06.
+Até lá, o adaptador server-side opera em noop em produção. Esta é uma decisão de engenharia
+conservadora, não parecer jurídico. A política final, prazos de retenção e textos devem ser aprovados
+pelo responsável do produto.
 
 ## Ferramentas escolhidas
 
@@ -246,6 +258,7 @@ Todo evento deve receber automaticamente, quando aplicável:
 
 Não repetir `user_id` nas propriedades: a identidade da pessoa já é o `distinct_id`. IDs internos de
 produto podem ser enviados quando necessários ao diagnóstico, mas nomes, descrições e imagens não.
+`plan` sempre significa o plano efetivo calculado por `getEntitlements`, nunca `StoreDTO.signupPlan`.
 
 ### Valores controlados
 
@@ -294,8 +307,8 @@ Agregação: pessoa identificada (`user.id`). Todos os eventos server-side deste
 
 ### 2. Store Activation Funnel — Sprint 1
 
-Este é o **Activation Funnel** principal. Agregação: grupo `store`, com fallback por `store_id` se
-Group Analytics não estiver disponível.
+Este é o **Activation Funnel** principal. Agregação: grupo `store`. Group Analytics é dependência do
+funil padrão, pois um breakdown/filtro por `store_id` não muda a unidade de agregação de pessoa.
 
 1. `store_created`;
 2. `product_created` com `is_first_product = true`;
@@ -312,6 +325,12 @@ Configuração inicial dos dois insights:
 - não exigir `subscription_started` para considerar ativação;
 - documentar data de criação, proprietário e link de cada insight.
 
+Se Group Analytics não estiver disponível, não criar um funil padrão e chamá-lo de funil de loja.
+Criar um insight HogQL que agregue explicitamente cada passo por `store_id`, documentar a consulta e
+validá-la contra uma coorte conhecida. Se isso não for viável no plano contratado, o Store Activation
+Funnel fica bloqueado; tendências separadas por `store_id` podem ser exibidas, mas não substituem a
+conversão sequencial.
+
 A sequência preserva `product_created` e `store_published` como passos distintos porque o primeiro
 mede criação de valor e o segundo confirma a mudança de estado da loja. Eles podem ter timestamps
 próximos, mas significados diferentes. O dashboard pode apresentar os dois funis lado a lado, mas não
@@ -327,7 +346,11 @@ Cartões mínimos:
 2. lojas criadas — total de grupos únicos;
 3. lojas publicadas — total e taxa sobre lojas criadas;
 4. primeiros produtos criados — `product_created` com `is_first_product = true`;
-5. lojas ativas em 7 dias — grupos com qualquer evento relevante nos últimos 7 dias;
+5. lojas ativas em 7 dias — lojas com pelo menos um dos eventos `store_created`,
+   `product_creation_started`, `product_created`, `product_deleted`, `store_published`,
+   `catalog_viewed`, `product_viewed`, `whatsapp_clicked`, `subscription_started` ou
+   `subscription_cancelled` nos últimos 7 dias, agregadas por grupo `store` ou consulta HogQL por
+   `store_id`;
 6. visualizações de catálogo — total e lojas únicas;
 7. visualizações de produto — total e taxa por `catalog_viewed`;
 8. cliques no WhatsApp — total, lojas únicas e taxa por `catalog_viewed`;
@@ -364,7 +387,8 @@ conteúdo de suporte ou dado de cobrança visível no replay impede o rollout.
 - não enviar dados pessoais diretos ao PostHog;
 - tratar IDs internos, IP e identificadores de dispositivo como dados potencialmente pessoais;
 - disponibilizar escolha clara para aceitar/rejeitar analytics e revogar depois;
-- manter PostHog desativado antes da escolha quando consentimento for a base adotada;
+- manter captura client-side/replay desativada antes da escolha;
+- manter captura server-side desativada em produção até a base legal ser aprovada e implementada;
 - documentar operador, região, retenção, acesso, exclusão e atendimento aos direitos do titular na
   política de privacidade;
 - criar procedimento para exclusão/anonimização de pessoa no PostHog quando aplicável;
@@ -410,6 +434,7 @@ aprovação de texto e hipótese legal é uma dependência do produto/jurídico,
 | Vazamento de dados em replay | Alto | consentimento, máscara máxima, `ph-no-capture`, auditoria bloqueante |
 | Eventos duplicados | Alto | origem de sucesso no servidor, idempotência Stripe, testes de reentrega |
 | Identidades misturadas | Alto | `identify` com UUID interno, `reset` no logout, teste de troca de conta/loja |
+| Preferência só no browser não alcançar webhook | Alto | base legal separada ou consentimento persistido e consultado no servidor |
 | Dados de teste em produção | Médio | projetos separados ou `environment` obrigatório, SDK noop em testes |
 | Métricas inconsistentes com PostgreSQL | Médio | responsabilidades distintas e definições explícitas; não prometer igualdade 1:1 |
 | Alto custo/volume | Médio | sem autocapture, perfis só identificados, propriedades mínimas, revisão de volume |
@@ -424,9 +449,9 @@ aprovação de texto e hipótese legal é uma dependência do produto/jurídico,
 - escolha da região do projeto e ambientes;
 - variáveis configuradas em desenvolvimento, staging e produção;
 - permissão para criar insights e dashboards;
-- decisão de produto/jurídico sobre consentimento, política e retenção;
+- decisão de produto/privacidade sobre base legal do browser e do servidor, política e retenção;
 - release/SHA disponível no deploy, ou decisão documentada de deixar `release = null` inicialmente;
-- Group Analytics disponível ou aceite formal do fallback por `store_id`.
+- Group Analytics disponível ou consulta HogQL por `store_id` implementada e validada.
 
 Nenhuma dessas dependências autoriza inserir segredos no repositório.
 
@@ -438,16 +463,17 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 | 02 | [Criar contrato e wrapper de analytics](./tasks/02-analytics-contract-and-wrapper.md) | 01 | Pendente |
 | 03 | [Identificar o usuário autenticado](./tasks/03-user-identification.md) | 02 | Pendente |
 | 04 | [Identificar e agrupar por loja](./tasks/04-store-identification.md) | 02, 03 | Pendente |
-| 05 | [Instrumentar eventos do lojista](./tasks/05-merchant-lifecycle-events.md) | 02–04 | Pendente |
-| 06 | [Instrumentar vitrine, WhatsApp e billing](./tasks/06-storefront-whatsapp-and-billing-events.md) | 02–04 | Pendente |
-| 07 | [Habilitar Session Replay](./tasks/07-session-replay.md) | 01–04 | Pendente |
-| 08 | [Aplicar consentimento e privacy masking](./tasks/08-consent-and-privacy-masking.md) | 07 | Pendente |
-| 09 | [Criar Activation Funnel](./tasks/09-activation-funnel.md) | 05, 06 | Pendente |
-| 10 | [Criar Product Health Dashboard](./tasks/10-product-health-dashboard.md) | 05, 06, 09 | Pendente |
+| 05 | [Implementar consentimento e política do servidor](./tasks/05-consent-and-server-privacy-policy.md) | 01–04 | Pendente |
+| 06 | [Instrumentar eventos do lojista](./tasks/06-merchant-lifecycle-events.md) | 02–05 | Pendente |
+| 07 | [Instrumentar vitrine, WhatsApp e billing](./tasks/07-storefront-whatsapp-and-billing-events.md) | 02–05 | Pendente |
+| 08 | [Habilitar replay e privacy masking](./tasks/08-session-replay-and-privacy-masking.md) | 01–05 | Pendente |
+| 09 | [Criar Activation Funnel](./tasks/09-activation-funnel.md) | 06, 07 | Pendente |
+| 10 | [Criar Product Health Dashboard](./tasks/10-product-health-dashboard.md) | 06, 07, 09 | Pendente |
 | 11 | [Validar e liberar o rollout](./tasks/11-validation-and-rollout.md) | 01–10 | Pendente |
 
-Tarefas 09 e 10 só começam depois de os eventos aparecerem no projeto de desenvolvimento/staging com
-propriedades corretas. A produção só é habilitada após concluir a tarefa 11.
+Tarefas 06 e 07 só começam após a decisão da tarefa 05 estar registrada. Tarefas 09 e 10 só começam
+depois de os eventos aparecerem no projeto de desenvolvimento/staging com propriedades corretas. A
+produção só é habilitada após concluir a tarefa 11.
 
 ## Definição de pronto do sprint
 

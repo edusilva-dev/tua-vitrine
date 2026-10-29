@@ -15,7 +15,8 @@ podem divergir das métricas internas por consentimento, bloqueadores e origem c
 - criar dashboard **Product Health — Sprint 1**;
 - adicionar os dez cartões definidos no documento mestre;
 - usar período padrão de 30 dias e filtro de produção;
-- definir “loja ativa em 7 dias” como grupo com evento relevante no período;
+- definir “loja ativa em 7 dias” pela lista exata do documento mestre e agregar por grupo `store` ou
+  HogQL explícito por `store_id`;
 - usar lojas únicas, usuários únicos ou eventos totais conforme o significado do cartão;
 - adicionar descrições, owner e última revisão;
 - incluir os funis de onboarding do lojista e ativação da loja;
@@ -36,6 +37,7 @@ podem divergir das métricas internas por consentimento, bloqueadores e origem c
 - [ ] filtro de produção está aplicado;
 - [ ] planos podem ser comparados onde aplicável;
 - [ ] contagem de lojas usa grupo ou `store_id`, nunca pessoas por engano;
+- [ ] cartão de lojas ativas usa exatamente os eventos qualificadores do documento mestre;
 - [ ] billing é apresentado como tendência analítica, não fonte financeira;
 - [ ] dashboard inclui os dois funis validados sem uni-los artificialmente;
 - [ ] links e owner estão registrados sem segredos.

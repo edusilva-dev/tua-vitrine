@@ -19,7 +19,9 @@ camada fica em `modules/observability`.
 - criar adaptador cliente sobre `posthog-js` e servidor sobre `posthog-node`;
 - aceitar apenas enums e propriedades documentadas;
 - normalizar nomes de plano e valores ausentes;
-- aplicar noop quando desabilitado ou sem consentimento;
+- aplicar noop quando desabilitado; no cliente, também quando não houver consentimento;
+- manter o adaptador de servidor em noop na produção enquanto a base legal/controle server-side não
+  estiver aprovado e implementado;
 - capturar falhas de telemetria sem bloquear a operação e sem `console.*`;
 - tornar o wrapper injetável/testável;
 - impedir imports diretos do SDK por lint/teste de arquitetura, se viável sem complexidade excessiva.
@@ -39,7 +41,8 @@ camada fica em `modules/observability`.
 - [ ] não existe método público genérico com nome/payload livres;
 - [ ] propriedades comuns são aplicadas de modo consistente;
 - [ ] propriedades proibidas e desconhecidas falham em teste/desenvolvimento;
-- [ ] noop é silencioso e testado;
+- [ ] noop é silencioso e testado no cliente e no servidor;
+- [ ] cliente respeita consentimento e servidor respeita a política de habilitação definida;
 - [ ] falha do fornecedor não altera o resultado da operação de negócio;
 - [ ] imports de `posthog-js`/`posthog-node` ficam restritos aos adaptadores/bootstrap;
 - [ ] testes cobrem nome final, propriedades, sanitização e erro do cliente PostHog.
