@@ -10,18 +10,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Instruções do tua-vitrine
 
-## Harness e coordenação
+## Referência obrigatória
 
-- A sessão principal atua como orquestrador. Para implementar demandas, leia
-  `.agents/skills/tua-orchestrate/SKILL.md`; operação e exemplos em `docs/ai-workflow.md`.
-- Execute comandos OpenSpec com `bun run spec -- <argumentos>`, inclusive quando as skills geradas
-  mostrarem `openspec ...`. Use a dependência local fixada; não instale CLI global.
-- Cada demanda que altera arquivos usa `codex/<task>` (kebab-case; mesmo ID do OpenSpec).
+- Antes de implementar ou revisar código, leia `DEVELOPMENT.md`. Ele é a referência canônica para
+  organização, TypeScript, ambiente, backend, frontend, testes e estilo.
+- Cada demanda que altera arquivos usa `codex/<task>` em kebab-case.
   Crie a branch antes de editar; continuação reutiliza a branch da mesma tarefa.
   Nunca implemente diretamente em `master`, `main` ou `staging`.
-- Delegue explicitamente exploração, implementação e revisão quando útil, usando os perfis em
-  `.codex/agents/`. Envie contexto delimitado, critérios de aceite e arquivos de responsabilidade.
-  Paralelize apenas trabalhos independentes; subagentes não delegam nem operam Git.
 - Toda entrega exige revisor independente do autor, inclusive correções feitas pelo orquestrador.
   O revisor não edita. Mudanças após a revisão exigem nova revisão do delta e da integração.
 - Somente o orquestrador faz commits, push e abre PR. Merge é sempre manual pelo usuário.
