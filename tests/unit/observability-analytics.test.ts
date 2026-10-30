@@ -301,6 +301,7 @@ describe("limite arquitetural dos SDKs do PostHog", () => {
     const allowed = new Set([
       "instrumentation-client.ts",
       "modules/observability/client/analytics.ts",
+      "modules/observability/client/identity.ts",
       "modules/observability/server/posthog.ts",
     ]);
     const imports: string[] = [];
