@@ -1,7 +1,0 @@
-# A sessão principal é o orquestrador. Preferências explícitas da sessão podem prevalecer.
-model = "gpt-6.1-sol"
-model_reasoning_effort = "high"
-
-[agents]
-enabled = true
-max_concurrent_threads_per_session = 3
