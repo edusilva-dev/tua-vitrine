@@ -67,7 +67,8 @@ telefone, slug, mensagem, descrição, termo de busca, URL completa ou objeto li
 - `client/analytics.ts` expõe somente os quatro eventos de interação e exige consentimento explícito;
 - `server/analytics.ts` expõe somente os sete eventos de resultado e recebe `distinctId` fora das
   propriedades do evento;
-- `distinctId` aceita o formato opaco do Better Auth, sem presumir que IDs de usuário são UUIDs;
+- `distinctId` aceita somente os 32 caracteres alfanuméricos gerados pela configuração atual do
+  Better Auth, sem presumir UUID e sem aceitar e-mail, telefone, nome ou slug;
 - `source` e `surface` são derivados pelo contrato, nunca aceitos como texto livre do chamador;
 - valores opcionais ausentes não são enviados e `release` pode ser `null` no browser;
 - propriedades desconhecidas são rejeitadas em desenvolvimento/testes e descartam o evento em

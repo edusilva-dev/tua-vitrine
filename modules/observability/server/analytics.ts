@@ -58,10 +58,7 @@ export interface ServerAnalytics {
 const identitySchema = z.strictObject({
   distinctId: z
     .string()
-    .min(1)
-    .max(200)
-    .regex(/^\S+$/)
-    .refine((value) => !value.includes("@"), "distinctId deve ser um ID interno, nunca um e-mail."),
+    .regex(/^[A-Za-z0-9]{32}$/, "distinctId deve usar o formato interno do Better Auth."),
 });
 
 function safelyReportError(

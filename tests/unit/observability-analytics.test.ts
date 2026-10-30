@@ -11,7 +11,7 @@ import {
   type ServerAnalyticsMessage,
 } from "@/modules/observability/server/analytics";
 
-const userId = "better-auth-user_123";
+const userId = "aB3dE5fG7hJ9kL2mN4pQ6rS8tV1xY3zW";
 const storeId = "22222222-2222-4222-8222-222222222222";
 const productId = "33333333-3333-4333-8333-333333333333";
 
@@ -245,13 +245,23 @@ describe("wrapper de observabilidade do servidor", () => {
     expect(production.events).toEqual([]);
   });
 
-  test("aceita o ID opaco do Better Auth e recusa e-mail como identidade", () => {
+  test("aceita o ID do Better Auth e recusa identificadores pessoais", () => {
     const { analytics, events } = createServerHarness();
+    const forbiddenIdentities = [
+      "nao-usar-email@example.com",
+      "+5511999999999",
+      "Nome Pessoal",
+      "slug-da-loja",
+    ];
 
     analytics.accountCreated({ distinctId: userId }, { signupPlan: "FREE" });
-    expect(() =>
-      analytics.accountCreated({ distinctId: "nao-usar-email@example.com" }, { signupPlan: "FREE" })
-    ).toThrow(/ID interno/);
+
+    for (const distinctId of forbiddenIdentities) {
+      expect(() => analytics.accountCreated({ distinctId }, { signupPlan: "FREE" })).toThrow(
+        /Better Auth/
+      );
+    }
+
     expect(events).toHaveLength(1);
   });
 
@@ -294,17 +304,18 @@ describe("limite arquitetural dos SDKs do PostHog", () => {
       "modules/observability/server/posthog.ts",
     ]);
     const imports: string[] = [];
-    const glob = new Glob("{app,components,lib,modules,scripts}/**/*.{ts,tsx}");
+    const globs = [
+      new Glob("*.{ts,tsx}"),
+      new Glob("{app,components,lib,modules,scripts}/**/*.{ts,tsx}"),
+    ];
 
-    for await (const path of glob.scan({ cwd: process.cwd() })) {
-      const source = await Bun.file(path).text();
+    for (const glob of globs) {
+      for await (const path of glob.scan({ cwd: process.cwd() })) {
+        const source = await Bun.file(path).text();
 
-      if (/["']posthog-(js|node)["']/.test(source)) imports.push(path);
+        if (/["']posthog-(js|node)["']/.test(source)) imports.push(path);
+      }
     }
-
-    const bootstrap = await Bun.file("instrumentation-client.ts").text();
-
-    if (/["']posthog-(js|node)["']/.test(bootstrap)) imports.push("instrumentation-client.ts");
 
     expect(imports.sort()).toEqual([...allowed].sort());
   });
