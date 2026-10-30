@@ -17,7 +17,7 @@ import {
 } from "@/modules/observability/contracts/events";
 
 export interface BrowserAnalyticsClient {
-  capture(eventName: string, properties: AnalyticsProperties): unknown;
+  capture(eventName: string, properties: AnalyticsProperties, groups: { store: string }): unknown;
 }
 
 export interface BrowserAnalyticsOptions {
@@ -71,7 +71,11 @@ export function createBrowserAnalytics(options: BrowserAnalyticsOptions): Browse
     if (!event) return;
 
     try {
-      options.client.capture(event.name, event.properties);
+      const storeId = event.properties.store_id;
+
+      if (typeof storeId !== "string") return;
+
+      options.client.capture(event.name, event.properties, { store: storeId });
     } catch (error) {
       safelyReportError(options.reportError, error);
     }
@@ -97,7 +101,8 @@ const enabled = isBrowserPostHogEnabled(runtime);
 
 export const analytics = createBrowserAnalytics({
   client: {
-    capture: (eventName, properties) => posthog.capture(eventName, properties),
+    capture: (eventName, properties, groups) =>
+      posthog.capture(eventName, { ...properties, $groups: groups }),
   },
   enabled,
   environment: enabled ? runtime.environment : undefined,

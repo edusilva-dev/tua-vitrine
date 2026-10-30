@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { getEntitlements } from "@/modules/billing/server/entitlements";
+import { AnalyticsIdentity } from "@/modules/observability/components/analytics-identity";
+import { toAnalyticsStoreGroup } from "@/modules/observability/contracts/store-group";
 import { StorefrontPage } from "@/modules/storefront/server-page";
 import { getStoreBySlug } from "@/modules/stores/server/service";
 
@@ -20,10 +22,13 @@ export default async function PublicStorePage({
   const entitlements = await getEntitlements({ storeId: store.id });
 
   return (
-    <StorefrontPage
-      store={store}
-      searchParams={searchParams}
-      showFreeBranding={entitlements.plan === "FREE"}
-    />
+    <>
+      <AnalyticsIdentity userId={null} store={toAnalyticsStoreGroup(store, entitlements.plan)} />
+      <StorefrontPage
+        store={store}
+        searchParams={searchParams}
+        showFreeBranding={entitlements.plan === "FREE"}
+      />
+    </>
   );
 }

@@ -18,6 +18,7 @@ const productId = "33333333-3333-4333-8333-333333333333";
 interface CapturedBrowserEvent {
   eventName: string;
   properties: AnalyticsProperties;
+  groups: { store: string };
 }
 
 function createBrowserHarness(
@@ -32,7 +33,7 @@ function createBrowserHarness(
   const client =
     overrides.client ??
     ({
-      capture: (eventName, properties) => events.push({ eventName, properties }),
+      capture: (eventName, properties, groups) => events.push({ eventName, properties, groups }),
     } satisfies BrowserAnalyticsClient);
   const analytics = createBrowserAnalytics({
     client,
@@ -99,6 +100,7 @@ describe("wrapper de observabilidade do browser", () => {
       location: "product_detail",
     });
     expect(events[3]?.properties).not.toHaveProperty("cart_size");
+    expect(events.every((event) => event.groups.store === storeId)).toBe(true);
     expect("capture" in analytics).toBe(false);
   });
 
@@ -215,6 +217,8 @@ describe("wrapper de observabilidade do servidor", () => {
         signup_plan: "FREE",
       },
     });
+    expect(events[0]).not.toHaveProperty("groups");
+    expect(events.slice(1).every((event) => event.groups?.store === storeId)).toBe(true);
     expect(events[3]?.properties).toMatchObject({
       store_id: storeId,
       product_id: productId,

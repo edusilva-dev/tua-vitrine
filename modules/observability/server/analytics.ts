@@ -25,6 +25,7 @@ export interface ServerAnalyticsMessage {
   distinctId: string;
   event: string;
   properties: AnalyticsProperties;
+  groups?: { store: string };
 }
 
 export interface ServerAnalyticsClient {
@@ -112,10 +113,13 @@ export function createServerAnalytics(options: ServerAnalyticsOptions): ServerAn
     if (!event) return;
 
     try {
+      const storeId = event.properties.store_id;
+
       runtime.client.capture({
         distinctId: parsedIdentity.data.distinctId,
         event: event.name,
         properties: event.properties,
+        ...(typeof storeId === "string" ? { groups: { store: storeId } } : {}),
       });
     } catch (error) {
       safelyReportError(options.reportError, error, event.name);
