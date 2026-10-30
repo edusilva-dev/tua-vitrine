@@ -50,6 +50,7 @@ lint, TypeScript, testes, build e Playwright.
 A produção oficial usa Vercel, Neon PostgreSQL, Cloudflare R2, Resend e Stripe. Consulte:
 
 - [Arquitetura](docs/architecture.md)
+- [Regras de desenvolvimento](DEVELOPMENT.md)
 - [Deploy na Vercel](docs/vercel-deployment.md)
 - [Operação](docs/operations.md)
 - [Armazenamento](docs/storage.md)

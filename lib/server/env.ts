@@ -3,10 +3,27 @@ import { z } from "zod";
 
 const LOCAL_APP_URL = "http://localhost:3000";
 
-const optionalString = (schema: z.ZodString) =>
+const optionalString = <Schema extends z.ZodType<string>>(schema: Schema) =>
   z.preprocess((value) => (value === "" ? undefined : value), schema.optional());
 
+function parsePostHogHost(value: string, variableName: string) {
+  const host = new URL(value);
+
+  if (
+    host.protocol !== "https:" ||
+    host.username ||
+    host.password ||
+    host.pathname !== "/" ||
+    host.search ||
+    host.hash
+  )
+    throw new Error(`${variableName} deve conter somente uma origem HTTPS.`);
+
+  return host.origin;
+}
+
 const schema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z
     .string({ error: "DATABASE_URL é obrigatória." })
     .url()
@@ -33,6 +50,13 @@ const schema = z.object({
   STRIPE_WEBHOOK_SECRET: optionalString(z.string().startsWith("whsec_")),
   STRIPE_PRICE_BASIC_MONTHLY: optionalString(z.string().startsWith("price_")),
   STRIPE_PRICE_PRO_MONTHLY: optionalString(z.string().startsWith("price_")),
+  NEXT_PUBLIC_APP_ENV: optionalString(z.enum(["development", "staging", "production"])),
+  NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: optionalString(z.string().min(10).regex(/^\S+$/)),
+  NEXT_PUBLIC_POSTHOG_HOST: optionalString(z.string().url()),
+  POSTHOG_PROJECT_TOKEN: optionalString(z.string().min(10).regex(/^\S+$/)),
+  POSTHOG_HOST: optionalString(z.string().url()),
+  APP_RELEASE: optionalString(z.string().min(1).max(200)),
+  NEXT_PUBLIC_POSTHOG_DISABLED: z.enum(["0", "1"]).optional(),
 });
 
 export function parseEnv(input: Record<string, string | undefined>) {
@@ -94,6 +118,23 @@ export function parseEnv(input: Record<string, string | undefined>) {
     env.R2_PUBLIC_URL,
   ];
   const configuredR2Values = r2Values.filter(Boolean).length;
+  const browserPostHogValues = [
+    env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN,
+    env.NEXT_PUBLIC_POSTHOG_HOST,
+    env.NEXT_PUBLIC_APP_ENV,
+  ];
+  const configuredBrowserPostHogValues = browserPostHogValues.filter(Boolean).length;
+  const serverPostHogValues = [
+    env.POSTHOG_PROJECT_TOKEN,
+    env.POSTHOG_HOST,
+    env.NEXT_PUBLIC_APP_ENV,
+    env.APP_RELEASE,
+  ];
+  const configuredServerPostHogValues = serverPostHogValues.filter(Boolean).length;
+  const browserPostHogConfigured = Boolean(
+    env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN || env.NEXT_PUBLIC_POSTHOG_HOST
+  );
+  const serverPostHogConfigured = Boolean(env.POSTHOG_PROJECT_TOKEN || env.POSTHOG_HOST);
 
   if (configuredStripeValues > 0 && configuredStripeValues < stripeValues.length)
     throw new Error("Configure todas as quatro variáveis do Stripe juntas.");
@@ -114,6 +155,29 @@ export function parseEnv(input: Record<string, string | undefined>) {
   if (configuredR2Values > 0 && configuredR2Values < r2Values.length)
     throw new Error("Configure todas as cinco variáveis do R2 juntas.");
 
+  if (browserPostHogConfigured && configuredBrowserPostHogValues < browserPostHogValues.length)
+    throw new Error("Configure token, host e ambiente do PostHog do browser juntos.");
+
+  if (serverPostHogConfigured && configuredServerPostHogValues < serverPostHogValues.length)
+    throw new Error("Configure token, host, ambiente e release do PostHog do servidor juntos.");
+
+  const browserPostHogHost = env.NEXT_PUBLIC_POSTHOG_HOST
+    ? parsePostHogHost(env.NEXT_PUBLIC_POSTHOG_HOST, "NEXT_PUBLIC_POSTHOG_HOST")
+    : undefined;
+  const serverPostHogHost = env.POSTHOG_HOST
+    ? parsePostHogHost(env.POSTHOG_HOST, "POSTHOG_HOST")
+    : undefined;
+
+  if (
+    env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN &&
+    env.POSTHOG_PROJECT_TOKEN &&
+    env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN !== env.POSTHOG_PROJECT_TOKEN
+  )
+    throw new Error("Browser e servidor devem usar o mesmo projeto PostHog.");
+
+  if (browserPostHogHost && serverPostHogHost && browserPostHogHost !== serverPostHogHost)
+    throw new Error("Browser e servidor devem usar o mesmo host PostHog.");
+
   return {
     ...env,
     DATABASE_POOL_MAX: env.DATABASE_POOL_MAX ?? (isVercel ? 1 : 10),
@@ -121,7 +185,19 @@ export function parseEnv(input: Record<string, string | undefined>) {
     MAIL_TRANSPORT: env.RESEND_API_KEY ? ("resend" as const) : ("file" as const),
     STORAGE_DRIVER: configuredR2Values === r2Values.length ? ("r2" as const) : ("local" as const),
     R2_PUBLIC_URL: env.R2_PUBLIC_URL?.replace(/\/$/, ""),
+    NEXT_PUBLIC_POSTHOG_HOST: browserPostHogHost,
+    POSTHOG_HOST: serverPostHogHost,
     BILLING_ENABLED: configuredStripeValues === stripeValues.length,
+    POSTHOG_DISABLED: env.NEXT_PUBLIC_POSTHOG_DISABLED === "1",
+    POSTHOG_BROWSER_ENABLED:
+      env.NEXT_PUBLIC_POSTHOG_DISABLED !== "1" &&
+      env.NEXT_PUBLIC_APP_ENV !== "production" &&
+      configuredBrowserPostHogValues === browserPostHogValues.length,
+    POSTHOG_SERVER_ENABLED:
+      env.NEXT_PUBLIC_POSTHOG_DISABLED !== "1" &&
+      env.NODE_ENV !== "test" &&
+      env.NEXT_PUBLIC_APP_ENV !== "production" &&
+      configuredServerPostHogValues === serverPostHogValues.length,
   };
 }
 
