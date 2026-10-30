@@ -1,6 +1,7 @@
 "use client";
 
 import posthog from "posthog-js";
+import { browserAnalyticsConsent } from "@/modules/observability/client/browser-consent";
 import {
   type BrowserPostHogRuntime,
   isBrowserPostHogEnabled,
@@ -107,6 +108,6 @@ export const analytics = createBrowserAnalytics({
   enabled,
   environment: enabled ? runtime.environment : undefined,
   release: null,
-  hasConsent: () => posthog.has_opted_in_capturing(),
+  hasConsent: () => browserAnalyticsConsent.hasConsent(),
   reportError: (error) => globalThis.reportError(error),
 });

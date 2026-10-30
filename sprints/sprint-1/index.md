@@ -6,8 +6,8 @@
 
 ## Estado do sprint
 
-- **Status:** implementação em andamento; tarefas 01, 02, 03 e 04 implementadas, com smoke test externo da
-  tarefa 01 pendente.
+- **Status:** implementação em andamento; tarefas 01, 02, 03 e 04 implementadas; tarefa 05 com controle
+  técnico implementado e decisões de privacidade pendentes. Smoke test externo da tarefa 01 pendente.
 - **Tema:** product analytics e UX analytics com PostHog.
 - **Produto:** Tua Vitrine.
 - **Públicos observados:** lojistas autenticados e visitantes anônimos das vitrines públicas.
@@ -197,6 +197,12 @@ O caminho escolhido deve ser registrado neste documento antes da implementação
 Até lá, o adaptador server-side opera em noop em produção. Esta é uma decisão de engenharia
 conservadora, não parecer jurídico. A política final, prazos de retenção e textos devem ser aprovados
 pelo responsável do produto.
+
+Em 30/10/2026, o responsável pela demanda confirmou que ainda não existe decisão aprovada sobre a
+base legal dos eventos server-side. Portanto, o `noop` de produção permanece obrigatório, inclusive
+para webhooks. A preferência do navegador não autoriza captura no servidor. A escolha entre
+consentimento persistido no servidor e legítimo interesse com oposição, bem como retenção e acesso,
+continua pendente; as tarefas 06 e 07 não devem habilitar eventos de produção antes desse registro.
 
 ## Ferramentas escolhidas
 
@@ -480,7 +486,7 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 | 02 | [Criar contrato e wrapper de analytics](./tasks/02-analytics-contract-and-wrapper.md) | 01 | Implementada |
 | 03 | [Identificar o usuário autenticado](./tasks/03-user-identification.md) | 02 | Implementada; inspeção externa depende da 05 |
 | 04 | [Identificar e agrupar por loja](./tasks/04-store-identification.md) | 02, 03 | Implementada; inspeção externa depende da 05 |
-| 05 | [Implementar consentimento e política do servidor](./tasks/05-consent-and-server-privacy-policy.md) | 01–04 | Pendente |
+| 05 | [Implementar consentimento e política do servidor](./tasks/05-consent-and-server-privacy-policy.md) | 01–04 | Controle técnico implementado; aprovação da política e auditoria pendentes |
 | 06 | [Instrumentar eventos do lojista](./tasks/06-merchant-lifecycle-events.md) | 02–05 | Pendente |
 | 07 | [Instrumentar vitrine, WhatsApp e billing](./tasks/07-storefront-whatsapp-and-billing-events.md) | 02–05 | Pendente |
 | 08 | [Habilitar replay e privacy masking](./tasks/08-session-replay-and-privacy-masking.md) | 01–05 | Pendente |
@@ -523,6 +529,7 @@ O sprint está pronto somente quando:
 | 2026-10-29 | sem autocapture/heatmap no Sprint 1 | minimizar ruído, custo e exposição de dados |
 | 2026-10-29 | resultado no servidor; interação no browser | confiabilidade sem perder contexto de UX |
 | 2026-10-29 | IDs internos, sem PII direta | minimização e correlação estável |
+| 2026-10-30 | nenhuma base legal server-side aprovada; produção em `noop` | decisão confirmada pelo responsável pela demanda na tarefa 05 |
 | 2026-10-29 | replay com máscara máxima e consentimento | rollout conservador para dados não essenciais |
 | 2026-10-30 | browser expõe 4 eventos de interação e servidor 7 eventos de resultado | preservar a origem confiável de cada evento |
 | 2026-10-30 | `source` é derivado pelo contrato, não recebido do chamador | impedir valores livres e divergentes |

@@ -167,6 +167,11 @@
     background: #183c3d;
     color: #fff;
   }
+  body:has(.admin-sidebar) .analytics-consent {
+    @variant lg {
+      @apply ml-64;
+    }
+  }
   .eyebrow {
     margin-bottom: 0.65rem;
     font-size: 0.625rem;
