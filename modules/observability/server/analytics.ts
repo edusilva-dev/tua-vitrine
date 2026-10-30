@@ -86,7 +86,15 @@ export function createServerAnalytics(options: ServerAnalyticsOptions): ServerAn
     identity: ServerAnalyticsIdentity,
     payload: Payload
   ) {
-    const runtime = options.getRuntime();
+    let runtime: ServerAnalyticsRuntime | null;
+
+    try {
+      runtime = options.getRuntime();
+    } catch (error) {
+      safelyReportError(options.reportError, error, definition.name);
+
+      return;
+    }
 
     if (!runtime) return;
 

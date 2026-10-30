@@ -139,7 +139,7 @@ describe("wrapper de observabilidade do browser", () => {
 
   test("falha do fornecedor não altera o fluxo da aplicação", () => {
     const errors: unknown[] = [];
-    const analytics = createBrowserAnalytics({
+    const captureFailure = createBrowserAnalytics({
       client: {
         capture: () => {
           throw new Error("PostHog indisponível");
@@ -151,9 +151,20 @@ describe("wrapper de observabilidade do browser", () => {
       hasConsent: () => true,
       reportError: (error) => errors.push(error),
     });
+    const consentFailure = createBrowserAnalytics({
+      client: { capture: () => undefined },
+      enabled: true,
+      environment: "development",
+      release: null,
+      hasConsent: () => {
+        throw new Error("Estado de consentimento indisponível");
+      },
+      reportError: (error) => errors.push(error),
+    });
 
-    expect(() => analytics.catalogViewed({ storeId, plan: "FREE" })).not.toThrow();
-    expect(errors).toHaveLength(1);
+    expect(() => captureFailure.catalogViewed({ storeId, plan: "FREE" })).not.toThrow();
+    expect(() => consentFailure.catalogViewed({ storeId, plan: "FREE" })).not.toThrow();
+    expect(errors).toHaveLength(2);
   });
 });
 
@@ -246,7 +257,7 @@ describe("wrapper de observabilidade do servidor", () => {
 
   test("falha do fornecedor é reportada sem propagar a exceção", () => {
     const errors: unknown[] = [];
-    const analytics = createServerAnalytics({
+    const captureFailure = createServerAnalytics({
       getRuntime: () => ({
         client: {
           capture: () => {
@@ -258,11 +269,20 @@ describe("wrapper de observabilidade do servidor", () => {
       }),
       reportError: (error) => errors.push(error),
     });
+    const runtimeFailure = createServerAnalytics({
+      getRuntime: () => {
+        throw new Error("Runtime PostHog indisponível");
+      },
+      reportError: (error) => errors.push(error),
+    });
 
     expect(() =>
-      analytics.storeCreated({ distinctId: userId }, { storeId, plan: "FREE" })
+      captureFailure.storeCreated({ distinctId: userId }, { storeId, plan: "FREE" })
     ).not.toThrow();
-    expect(errors).toHaveLength(1);
+    expect(() =>
+      runtimeFailure.storeCreated({ distinctId: userId }, { storeId, plan: "FREE" })
+    ).not.toThrow();
+    expect(errors).toHaveLength(2);
   });
 });
 
@@ -274,17 +294,17 @@ describe("limite arquitetural dos SDKs do PostHog", () => {
       "modules/observability/server/posthog.ts",
     ]);
     const imports: string[] = [];
-    const glob = new Glob("{app,components,lib,modules}/**/*.{ts,tsx}");
+    const glob = new Glob("{app,components,lib,modules,scripts}/**/*.{ts,tsx}");
 
     for await (const path of glob.scan({ cwd: process.cwd() })) {
       const source = await Bun.file(path).text();
 
-      if (/from ["']posthog-(js|node)["']/.test(source)) imports.push(path);
+      if (/["']posthog-(js|node)["']/.test(source)) imports.push(path);
     }
 
     const bootstrap = await Bun.file("instrumentation-client.ts").text();
 
-    if (/from ["']posthog-(js|node)["']/.test(bootstrap)) imports.push("instrumentation-client.ts");
+    if (/["']posthog-(js|node)["']/.test(bootstrap)) imports.push("instrumentation-client.ts");
 
     expect(imports.sort()).toEqual([...allowed].sort());
   });

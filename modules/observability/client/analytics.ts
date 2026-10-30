@@ -51,7 +51,15 @@ export function createBrowserAnalytics(options: BrowserAnalyticsOptions): Browse
   const strict = options.strict ?? process.env.NODE_ENV !== "production";
 
   function capture<Payload>(definition: AnalyticsEventDefinition<Payload>, payload: Payload) {
-    if (!options.enabled || !options.environment || !options.hasConsent()) return;
+    if (!options.enabled || !options.environment) return;
+
+    try {
+      if (!options.hasConsent()) return;
+    } catch (error) {
+      safelyReportError(options.reportError, error);
+
+      return;
+    }
 
     const event = prepareAnalyticsEvent(
       definition,
