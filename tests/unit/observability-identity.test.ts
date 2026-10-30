@@ -8,9 +8,12 @@ import {
   type AnalyticsIdentityState,
   syncAnalyticsIdentity,
 } from "@/modules/observability/components/analytics-identity";
+import { toAnalyticsStoreGroup } from "@/modules/observability/contracts/store-group";
 
 const firstUserId = "aB3dE5fG7hJ9kL2mN4pQ6rS8tV1xY3zW";
 const secondUserId = "Z9yX7wV5tS3rQ1pN8mL6kJ4hG2fE0dCb";
+const firstStoreId = "22222222-2222-4222-8222-222222222222";
+const secondStoreId = "44444444-4444-4444-8444-444444444444";
 
 interface IdentityHarnessOptions {
   enabled?: boolean;
@@ -29,6 +32,7 @@ function createIdentityHarness(options: IdentityHarnessOptions = {}) {
 
       if (options.identifyFailure) throw new Error("PostHog indisponível");
     },
+    group: (storeId, properties) => calls.push(`group:${storeId}:${properties.plan}`),
     reset: () => {
       calls.push("reset");
 
@@ -134,6 +138,8 @@ describe("sincronização da identidade autenticada", () => {
 
         return true;
       },
+      group: () => true,
+      anonymize: () => true,
       reset: () => {
         calls.push("reset");
 
@@ -146,5 +152,87 @@ describe("sincronização da identidade autenticada", () => {
 
     expect(calls).toEqual(["reset"]);
     expect(state.currentUserId).toBe(firstUserId);
+  });
+});
+
+describe("associação à loja", () => {
+  test("usa o plano efetivo em vez do plano escolhido no cadastro", () => {
+    const store = {
+      id: firstStoreId,
+      status: "ACTIVE" as const,
+      onboardingStep: 4 as const,
+      signupPlan: "FREE" as const,
+    };
+
+    expect(toAnalyticsStoreGroup(store, "PROFESSIONAL")).toEqual({
+      storeId: firstStoreId,
+      plan: "PROFESSIONAL",
+      status: "ACTIVE",
+      onboarding_step: 4,
+    });
+  });
+
+  test("troca entre duas lojas sem trocar a pessoa", () => {
+    const { calls, identity } = createIdentityHarness();
+    const state = createState();
+    const firstStore = {
+      storeId: firstStoreId,
+      plan: "FREE" as const,
+      status: "DRAFT" as const,
+      onboarding_step: 2,
+    };
+    const secondStore = {
+      storeId: secondStoreId,
+      plan: "PROFESSIONAL" as const,
+      status: "ACTIVE" as const,
+      onboarding_step: 4,
+    };
+
+    syncAnalyticsIdentity(identity, state, firstUserId, firstStore);
+    syncAnalyticsIdentity(identity, state, firstUserId, firstStore);
+    syncAnalyticsIdentity(identity, state, firstUserId, secondStore);
+
+    expect(calls).toEqual([
+      `identify:${firstUserId}`,
+      `group:${firstStoreId}:FREE`,
+      `group:${secondStoreId}:PROFESSIONAL`,
+    ]);
+  });
+
+  test("vitrine pública associa a loja sem identificar visitante e recusa propriedades pessoais", () => {
+    const { calls, identity } = createIdentityHarness();
+    const state = createState();
+
+    syncAnalyticsIdentity(identity, state, null, {
+      storeId: firstStoreId,
+      plan: "FREE",
+      status: "ACTIVE",
+      onboarding_step: 4,
+    });
+
+    expect(calls).toEqual([`group:${firstStoreId}:FREE`]);
+    expect(() =>
+      identity.group({
+        storeId: firstStoreId,
+        plan: "FREE",
+        status: "ACTIVE",
+        onboarding_step: 4,
+        ...{ name: "Não enviar" },
+      })
+    ).toThrow();
+  });
+
+  test("navegação do painel para a vitrine limpa a pessoa antes de agrupar a loja", () => {
+    const { calls, identity } = createIdentityHarness();
+
+    syncAnalyticsIdentity(identity, createState(), firstUserId);
+    syncAnalyticsIdentity(identity, createState(), null, {
+      storeId: firstStoreId,
+      plan: "FREE",
+      status: "ACTIVE",
+      onboarding_step: 4,
+    });
+
+    expect(calls).toEqual([`identify:${firstUserId}`, "reset", `group:${firstStoreId}:FREE`]);
   });
 });

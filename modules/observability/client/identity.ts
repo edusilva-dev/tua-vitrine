@@ -6,9 +6,14 @@ import {
   isBrowserPostHogEnabled,
 } from "@/modules/observability/client/posthog";
 import { analyticsUserIdSchema } from "@/modules/observability/contracts/identity";
+import {
+  type AnalyticsStoreGroup,
+  analyticsStoreGroupSchema,
+} from "@/modules/observability/contracts/store-group";
 
 export interface BrowserIdentityProvider {
   identify(userId: string): void;
+  group(storeId: string, properties: Omit<AnalyticsStoreGroup, "storeId">): void;
   reset(): void;
   hasConsent(): boolean;
 }
@@ -22,6 +27,8 @@ export interface BrowserIdentityOptions {
 
 export interface BrowserIdentity {
   identify(userId: string): boolean;
+  group(store: AnalyticsStoreGroup): boolean;
+  anonymize(): boolean;
   reset(): boolean;
 }
 
@@ -37,6 +44,7 @@ function safelyReportError(reportError: ((error: unknown) => void) | undefined, 
 
 export function createBrowserIdentity(options: BrowserIdentityOptions): BrowserIdentity {
   const strict = options.strict ?? process.env.NODE_ENV !== "production";
+  let identifiedUserId: string | null = null;
 
   return {
     identify(userId) {
@@ -60,6 +68,52 @@ export function createBrowserIdentity(options: BrowserIdentityOptions): BrowserI
 
       try {
         options.provider.identify(parsedUserId.data);
+        identifiedUserId = parsedUserId.data;
+
+        return true;
+      } catch (error) {
+        safelyReportError(options.reportError, error);
+
+        return false;
+      }
+    },
+    group(store) {
+      if (!options.enabled) return false;
+
+      try {
+        if (!options.provider.hasConsent()) return false;
+      } catch (error) {
+        safelyReportError(options.reportError, error);
+
+        return false;
+      }
+
+      const parsed = analyticsStoreGroupSchema.safeParse(store);
+
+      if (!parsed.success) {
+        if (strict) throw parsed.error;
+
+        return false;
+      }
+
+      const { storeId, ...properties } = parsed.data;
+
+      try {
+        options.provider.group(storeId, properties);
+
+        return true;
+      } catch (error) {
+        safelyReportError(options.reportError, error);
+
+        return false;
+      }
+    },
+    anonymize() {
+      if (!identifiedUserId) return true;
+
+      try {
+        options.provider.reset();
+        identifiedUserId = null;
 
         return true;
       } catch (error) {
@@ -71,6 +125,7 @@ export function createBrowserIdentity(options: BrowserIdentityOptions): BrowserI
     reset() {
       try {
         options.provider.reset();
+        identifiedUserId = null;
 
         return true;
       } catch (error) {
@@ -93,6 +148,7 @@ const runtime: BrowserPostHogRuntime = {
 export const analyticsIdentity = createBrowserIdentity({
   provider: {
     identify: (userId) => posthog.identify(userId),
+    group: (storeId, properties) => posthog.group("store", storeId, properties),
     reset: () => posthog.reset(),
     hasConsent: () => posthog.has_opted_in_capturing(),
   },
