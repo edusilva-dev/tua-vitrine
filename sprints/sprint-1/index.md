@@ -6,7 +6,8 @@
 
 ## Estado do sprint
 
-- **Status:** implementação em andamento; tarefa 01 implementada com smoke test externo pendente.
+- **Status:** implementação em andamento; tarefas 01 e 02 implementadas, com smoke test externo da
+  tarefa 01 pendente.
 - **Tema:** product analytics e UX analytics com PostHog.
 - **Produto:** Tua Vitrine.
 - **Públicos observados:** lojistas autenticados e visitantes anônimos das vitrines públicas.
@@ -266,6 +267,22 @@ Usar enums/uniões para propriedades de baixa cardinalidade. Não enviar objetos
 stack traces, URLs completas nem payloads de API. `source` e `surface` têm vocabulário fechado no
 contrato.
 
+Vocabulário inicial de `source`:
+
+| Valor | Origem |
+| --- | --- |
+| `better_auth` | criação de conta confirmada pelo Better Auth |
+| `onboarding` | criação e primeira publicação da loja |
+| `product_form` | abertura explícita do formulário de produto |
+| `catalog_service` | criação ou arquivamento confirmado no serviço de catálogo |
+| `storefront` | interação na vitrine pública real |
+| `stripe_webhook` | transição de assinatura confirmada pelo webhook Stripe |
+
+O contrato recebe objetos em `camelCase`, valida-os com schemas estritos e envia propriedades em
+`snake_case`. Planos reutilizam `billingPlanSchema` e `paidBillingPlanSchema`; não existe uma segunda
+enumeração de planos na observabilidade. Propriedades opcionais ausentes são omitidas, enquanto
+`release` ausente é normalizado para `null`.
+
 ### Catálogo de eventos do Sprint 1
 
 | Evento | Origem confiável | Propriedades específicas mínimas |
@@ -460,7 +477,7 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 | Ordem | Tarefa | Depende de | Status |
 | --- | --- | --- | --- |
 | 01 | [Instalar e configurar o PostHog](./tasks/01-posthog-installation-and-configuration.md) | — | Implementada; smoke test externo pendente |
-| 02 | [Criar contrato e wrapper de analytics](./tasks/02-analytics-contract-and-wrapper.md) | 01 | Pendente |
+| 02 | [Criar contrato e wrapper de analytics](./tasks/02-analytics-contract-and-wrapper.md) | 01 | Implementada |
 | 03 | [Identificar o usuário autenticado](./tasks/03-user-identification.md) | 02 | Pendente |
 | 04 | [Identificar e agrupar por loja](./tasks/04-store-identification.md) | 02, 03 | Pendente |
 | 05 | [Implementar consentimento e política do servidor](./tasks/05-consent-and-server-privacy-policy.md) | 01–04 | Pendente |
@@ -507,3 +524,6 @@ O sprint está pronto somente quando:
 | 2026-10-29 | resultado no servidor; interação no browser | confiabilidade sem perder contexto de UX |
 | 2026-10-29 | IDs internos, sem PII direta | minimização e correlação estável |
 | 2026-10-29 | replay com máscara máxima e consentimento | rollout conservador para dados não essenciais |
+| 2026-10-30 | browser expõe 4 eventos de interação e servidor 7 eventos de resultado | preservar a origem confiável de cada evento |
+| 2026-10-30 | `source` é derivado pelo contrato, não recebido do chamador | impedir valores livres e divergentes |
+| 2026-10-30 | schemas de billing são a fonte dos nomes de plano | evitar enumeração duplicada |
