@@ -14,6 +14,7 @@ import {
   type SubscriptionCancelledPayload,
   type SubscriptionStartedPayload,
 } from "@/modules/observability/contracts/events";
+import { analyticsUserIdSchema } from "@/modules/observability/contracts/identity";
 import { getPostHogServer } from "@/modules/observability/server/posthog";
 
 export interface ServerAnalyticsIdentity {
@@ -56,9 +57,7 @@ export interface ServerAnalytics {
 }
 
 const identitySchema = z.strictObject({
-  distinctId: z
-    .string()
-    .regex(/^[A-Za-z0-9]{32}$/, "distinctId deve usar o formato interno do Better Auth."),
+  distinctId: analyticsUserIdSchema,
 });
 
 function safelyReportError(

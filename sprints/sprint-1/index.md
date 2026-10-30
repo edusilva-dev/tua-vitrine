@@ -6,7 +6,7 @@
 
 ## Estado do sprint
 
-- **Status:** implementação em andamento; tarefas 01 e 02 implementadas, com smoke test externo da
+- **Status:** implementação em andamento; tarefas 01, 02 e 03 implementadas, com smoke test externo da
   tarefa 01 pendente.
 - **Tema:** product analytics e UX analytics com PostHog.
 - **Produto:** Tua Vitrine.
@@ -478,7 +478,7 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 | --- | --- | --- | --- |
 | 01 | [Instalar e configurar o PostHog](./tasks/01-posthog-installation-and-configuration.md) | — | Implementada; smoke test externo pendente |
 | 02 | [Criar contrato e wrapper de analytics](./tasks/02-analytics-contract-and-wrapper.md) | 01 | Implementada |
-| 03 | [Identificar o usuário autenticado](./tasks/03-user-identification.md) | 02 | Pendente |
+| 03 | [Identificar o usuário autenticado](./tasks/03-user-identification.md) | 02 | Implementada; inspeção externa depende da 05 |
 | 04 | [Identificar e agrupar por loja](./tasks/04-store-identification.md) | 02, 03 | Pendente |
 | 05 | [Implementar consentimento e política do servidor](./tasks/05-consent-and-server-privacy-policy.md) | 01–04 | Pendente |
 | 06 | [Instrumentar eventos do lojista](./tasks/06-merchant-lifecycle-events.md) | 02–05 | Pendente |
@@ -527,3 +527,6 @@ O sprint está pronto somente quando:
 | 2026-10-30 | browser expõe 4 eventos de interação e servidor 7 eventos de resultado | preservar a origem confiável de cada evento |
 | 2026-10-30 | `source` é derivado pelo contrato, não recebido do chamador | impedir valores livres e divergentes |
 | 2026-10-30 | schemas de billing são a fonte dos nomes de plano | evitar enumeração duplicada |
+| 2026-10-30 | identidade usa somente o ID interno do Better Auth | evitar PII e manter correlação estável |
+| 2026-10-30 | troca de pessoa exige reset bem-sucedido antes do identify | impedir a união de duas pessoas no mesmo navegador |
+| 2026-10-30 | consentimento deve ser reaplicado após reset na tarefa 05 | o reset do SDK também limpa seu estado de consentimento |
