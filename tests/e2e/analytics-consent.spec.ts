@@ -139,110 +139,172 @@ test("página de cookies preserva a vitrine com slug privacidade", async ({ page
   }
 });
 
-test("SDK real só transmite após aceite e interrompe novas capturas na revogação", async ({
-  page,
-  context,
-}) => {
-  // A separate browser bundle exercises the production adapters with a fake staging
-  // project. Every request is fulfilled locally, never sent to PostHog.
-  const bundle = await Bun.build({
-    entrypoints: ["tests/fixtures/analytics-consent-browser.ts"],
-    target: "browser",
-    format: "esm",
-    define: {
-      "process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN": '"phc_consent_test_only"',
-      "process.env.NEXT_PUBLIC_POSTHOG_HOST": '"https://posthog.invalid"',
-      "process.env.NEXT_PUBLIC_APP_ENV": '"staging"',
-      "process.env.NEXT_PUBLIC_POSTHOG_DISABLED": '"0"',
-      "process.env.NODE_ENV": '"development"',
-    },
-  });
-  const output = bundle.outputs[0];
-
-  if (!bundle.success || !output) throw new Error("Falha ao preparar o SDK de teste.");
-
-  const requests: string[] = [];
-
-  await context.route("https://posthog.invalid/**", async (route) => {
-    requests.push(route.request().url());
-    await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
-  });
-  // The SDK deliberately drops automated-browser events. Simulate a normal visitor
-  // only inside this isolated test; production bot filtering stays enabled.
-  await page.addInitScript(() => {
-    Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false });
-    Object.defineProperty(Navigator.prototype, "userAgentData", { get: () => undefined });
-  });
-  await page.goto("/privacidade/cookies");
-  await page.evaluate(
-    async (source) => {
-      const moduleUrl = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
-
-      try {
-        window.analyticsConsentProbe = await import(moduleUrl);
-        window.analyticsConsentProbe.initializeBrowserAnalyticsConsent();
-      } finally {
-        URL.revokeObjectURL(moduleUrl);
-      }
-    },
-    await output.text()
-  );
-  await page.evaluate(() => {
-    window.analyticsConsentProbe.analytics.catalogViewed({
-      storeId: "22222222-2222-4222-8222-222222222222",
-      plan: "FREE",
+for (const scenario of [
+  "success",
+  "rejected_retry",
+  "reaccepted_retry",
+  "shutdown_retry",
+] as const) {
+  test(`SDK real bloqueia captura e retries revogados: ${scenario}`, async ({ page, context }) => {
+    // A separate browser bundle exercises the production adapters with a fake staging
+    // project. Every request is fulfilled locally, never sent to PostHog.
+    const bundle = await Bun.build({
+      entrypoints: ["tests/fixtures/analytics-consent-browser.ts"],
+      target: "browser",
+      format: "esm",
+      define: {
+        "process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN": '"phc_consent_test_only"',
+        "process.env.NEXT_PUBLIC_POSTHOG_HOST": '"https://posthog.invalid"',
+        "process.env.NEXT_PUBLIC_APP_ENV": '"staging"',
+        "process.env.NEXT_PUBLIC_POSTHOG_DISABLED": '"0"',
+        "process.env.NODE_ENV": '"development"',
+      },
     });
-  });
-  expect(requests).toEqual([]);
-  await page.evaluate(() =>
-    window.analyticsConsentProbe.browserAnalyticsConsent.choose("rejected")
-  );
-  expect(requests).toEqual([]);
-  await page.evaluate(() =>
-    window.analyticsConsentProbe.browserAnalyticsConsent.choose("accepted")
-  );
-  expect(
-    await page.evaluate(() => window.analyticsConsentProbe.browserAnalyticsConsent.hasConsent())
-  ).toBe(true);
-  const eventRequest = page.waitForRequest(
-    (request) => request.url().startsWith("https://posthog.invalid/") && request.method() === "POST"
-  );
+    const output = bundle.outputs[0];
 
-  await page.evaluate(() => {
-    window.analyticsConsentProbe.analytics.catalogViewed({
-      storeId: "22222222-2222-4222-8222-222222222222",
-      plan: "FREE",
+    if (!bundle.success || !output) throw new Error("Falha ao preparar o SDK de teste.");
+
+    const requests: string[] = [];
+    let firstPost = true;
+
+    await context.route("https://posthog.invalid/**", async (route) => {
+      requests.push(route.request().url());
+      const failingPost =
+        scenario !== "success" && firstPost && route.request().method() === "POST";
+
+      if (route.request().method() === "POST") firstPost = false;
+
+      await route.fulfill({
+        status: failingPost ? 503 : 200,
+        contentType: "application/json",
+        body: "{}",
+      });
     });
-  });
-  await eventRequest;
-  await page.evaluate(() => {
-    const probe = window.analyticsConsentProbe;
-
-    probe.analyticsIdentity.identify("aB3dE5fG7hJ9kL2mN4pQ6rS8tV1xY3zW");
-    probe.analyticsIdentity.reset();
-  });
-  expect(
-    await page.evaluate(() => window.analyticsConsentProbe.browserAnalyticsConsent.hasConsent())
-  ).toBe(true);
-  await page.evaluate(() =>
-    window.analyticsConsentProbe.browserAnalyticsConsent.choose("rejected")
-  );
-  const requestsAtRevocation = requests.length;
-
-  await page.clock.install();
-  await page.evaluate(() => {
-    const probe = window.analyticsConsentProbe;
-
-    probe.analytics.catalogViewed({
-      storeId: "22222222-2222-4222-8222-222222222222",
-      plan: "FREE",
+    // The SDK deliberately drops automated-browser events. Simulate a normal visitor
+    // only inside this isolated test; production bot filtering stays enabled.
+    await page.addInitScript(() => {
+      Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false });
+      Object.defineProperty(Navigator.prototype, "userAgentData", { get: () => undefined });
     });
-    probe.analyticsIdentity.identify("Z9yX7wV5tS3rQ1pN8mL6kJ4hG2fE0dCb");
+    await page.goto("/privacidade/cookies");
+    await page.evaluate(
+      async (source) => {
+        const moduleUrl = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
+
+        try {
+          window.analyticsConsentProbe = await import(moduleUrl);
+          window.analyticsConsentProbe.initializeBrowserAnalyticsConsent();
+        } finally {
+          URL.revokeObjectURL(moduleUrl);
+        }
+      },
+      await output.text()
+    );
+    await page.evaluate(() => {
+      window.analyticsConsentProbe.analytics.catalogViewed({
+        storeId: "22222222-2222-4222-8222-222222222222",
+        plan: "FREE",
+      });
+    });
+    expect(requests).toEqual([]);
+    await page.evaluate(() =>
+      window.analyticsConsentProbe.browserAnalyticsConsent.choose("rejected")
+    );
+    expect(requests).toEqual([]);
+    await page.clock.install();
+    await page.evaluate(() =>
+      window.analyticsConsentProbe.browserAnalyticsConsent.choose("accepted")
+    );
+    expect(
+      await page.evaluate(() => window.analyticsConsentProbe.browserAnalyticsConsent.hasConsent())
+    ).toBe(true);
+    const eventRequest = page.waitForRequest(
+      (request) =>
+        request.url().startsWith("https://posthog.invalid/") && request.method() === "POST"
+    );
+    const eventResponse = page.waitForResponse(
+      (response) =>
+        response.url().startsWith("https://posthog.invalid/") &&
+        response.request().method() === "POST"
+    );
+
+    await page.evaluate(() => {
+      window.analyticsConsentProbe.analytics.catalogViewed({
+        storeId: "22222222-2222-4222-8222-222222222222",
+        plan: "FREE",
+      });
+    });
+    await eventRequest;
+
+    const response = await eventResponse;
+
+    expect(response.status()).toBe(scenario === "success" ? 200 : 503);
+    await response.finished();
+    await page.evaluate(() => Promise.resolve());
+
+    if (scenario === "success")
+      await page.evaluate(() => {
+        const probe = window.analyticsConsentProbe;
+
+        probe.analyticsIdentity.identify("aB3dE5fG7hJ9kL2mN4pQ6rS8tV1xY3zW");
+        probe.analyticsIdentity.reset();
+      });
+
+    expect(
+      await page.evaluate(() => window.analyticsConsentProbe.browserAnalyticsConsent.hasConsent())
+    ).toBe(true);
+    await page.evaluate(() =>
+      window.analyticsConsentProbe.browserAnalyticsConsent.choose("rejected")
+    );
+    const requestsAtRevocation = requests.length;
+
+    if (scenario === "reaccepted_retry") {
+      await page.evaluate(() =>
+        window.analyticsConsentProbe.browserAnalyticsConsent.choose("accepted")
+      );
+    }
+
+    if (scenario === "shutdown_retry") {
+      await page.evaluate(() => window.analyticsConsentProbe.shutdownBrowserAnalyticsProbe());
+    }
+
+    await page.clock.fastForward(10000);
+    expect(requests).toHaveLength(requestsAtRevocation);
+    await page.evaluate(() =>
+      window.analyticsConsentProbe.browserAnalyticsConsent.choose("rejected")
+    );
+    await page.evaluate(() => {
+      const probe = window.analyticsConsentProbe;
+
+      probe.analytics.catalogViewed({
+        storeId: "22222222-2222-4222-8222-222222222222",
+        plan: "FREE",
+      });
+      probe.analyticsIdentity.identify("Z9yX7wV5tS3rQ1pN8mL6kJ4hG2fE0dCb");
+    });
+    await page.clock.fastForward(10000);
+    expect(requests).toHaveLength(requestsAtRevocation);
+    expect(
+      await page.evaluate(() => Object.keys(localStorage).filter((key) => /^(ph_|__ph_)/.test(key)))
+    ).toEqual([]);
+    expect(await context.cookies()).toEqual([]);
+
+    if (scenario === "shutdown_retry") return;
+
+    const freshEvent = page.waitForRequest(
+      (request) =>
+        request.url().startsWith("https://posthog.invalid/") && request.method() === "POST"
+    );
+
+    await page.evaluate(() => {
+      const probe = window.analyticsConsentProbe;
+
+      probe.browserAnalyticsConsent.choose("accepted");
+      probe.analytics.catalogViewed({
+        storeId: "22222222-2222-4222-8222-222222222222",
+        plan: "FREE",
+      });
+    });
+    expect((await freshEvent).url()).not.toContain("retry_count");
   });
-  await page.clock.fastForward(10000);
-  expect(requests).toHaveLength(requestsAtRevocation);
-  expect(
-    await page.evaluate(() => Object.keys(localStorage).filter((key) => /^(ph_|__ph_)/.test(key)))
-  ).toEqual([]);
-  expect(await context.cookies()).toEqual([]);
-});
+}

@@ -97,10 +97,12 @@ nem descrita como autorizada nesta tarefa.
   revogação. O banner, as preferências no rodapé e a página `/privacidade/cookies` permitem rever a
   escolha sem ocupar o slug público `/privacidade` de uma loja.
 - O SDK usa persistência em memória e não captura automaticamente. A revogação impede novas
-  capturas e limpa identidade e armazenamento aplicável; uma requisição já iniciada pelo SDK pode
-  terminar depois da revogação, pois não há cancelamento público dessa requisição.
+  capturas e limpa identidade e armazenamento aplicável. O adaptador bloqueia retries antigos após
+  revogação e novo aceite; como o PostHog não oferece cancelamento público de retries, esse guard
+  depende da estrutura do SDK instalado e precisa ser revalidado em upgrades. Uma requisição já
+  iniciada pode terminar depois da revogação.
 - Testes unitários cobrem estado, falhas de armazenamento/SDK, troca de identidade e kill switch.
-  Playwright cobre os dois viewports, storage/cookies, rede interceptada, navegação do painel e
-  colisão do slug. Lint, typecheck, 135 testes e build passaram com Bun 1.3.14.
+  Playwright cobre os dois viewports, storage/cookies, rede interceptada, falha HTTP 503 e retries,
+  navegação do painel e colisão do slug. Lint, typecheck, 135 testes e build passaram com Bun 1.3.14.
 - A revisão das permissões reais do projeto PostHog, o prazo de retenção e a designação do
   responsável ainda precisam de evidência antes da ativação em produção.
