@@ -403,15 +403,17 @@ export async function saveProduct(
         }
       }
 
-      if (!store.onboardingCompletedAt)
-        await tx.store.update({
-          where: { id: store.id },
-          data: {
-            status: "ACTIVE",
-            onboardingCompletedAt: new Date(),
-            ...(store.signupPlan === "FREE" ? {} : { trialStartedAt: new Date() }),
-          },
-        });
+      const published =
+        !id && store.status === "DRAFT"
+          ? await tx.store.updateMany({
+              where: { id: store.id, status: "DRAFT", onboardingCompletedAt: null },
+              data: {
+                status: "ACTIVE",
+                onboardingCompletedAt: new Date(),
+                ...(store.signupPlan === "FREE" ? {} : { trialStartedAt: new Date() }),
+              },
+            })
+          : { count: 0 };
 
       if (idempotencyKey)
         await tx.idempotency.create({
@@ -427,7 +429,7 @@ export async function saveProduct(
         product: toProductDTO(
           await tx.product.findUniqueOrThrow({ where: { id: product.id }, include: productInclude })
         ),
-        firstProduct: !id && !store.onboardingCompletedAt,
+        firstProduct: published.count === 1,
         publishedPlan:
           entitlements.plan === "FREE" && store.signupPlan !== "FREE"
             ? ("PROFESSIONAL" as const)
@@ -559,7 +561,7 @@ export async function archiveProducts(
     );
   });
 
-  if (actorId)
+  if (actorId && result.archived > 0)
     try {
       observer.productDeleted(
         { distinctId: actorId },

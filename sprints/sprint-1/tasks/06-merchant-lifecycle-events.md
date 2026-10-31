@@ -81,11 +81,13 @@ mostrarem necessidade.
   de novo produto registra `product_creation_started` em cada abertura, inclusive ao retomar a
   etapa do primeiro produto no onboarding.
 - A criação manual emite `product_created` após o commit e, na primeira ativação da loja, também
-  `store_published`. Edição e retry com chave já processada não emitem esses eventos. A importação
-  preserva os IDs apenas internamente e emite um evento por produto persistido.
+  `store_published`. A transição condicional `DRAFT` → `ACTIVE` impede duas publicações simultâneas.
+  Edição e retry com chave já processada não emitem esses eventos. A importação preserva os IDs apenas
+  internamente e emite um evento por produto persistido.
 - Exclusão simples e em lote emitem somente contagem e operação após o arquivamento; nenhuma lista
-  de IDs ou nomes vai ao PostHog. Falhas de captura são registradas sem payload e não bloqueiam as
-  operações principais. Sem outbox, uma falha após o commit pode perder o evento.
+  de IDs ou nomes vai ao PostHog. Um retry concorrente sem arquivamento efetivo não emite evento.
+  Falhas de captura são registradas sem payload e não bloqueiam as operações principais. Sem outbox,
+  uma falha após o commit pode perder o evento.
 - A captura server-side permanece em `noop` em produção até a aprovação da política registrada no
   índice do sprint. Testes automatizados usam observador local; a inspeção manual no projeto PostHog
   de desenvolvimento/staging continua pendente.

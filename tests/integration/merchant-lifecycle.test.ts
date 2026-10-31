@@ -187,6 +187,87 @@ test("marcos do lojista seguem commits, retries e a identidade da loja", async (
   ).toBe(true);
 });
 
+test("duas criações simultâneas publicam a loja uma única vez", async () => {
+  const ownerId = randomBytes(16).toString("hex");
+
+  await db.user.create({
+    data: {
+      id: ownerId,
+      name: "Concorrência",
+      email: `${ownerId}@example.test`,
+      emailVerified: true,
+    },
+  });
+
+  let concurrentStoreId = "";
+
+  try {
+    const store = await createStore(
+      { name: "Loja concorrente", slug: `concurrent-${ownerId}` },
+      ownerId,
+      observer
+    );
+
+    concurrentStoreId = store.id;
+    await saveWhatsapp({ storeId: store.id }, { whatsapp: "+5511999999999" });
+    const before = events.length;
+    const results = await Promise.all([
+      saveProduct(
+        { storeId: store.id },
+        product("Concorrente A"),
+        undefined,
+        randomUUID(),
+        ownerId,
+        observer
+      ),
+      saveProduct(
+        { storeId: store.id },
+        product("Concorrente B"),
+        undefined,
+        randomUUID(),
+        ownerId,
+        observer
+      ),
+    ]);
+    const captured = events.slice(before);
+
+    expect(results).toHaveLength(2);
+    expect(captured.filter(({ event }) => event === "product_created")).toHaveLength(2);
+    expect(captured.filter(({ event }) => event === "store_published")).toHaveLength(1);
+    expect(captured.filter(({ properties }) => properties.is_first_product === true)).toHaveLength(
+      1
+    );
+    expect((await db.store.findUnique({ where: { id: store.id } }))?.status).toBe("ACTIVE");
+  } finally {
+    if (concurrentStoreId) await db.store.delete({ where: { id: concurrentStoreId } });
+
+    await db.user.delete({ where: { id: ownerId } });
+  }
+});
+
+test("duas exclusões simultâneas emitem apenas o arquivamento efetivo", async () => {
+  const saved = await saveProduct(
+    { storeId },
+    product("Exclusão concorrente"),
+    undefined,
+    randomUUID(),
+    actorId,
+    observer
+  );
+  const before = events.length;
+  const results = await Promise.allSettled([
+    archiveProducts({ storeId }, { productIds: [saved.id] }, actorId, "bulk", observer),
+    archiveProducts({ storeId }, { productIds: [saved.id] }, actorId, "bulk", observer),
+  ]);
+  const archived = results.reduce(
+    (count, result) => count + (result.status === "fulfilled" ? result.value.archived : 0),
+    0
+  );
+
+  expect(archived).toBe(1);
+  expect(events.slice(before).filter(({ event }) => event === "product_deleted")).toHaveLength(1);
+});
+
 test("falha da telemetria não desfaz criação ou exclusão", async () => {
   const failing = {
     productCreated: () => {
