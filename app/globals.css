@@ -180,6 +180,9 @@
   body:has(.product-bulk-actions) .analytics-consent-banner {
     display: none;
   }
+  .auth-layout {
+    padding-bottom: 3rem;
+  }
   body:has(.analytics-consent-banner) .auth-layout {
     padding-bottom: 16rem;
   }
