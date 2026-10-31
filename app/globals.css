@@ -177,6 +177,9 @@
       left: calc(16rem + 1rem);
     }
   }
+  body:has(.product-bulk-actions) .analytics-consent-banner {
+    display: none;
+  }
   .eyebrow {
     margin-bottom: 0.65rem;
     font-size: 0.625rem;

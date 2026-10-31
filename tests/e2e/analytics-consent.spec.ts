@@ -118,6 +118,11 @@ test("escolha desconhecida mantém o menu do painel e os controles acessíveis",
       exact: true,
     })
     .click({ trial: true });
+  await page.getByRole("checkbox", { name: "Selecionar Cookie com chocolate" }).check();
+  await expect(banner).toBeHidden();
+  await expect(page.locator(".product-bulk-actions")).toBeVisible();
+  await page.getByRole("button", { name: "Limpar", exact: true }).click();
+  await expect(banner).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("consent-admin.png") });
   // Onboarding can render without AppShell. The offset must follow the actual
   // sidebar, including its removal, rather than the current administrative URL.

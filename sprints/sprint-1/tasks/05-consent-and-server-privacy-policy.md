@@ -96,7 +96,8 @@ nem descrita como autorizada nesta tarefa.
 
 - A preferência local versionada controla a inicialização do SDK, o aceite e a revogação. O aviso
   flutuante no rodapé, as preferências e a página `/privacidade/cookies` permitem rever a
-  escolha sem ocupar o slug público `/privacidade` de uma loja.
+  escolha sem ocupar o slug público `/privacidade` de uma loja. Durante uma seleção em lote no
+  painel de produtos, o aviso se recolhe e reaparece quando a seleção é limpa.
 - O SDK usa persistência em memória e não captura automaticamente. A revogação impede novas
   capturas e limpa identidade e armazenamento aplicável. O adaptador bloqueia retries antigos após
   revogação e novo aceite; como o PostHog não oferece cancelamento público de retries, esse guard

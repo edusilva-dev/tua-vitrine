@@ -410,7 +410,8 @@ conteúdo de suporte ou dado de cobrança visível no replay impede o rollout.
 - coletar somente propriedades listadas no contrato;
 - não enviar dados pessoais diretos ao PostHog;
 - tratar IDs internos, IP e identificadores de dispositivo como dados potencialmente pessoais;
-- disponibilizar escolha clara para aceitar/rejeitar analytics e revogar depois;
+- disponibilizar concordância clara e revogação posterior; sem concordância, manter analytics
+  desligado;
 - manter captura client-side/replay desativada antes da escolha;
 - manter captura server-side desativada em produção até a base legal ser aprovada e implementada;
 - documentar operador, região, retenção, acesso, exclusão e atendimento aos direitos do titular na
