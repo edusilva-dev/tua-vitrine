@@ -83,7 +83,8 @@ mostrarem necessidade.
 - A criação manual emite `product_created` após o commit e, na primeira ativação da loja, também
   `store_published`. A transição condicional `DRAFT` → `ACTIVE` impede duas publicações simultâneas.
   Edição e retry com chave já processada não emitem esses eventos. A importação preserva os IDs apenas
-  internamente e emite um evento por produto persistido.
+  internamente e emite um evento por produto persistido. A importação exige onboarding concluído;
+  uma assinatura ativa em loja `DRAFT` não contorna a publicação do primeiro produto.
 - Exclusão simples e em lote emitem somente contagem e operação após o arquivamento; nenhuma lista
   de IDs ou nomes vai ao PostHog. Um retry concorrente sem arquivamento efetivo não emite evento.
   Falhas de captura são registradas sem payload e não bloqueiam as operações principais. Sem outbox,

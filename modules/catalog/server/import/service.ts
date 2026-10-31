@@ -67,13 +67,20 @@ export async function importProducts(
       async (tx) => {
         const store = await tx.store.findUnique({
           where: { id: context.storeId },
-          select: { id: true, whatsapp: true },
+          select: { id: true, whatsapp: true, status: true, onboardingCompletedAt: true },
         });
 
         if (!store) throw new AppError(404, "NOT_FOUND", "Loja não encontrada.");
 
         if (!store.whatsapp)
           throw new AppError(422, "ONBOARDING", "Cadastre o WhatsApp antes de importar produtos.");
+
+        if (store.status !== "ACTIVE" || !store.onboardingCompletedAt)
+          throw new AppError(
+            422,
+            "ONBOARDING",
+            "Cadastre o primeiro produto antes de importar uma planilha."
+          );
 
         const currentProducts = await tx.product.count({
           where: { storeId: context.storeId, archivedAt: null },
