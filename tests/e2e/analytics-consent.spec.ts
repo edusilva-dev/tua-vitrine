@@ -139,6 +139,8 @@ test("aviso flutuante não impede o cadastro sem concordância", async ({ page }
   const banner = page.getByRole("region", { name: "Sua escolha de privacidade" });
 
   await expect(banner).toBeVisible();
+  await expect(page.locator(".auth-layout")).toHaveCSS("padding-bottom", "256px");
+  await page.getByRole("link", { name: "Voltar para entrar" }).click({ trial: true });
   await page.getByLabel("Seu nome").fill("Teste de cadastro");
   await expect(banner).toBeHidden();
   await page.getByRole("button", { name: "Criar conta", exact: true }).click({ trial: true });
