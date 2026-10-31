@@ -4,6 +4,8 @@ import { Prisma } from "@/generated/prisma/client";
 import type { StoreContext } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { AppError } from "@/lib/server/http";
+import { logger } from "@/lib/server/logger";
+import { analytics, type ServerAnalytics } from "@/modules/observability/server/analytics";
 import { normalizeSlug } from "@/modules/stores/contracts";
 import { type ProductImportResultDTO, productImportConfirmSchema } from "../../contracts/import";
 
@@ -24,7 +26,9 @@ export async function importProducts(
   context: StoreContext,
   input: unknown,
   idempotencyKey: string,
-  allowance: ImportAllowance
+  allowance: ImportAllowance,
+  actorId?: string,
+  observer: Pick<ServerAnalytics, "productCreated"> = analytics
 ): Promise<ProductImportResultDTO> {
   if (!allowance.enabled)
     throw new AppError(
@@ -59,7 +63,7 @@ export async function importProducts(
   }
 
   try {
-    return await db.$transaction(
+    const created = await db.$transaction(
       async (tx) => {
         const store = await tx.store.findUnique({
           where: { id: context.storeId },
@@ -125,10 +129,23 @@ export async function importProducts(
           },
         });
 
-        return { importedCount: products.length, alreadyImported: false };
+        return { productIds: products.map(({ id }) => id), importedCount: products.length };
       },
       { timeout: 20_000 }
     );
+
+    if (actorId)
+      for (const productId of created.productIds)
+        try {
+          observer.productCreated(
+            { distinctId: actorId },
+            { storeId: context.storeId, productId, creationMethod: "import", isFirstProduct: false }
+          );
+        } catch {
+          logger.error("Falha na captura do evento de importação de produto.");
+        }
+
+    return { importedCount: created.importedCount, alreadyImported: false };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const saved = await db.idempotency.findUnique({

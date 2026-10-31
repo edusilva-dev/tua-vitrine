@@ -9,6 +9,7 @@ import { logger } from "@/lib/server/logger";
 import { assetUrl, getAssetStorageForReference } from "@/lib/server/storage-adapter";
 import { PLAN_CAPABILITIES } from "@/modules/billing/contracts";
 import { getEntitlements } from "@/modules/billing/server/entitlements";
+import { analytics, type ServerAnalytics } from "@/modules/observability/server/analytics";
 import { normalizeSlug } from "@/modules/stores/contracts";
 import {
   type CategoryDTO,
@@ -213,7 +214,9 @@ export async function saveProduct(
   context: StoreContext,
   input: unknown,
   id?: string,
-  idempotencyKey?: string
+  idempotencyKey?: string,
+  actorId?: string,
+  observer: Pick<ServerAnalytics, "productCreated" | "storePublished"> = analytics
 ): Promise<ProductDTO> {
   const values = productInputSchema.parse(input);
   const entitlements = await getEntitlements(context);
@@ -240,7 +243,7 @@ export async function saveProduct(
   }
 
   try {
-    return await db.$transaction(async (tx) => {
+    const saved = await db.$transaction(async (tx) => {
       const store = await tx.store.findUnique({ where: { id: context.storeId } });
 
       if (!store) throw new AppError(404, "NOT_FOUND", "Loja não encontrada.");
@@ -420,10 +423,45 @@ export async function saveProduct(
           },
         });
 
-      return toProductDTO(
-        await tx.product.findUniqueOrThrow({ where: { id: product.id }, include: productInclude })
-      );
+      return {
+        product: toProductDTO(
+          await tx.product.findUniqueOrThrow({ where: { id: product.id }, include: productInclude })
+        ),
+        firstProduct: !id && !store.onboardingCompletedAt,
+        publishedPlan:
+          entitlements.plan === "FREE" && store.signupPlan !== "FREE"
+            ? ("PROFESSIONAL" as const)
+            : entitlements.plan,
+      };
     });
+
+    if (!id && actorId) {
+      try {
+        observer.productCreated(
+          { distinctId: actorId },
+          {
+            storeId: context.storeId,
+            productId: saved.product.id,
+            creationMethod: "manual",
+            isFirstProduct: saved.firstProduct,
+          }
+        );
+      } catch {
+        logger.error("Falha na captura do evento de criação de produto.");
+      }
+
+      if (saved.firstProduct)
+        try {
+          observer.storePublished(
+            { distinctId: actorId },
+            { storeId: context.storeId, plan: saved.publishedPlan, productCount: 1 }
+          );
+        } catch {
+          logger.error("Falha na captura do evento de publicação da loja.");
+        }
+    }
+
+    return saved.product;
   } catch (error) {
     if (
       idempotencyKey &&
@@ -441,13 +479,21 @@ export async function saveProduct(
   }
 }
 
-export async function archiveProduct(context: StoreContext, id: string): Promise<void> {
-  await archiveProducts(context, { productIds: [id] });
+export async function archiveProduct(
+  context: StoreContext,
+  id: string,
+  actorId?: string,
+  observer: Pick<ServerAnalytics, "productDeleted"> = analytics
+): Promise<void> {
+  await archiveProducts(context, { productIds: [id] }, actorId, "single", observer);
 }
 
 export async function archiveProducts(
   context: StoreContext,
-  input: unknown
+  input: unknown,
+  actorId?: string,
+  operation: "single" | "bulk" = "bulk",
+  observer: Pick<ServerAnalytics, "productDeleted"> = analytics
 ): Promise<{ archived: number }> {
   const { productIds } = z
     .object({ productIds: z.array(z.string().uuid()).min(1).max(100) })
@@ -512,6 +558,16 @@ export async function archiveProducts(
       "Falha ao remover imagem de produto excluído do storage."
     );
   });
+
+  if (actorId)
+    try {
+      observer.productDeleted(
+        { distinctId: actorId },
+        { storeId: context.storeId, productCount: result.archived, operation }
+      );
+    } catch {
+      logger.error("Falha na captura do evento de exclusão de produto.");
+    }
 
   return { archived: result.archived };
 }

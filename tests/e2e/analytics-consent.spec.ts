@@ -134,6 +134,17 @@ test("escolha desconhecida mantém o menu do painel e os controles acessíveis",
   await expect(page.getByRole("dialog")).toBeVisible();
 });
 
+test("aviso flutuante não impede o cadastro sem concordância", async ({ page }) => {
+  await page.goto("/cadastro");
+  const banner = page.getByRole("region", { name: "Sua escolha de privacidade" });
+
+  await expect(banner).toBeVisible();
+  await page.getByLabel("Seu nome").fill("Teste de cadastro");
+  await expect(banner).toBeHidden();
+  await page.getByRole("button", { name: "Criar conta", exact: true }).click({ trial: true });
+  await expect(banner).toBeHidden();
+});
+
 test("página de cookies preserva a vitrine com slug privacidade", async ({ page }) => {
   const db = testDatabase();
 
