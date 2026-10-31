@@ -21,7 +21,8 @@ decisões explícitos.
 - se a base aprovada for legítimo interesse, registrar avaliação, finalidade, minimização, retenção e
   mecanismo de oposição, implementando o opt-out também no servidor;
 - criar estado de consentimento do browser versionado com `unknown`, `accepted` e `rejected`;
-- exibir escolhas equivalentes de aceitar e rejeitar e link para detalhes;
+- exibir o aviso flutuante no rodapé com “Eu concordo” e link para detalhes; sem concordância,
+  manter a captura desligada e permitir continuar usando o produto;
 - não inicializar captura client-side persistente antes de `accepted`;
 - permitir revisar/revogar a escolha em local acessível;
 - ao revogar, parar captura, resetar identidade e remover persistência PostHog aplicável;
@@ -42,7 +43,7 @@ decisões explícitos.
 
 - [x] estado desconhecido e rejeitado não enviam eventos client-side;
 - [x] aceitar inicia captura sem reload obrigatório;
-- [x] rejeitar não degrada funcionalidades do produto;
+- [x] continuar sem concordar não degrada funcionalidades do produto;
 - [x] revogação interrompe captura e limpa identidade/persistência aplicável;
 - [x] preferência é versionada e pode ser solicitada novamente após mudança material;
 - [x] eventos server-side estão desabilitados ou obedecem à base legal e ao mecanismo de oposição
@@ -52,7 +53,7 @@ decisões explícitos.
 
 ## Validação
 
-- E2E para aceitar, rejeitar, persistir escolha e revogar;
+- E2E para aceitar, continuar sem concordar, persistir escolha e revogar;
 - inspecionar storage/cookies e requests de rede em cada estado;
 - validar a política server-side com operação administrativa e webhook, inclusive após oposição;
 - testar indisponibilidade da fonte de preferência, quando houver, com comportamento fail-closed para
@@ -93,8 +94,8 @@ nem descrita como autorizada nesta tarefa.
 
 ## Evidências de implementação
 
-- A preferência local versionada controla a inicialização do SDK, o aceite, a rejeição e a
-  revogação. O banner, as preferências no rodapé e a página `/privacidade/cookies` permitem rever a
+- A preferência local versionada controla a inicialização do SDK, o aceite e a revogação. O aviso
+  flutuante no rodapé, as preferências e a página `/privacidade/cookies` permitem rever a
   escolha sem ocupar o slug público `/privacidade` de uma loja.
 - O SDK usa persistência em memória e não captura automaticamente. A revogação impede novas
   capturas e limpa identidade e armazenamento aplicável. O adaptador bloqueia retries antigos após

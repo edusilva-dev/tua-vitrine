@@ -180,8 +180,9 @@ risco de coletar texto, URL ou valores de formulário. Pageviews genéricos não
 ### 8. Base legal e consentimento por canal
 
 Captura no browser e Session Replay só iniciam após consentimento válido no ambiente de produção. A
-interface deve oferecer aceitar, rejeitar e alterar a escolha posteriormente. A rejeição não pode
-impedir o uso da aplicação.
+interface pede concordância em um aviso flutuante no rodapé. Sem concordância, a captura permanece
+desligada e o uso da aplicação continua disponível. O usuário pode revogar a escolha nas preferências
+de privacidade do rodapé.
 
 Eventos server-side não conseguem inferir a escolha guardada apenas no navegador, especialmente em
 webhooks Stripe. Eles permanecem desabilitados em produção até o responsável por produto/privacidade
@@ -537,3 +538,4 @@ O sprint está pronto somente quando:
 | 2026-10-30 | identidade usa somente o ID interno do Better Auth | evitar PII e manter correlação estável |
 | 2026-10-30 | troca de pessoa exige reset bem-sucedido antes do identify | impedir a união de duas pessoas no mesmo navegador |
 | 2026-10-30 | consentimento deve ser reaplicado após reset na tarefa 05 | o reset do SDK também limpa seu estado de consentimento |
+| 2026-10-30 | aviso de consentimento com apenas “Eu concordo” no rodapé | pedido do responsável; sem aceite, analytics permanece desligado e revogação segue disponível nas preferências |

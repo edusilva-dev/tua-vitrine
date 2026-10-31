@@ -28,10 +28,21 @@ test("aceita, persiste e revoga pelas preferências acessíveis", async ({
     true
   );
   await page.screenshot({ path: testInfo.outputPath("consent-banner.png"), fullPage: true });
-  const accept = banner.getByRole("button", { name: "Aceitar análises" });
-  const reject = banner.getByRole("button", { name: "Rejeitar análises" });
+  const accept = banner.getByRole("button", { name: "Eu concordo" });
 
-  expect(await accept.getAttribute("class")).toBe(await reject.getAttribute("class"));
+  await expect(banner.getByRole("button")).toHaveCount(1);
+  await expect(banner).toHaveCSS("position", "fixed");
+  const bannerBox = await banner.boundingBox();
+  const viewport = page.viewportSize();
+
+  expect(bannerBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+
+  if (bannerBox && viewport) {
+    expect(bannerBox.y + bannerBox.height).toBeGreaterThan(viewport.height - 32);
+    expect(bannerBox.y + bannerBox.height).toBeLessThanOrEqual(viewport.height);
+  }
+
   await expect(accept).toBeEnabled();
   await accept.focus();
   await page.keyboard.press("Enter");
@@ -48,7 +59,7 @@ test("aceita, persiste e revoga pelas preferências acessíveis", async ({
 
   await expect(dialog.getByRole("status")).toHaveText("Escolha atual: aceita.");
   await page.screenshot({ path: testInfo.outputPath("consent-settings.png") });
-  await dialog.getByRole("button", { name: "Rejeitar análises" }).click();
+  await dialog.getByRole("button", { name: "Revogar consentimento" }).click();
   await expect(dialog).toHaveCount(0);
   await expect(preferences).toBeFocused();
   await page.reload({ waitUntil: "domcontentloaded" });
@@ -63,7 +74,7 @@ test("aceita, persiste e revoga pelas preferências acessíveis", async ({
   expect(telemetryRequests).toEqual([]);
 });
 
-test("rejeita sem bloquear navegação e solicita uma versão antiga novamente", async ({ page }) => {
+test("continua sem concordar e solicita uma versão antiga novamente", async ({ page }) => {
   await page.addInitScript((key) => {
     localStorage.setItem(key, '{"version":0,"status":"accepted"}');
   }, preferenceKey);
@@ -71,12 +82,14 @@ test("rejeita sem bloquear navegação e solicita uma versão antiga novamente",
   const banner = page.getByRole("region", { name: "Sua escolha de privacidade" });
 
   await expect(banner).toBeVisible();
-  await banner.getByRole("button", { name: "Rejeitar análises" }).click();
-  await expect(banner).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Voltar para tua vitrine" })).toBeEnabled();
-  await page.getByRole("button", { name: "Preferências de privacidade" }).click();
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(banner.getByRole("button", { name: "Eu concordo" })).toBeVisible();
+  expect(await page.evaluate((key) => localStorage.getItem(key), preferenceKey)).toBe(
+    '{"version":0,"status":"accepted"}'
+  );
+  await expect(page.getByRole("button", { name: "Preferências de privacidade" })).toHaveCount(0);
+  await page.getByRole("link", { name: "Voltar para tua vitrine" }).click();
+  await expect(page).toHaveURL("/");
+  await expect(banner).toBeVisible();
 });
 
 test("escolha desconhecida mantém o menu do painel e os controles acessíveis", async ({
@@ -96,7 +109,8 @@ test("escolha desconhecida mantém o menu do painel e os controles acessíveis",
   const banner = page.getByRole("region", { name: "Sua escolha de privacidade" });
 
   await expect(banner).toBeVisible();
-  await banner.getByRole("button", { name: "Aceitar análises" }).click({ trial: true });
+  await expect(banner).toHaveCSS("position", "fixed");
+  await banner.getByRole("button", { name: "Eu concordo" }).click({ trial: true });
   await page
     .getByRole("navigation", { name: "Menu principal" })
     .getByRole("link", {
@@ -108,8 +122,8 @@ test("escolha desconhecida mantém o menu do painel e os controles acessíveis",
   // Onboarding can render without AppShell. The offset must follow the actual
   // sidebar, including its removal, rather than the current administrative URL.
   await page.locator(".admin-sidebar").evaluate((sidebar) => sidebar.remove());
-  await expect(banner).toHaveCSS("margin-left", "0px");
-  await banner.getByRole("button", { name: "Rejeitar análises" }).click();
+  await expect(banner).toHaveCSS("left", "16px");
+  await banner.getByRole("button", { name: "Eu concordo" }).click();
   await expect(page.getByRole("heading", { name: /^Meus produtos/ })).toBeVisible();
   await page.getByRole("button", { name: "Preferências de privacidade" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();

@@ -16,8 +16,8 @@ export default function PrivacyPage() {
         <h2 className="font-heading text-xl font-semibold">Análises opcionais</h2>
         <p>
           Usamos PostHog Cloud como fornecedor de análises para entender a ativação, a usabilidade e
-          a confiabilidade do produto. A captura no navegador depende da sua aceitação. Rejeitar não
-          impede o uso da loja, da vitrine ou do WhatsApp.
+          a confiabilidade do produto. A captura no navegador depende da sua aceitação. Não
+          concordar não impede o uso da loja, da vitrine ou do WhatsApp.
         </p>
         <p>
           A captura analítica em produção permanece desativada enquanto a política final, o prazo de
@@ -48,10 +48,10 @@ export default function PrivacyPage() {
       <section className="space-y-3">
         <h2 className="font-heading text-xl font-semibold">Alterar ou revogar</h2>
         <p>
-          Abra “Preferências de privacidade” no rodapé de qualquer página. “Rejeitar análises”
-          interrompe novas capturas e limpa a identidade e a persistência aplicável do PostHog neste
-          navegador. A escolha vale para este navegador; ela não exclui dados que já tenham sido
-          enviados ao fornecedor.
+          Após concordar, abra “Preferências de privacidade” no rodapé de qualquer página. “Revogar
+          consentimento” interrompe novas capturas e limpa a identidade e a persistência aplicável
+          do PostHog neste navegador. A escolha vale para este navegador; ela não exclui dados que
+          já tenham sido enviados ao fornecedor.
         </p>
         <p>
           A política final e o processo de acesso, exclusão ou anonimização no fornecedor ainda

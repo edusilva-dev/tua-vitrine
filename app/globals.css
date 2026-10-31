@@ -172,6 +172,11 @@
       @apply ml-64;
     }
   }
+  body:has(.admin-sidebar) .analytics-consent-banner {
+    @variant lg {
+      left: calc(16rem + 1rem);
+    }
+  }
   .eyebrow {
     margin-bottom: 0.65rem;
     font-size: 0.625rem;
