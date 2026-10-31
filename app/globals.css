@@ -180,6 +180,12 @@
   body:has(.product-bulk-actions) .analytics-consent-banner {
     display: none;
   }
+  body:has(.analytics-consent-banner) .auth-layout {
+    padding-bottom: 16rem;
+  }
+  body:has(.auth-layout :focus-within) .analytics-consent-banner {
+    display: none;
+  }
   .eyebrow {
     margin-bottom: 0.65rem;
     font-size: 0.625rem;
