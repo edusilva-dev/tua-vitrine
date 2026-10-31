@@ -27,8 +27,10 @@ export function createBrowserPostHogOptions(config: EnabledBrowserPostHogRuntime
     advanced_disable_flags: true,
     capture_performance: false,
     capture_dead_clicks: false,
+    request_batching: false,
     mask_personal_data_properties: true,
-    opt_out_capturing_by_default: false,
+    opt_out_capturing_by_default: true,
+    opt_out_persistence_by_default: true,
     persistence: "memory" as const,
     person_profiles: "identified_only" as const,
   };

@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
+import { AnalyticsConsent } from "@/modules/observability/components/analytics-consent";
 
 const montserratHeading = Montserrat({ subsets: ["latin"], variable: "--font-heading" });
 
@@ -41,7 +42,9 @@ export default function RootLayout({
       <body>
         <ThemeProvider defaultTheme="light">
           <Toaster />
+          <AnalyticsConsent placement="banner" />
           {children}
+          <AnalyticsConsent placement="settings" />
         </ThemeProvider>
       </body>
     </html>

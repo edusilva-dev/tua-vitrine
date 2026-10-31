@@ -1,6 +1,7 @@
 "use client";
 
 import posthog from "posthog-js";
+import { browserAnalyticsConsent } from "@/modules/observability/client/browser-consent";
 import {
   type BrowserPostHogRuntime,
   isBrowserPostHogEnabled,
@@ -149,8 +150,8 @@ export const analyticsIdentity = createBrowserIdentity({
   provider: {
     identify: (userId) => posthog.identify(userId),
     group: (storeId, properties) => posthog.group("store", storeId, properties),
-    reset: () => posthog.reset(),
-    hasConsent: () => posthog.has_opted_in_capturing(),
+    reset: () => browserAnalyticsConsent.resetIdentity(),
+    hasConsent: () => browserAnalyticsConsent.hasConsent(),
   },
   enabled: isBrowserPostHogEnabled(runtime),
   reportError: (error) => globalThis.reportError(error),

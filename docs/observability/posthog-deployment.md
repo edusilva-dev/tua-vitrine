@@ -19,9 +19,12 @@ administrativa na aplicação.
 - browser e servidor devem apontar para o mesmo projeto e host regional.
 
 O SDK do browser não captura automaticamente pageviews, interações, heatmaps, dead clicks, Web
-Vitals, exceções ou replay. Ele não é inicializado em produção até a Tarefa 05 entregar o controle de
-consentimento. O SDK do servidor permanece em `noop` na produção até a política server-side ser
-aprovada. `NEXT_PUBLIC_POSTHOG_DISABLED=1` funciona como kill switch para ambos os SDKs e é definido
+Vitals, exceções ou replay. A escolha do navegador é entregue na Tarefa 05; a captura em produção
+continua desabilitada até a auditoria e liberação da Tarefa 11. O SDK do servidor permanece em `noop`
+na produção: não existe base legal server-side aprovada, e uma preferência local do browser não pode
+ser usada para autorizar webhooks. Retenção, responsável pelo acesso, processo de oposição e hipótese
+legal ainda precisam de decisão registrada antes de habilitar esse canal.
+`NEXT_PUBLIC_POSTHOG_DISABLED=1` funciona como kill switch para ambos os SDKs e é definido
 obrigatoriamente pelos servidores dos testes E2E.
 
 ## Rede e CSP

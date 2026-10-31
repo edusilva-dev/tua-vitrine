@@ -167,6 +167,19 @@
     background: #183c3d;
     color: #fff;
   }
+  body:has(.admin-sidebar) .analytics-consent {
+    @variant lg {
+      @apply ml-64;
+    }
+  }
+  body:has(.admin-sidebar) .analytics-consent-banner {
+    @variant lg {
+      left: calc(16rem + 1rem);
+    }
+  }
+  body:has(.product-bulk-actions) .analytics-consent-banner {
+    display: none;
+  }
   .eyebrow {
     margin-bottom: 0.65rem;
     font-size: 0.625rem;
