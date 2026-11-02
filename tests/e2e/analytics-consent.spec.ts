@@ -147,6 +147,13 @@ test("aviso flutuante não impede o cadastro sem concordância", async ({ page }
   await expect(banner).toBeHidden();
 });
 
+test("aviso flutuante não cobre a avaliação no rodapé da vitrine", async ({ page }) => {
+  await page.goto(`/${fixtures.firstSlug}`);
+  await expect(page.getByRole("region", { name: "Sua escolha de privacidade" })).toBeVisible();
+  await page.getByRole("button", { name: "Avaliar experiência" }).click();
+  await expect(page.getByRole("dialog", { name: "Como foi sua experiência?" })).toBeVisible();
+});
+
 test("página de cookies preserva a vitrine com slug privacidade", async ({ page }) => {
   const db = testDatabase();
 
