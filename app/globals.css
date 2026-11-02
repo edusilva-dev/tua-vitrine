@@ -186,6 +186,12 @@
   body:has(.analytics-consent-banner) .auth-layout {
     padding-bottom: 16rem;
   }
+  .storefront-main {
+    padding-bottom: 5rem;
+  }
+  body:has(.analytics-consent-banner) .storefront-main {
+    padding-bottom: 16rem;
+  }
   body:has(.auth-layout :focus-within) .analytics-consent-banner {
     display: none;
   }
