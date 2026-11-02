@@ -2,7 +2,10 @@ import { afterAll, beforeAll, beforeEach, expect, test } from "bun:test";
 import { randomBytes, randomUUID } from "node:crypto";
 import type Stripe from "stripe";
 import { db } from "@/lib/server/db";
-import { processStripeEvent } from "@/modules/billing/server/service";
+import {
+  processStripeEvent,
+  synchronizeStripeSubscription,
+} from "@/modules/billing/server/service";
 import {
   createServerAnalytics,
   type ServerAnalyticsMessage,
@@ -138,6 +141,30 @@ test("dois webhooks distintos concorrentes registram uma única ativação", asy
   ]);
 
   expect(events.filter(({ event }) => event === "subscription_started")).toHaveLength(1);
+});
+
+test("reconciliação anterior ao webhook preserva um único evento confirmado", async () => {
+  const activated = webhook("active");
+
+  await synchronizeStripeSubscription(activated.data.object as Stripe.Subscription, observer);
+  await processStripeEvent(activated, observer);
+
+  expect(events).toHaveLength(1);
+  expect(events[0]).toMatchObject({
+    event: "subscription_started",
+    properties: { source: "stripe_reconciliation", plan: "ESSENTIAL" },
+  });
+
+  const scheduled = webhook("active", { cancelAtPeriodEnd: true });
+
+  await synchronizeStripeSubscription(scheduled.data.object as Stripe.Subscription, observer);
+  await processStripeEvent(scheduled, observer);
+
+  expect(events).toHaveLength(2);
+  expect(events[1]).toMatchObject({
+    event: "subscription_cancelled",
+    properties: { source: "stripe_reconciliation", effective_immediately: false },
+  });
 });
 
 test("cancelamento agendado e conclusão não duplicam evento", async () => {

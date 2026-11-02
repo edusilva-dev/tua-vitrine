@@ -7,8 +7,8 @@ Registrar descoberta de catálogo, interesse em produto, intenção de contato e
 ## Contexto
 
 A vitrine já envia métricas próprias ao PostgreSQL. O PostHog não substitui esse caminho. Eventos de
-UX são client-side; assinatura nasce do webhook Stripe para representar estado confirmado e lidar com
-redelivery.
+UX são client-side; assinatura nasce do webhook Stripe ou da reconciliação confirmada com a API do
+Stripe, conforme qual aplicar a transição primeiro. A reentrega do webhook não repete o evento.
 
 ## Implementação esperada
 
@@ -78,9 +78,15 @@ deve ser apresentado como contabilidade financeira nem substituir a fonte de bil
   cancelamento emite `subscription_cancelled` com `effective_immediately = false`; o encerramento
   posterior não duplica esse marco. Um cancelamento direto usa `true`. A linha da assinatura é
   bloqueada durante a transição para que dois webhooks distintos simultâneos não dupliquem o início.
+- A consulta ao Stripe no retorno do checkout ou na reconciliação do painel pode aplicar a mesma
+  transição antes do webhook. Nesse caso, o evento nasce após o commit da reconciliação confirmada,
+  com `source = stripe_reconciliation`; o webhook posterior encontra o estado já aplicado e não
+  duplica a captura. Essa origem é distinta de `stripe_webhook`.
 - Captura do servidor segue em `noop` em produção até a aprovação da política no índice. A captura
   client-side requer concordância válida. A fonte de métricas do lojista no PostgreSQL permanece
   separada; contagens podem divergir por consentimento, bloqueadores e falhas best-effort.
+- Antes do envio pelo SDK web, propriedades automáticas de URL, caminho, busca, referrer e campanhas
+  são removidas, inclusive quando a vitrine recebe parâmetros de busca.
 - Inspeção externa no PostHog de desenvolvimento/staging e comparação amostral seguem pendentes.
   A validação local usa o SDK real com host interceptado, sem enviar dados externos, e compara uma
   visita PostHog com uma nova visita interna `STORE_VIEW` por montagem da vitrine.

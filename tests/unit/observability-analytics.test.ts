@@ -326,6 +326,7 @@ describe("limite arquitetural dos SDKs do PostHog", () => {
       "modules/observability/client/browser-consent.ts",
       "modules/observability/client/analytics.ts",
       "modules/observability/client/identity.ts",
+      "modules/observability/client/posthog.ts",
       "modules/observability/server/posthog.ts",
     ]);
     const imports: string[] = [];

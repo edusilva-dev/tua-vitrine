@@ -145,4 +145,14 @@ test("vitrine captura catálogo, detalhe e as quatro origens de WhatsApp sem cap
   } finally {
     await db.$disconnect();
   }
+
+  const beforeNavigation = captured().filter((event) => event.event === "catalog_viewed").length;
+
+  await page.goto("/privacidade/cookies?referrer=referrer-sentinel");
+  await page.goto(`/${fixtures.firstSlug}?q=search-sentinel`);
+  await expect
+    .poll(() => captured().filter((event) => event.event === "catalog_viewed").length)
+    .toBeGreaterThan(beforeNavigation);
+  expect(requests.join(" ")).not.toContain("referrer-sentinel");
+  expect(requests.join(" ")).not.toContain("search-sentinel");
 });

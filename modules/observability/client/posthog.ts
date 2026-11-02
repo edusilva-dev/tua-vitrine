@@ -1,3 +1,29 @@
+import type { BeforeSendFn } from "posthog-js";
+
+function removeNavigationFields(properties: Record<string, unknown>) {
+  for (const [key, value] of Object.entries(properties)) {
+    if (/url|referr|pathname|search|query|utm|campaign|gclid|fbclid/i.test(key)) {
+      delete properties[key];
+
+      continue;
+    }
+
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      removeNavigationFields(value as Record<string, unknown>);
+    }
+  }
+}
+
+export const stripNavigationProperties: BeforeSendFn = (event) => {
+  if (event.properties) removeNavigationFields(event.properties);
+
+  if (event.$set) removeNavigationFields(event.$set);
+
+  if (event.$set_once) removeNavigationFields(event.$set_once);
+
+  return event;
+};
+
 export interface BrowserPostHogRuntime {
   projectToken?: string | undefined;
   host?: string | undefined;
@@ -33,6 +59,7 @@ export function createBrowserPostHogOptions(config: EnabledBrowserPostHogRuntime
     opt_out_persistence_by_default: true,
     persistence: "memory" as const,
     person_profiles: "identified_only" as const,
+    before_send: stripNavigationProperties,
   };
 }
 

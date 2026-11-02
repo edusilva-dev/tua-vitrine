@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   createBrowserPostHogOptions,
   isBrowserPostHogEnabled,
+  stripNavigationProperties,
 } from "@/modules/observability/client/posthog";
 
 describe("configuração pública do PostHog", () => {
@@ -44,5 +45,32 @@ describe("configuração pública do PostHog", () => {
     expect(isBrowserPostHogEnabled({ ...runtime, environment: "production" })).toBe(false);
     expect(isBrowserPostHogEnabled({ ...runtime, nodeEnv: "test" })).toBe(false);
     expect(isBrowserPostHogEnabled({ ...runtime, disabled: "1" })).toBe(false);
+  });
+
+  test("remove URL, busca, referrer e campanha antes do envio", () => {
+    const event = stripNavigationProperties({
+      uuid: "33333333-3333-4333-8333-333333333333",
+      event: "catalog_viewed",
+      properties: {
+        token: "phc_test",
+        store_id: "22222222-2222-4222-8222-222222222222",
+        $groups: { store: "22222222-2222-4222-8222-222222222222" },
+        $current_url: "https://example.test/loja?q=segredo",
+        $referrer: "https://example.test/?token=segredo",
+        $initial_referrer: "https://example.test/?token=segredo",
+        utm_campaign: "segredo",
+        $pathname: "/loja",
+        $set_once: { $initial_current_url: "https://example.test/?q=segredo" },
+      },
+      $set_once: { $initial_referrer: "https://example.test/?q=segredo" },
+    });
+
+    expect(event?.properties).toMatchObject({
+      token: "phc_test",
+      store_id: "22222222-2222-4222-8222-222222222222",
+      $groups: { store: "22222222-2222-4222-8222-222222222222" },
+    });
+    expect(JSON.stringify(event)).not.toContain("segredo");
+    expect(event?.properties).not.toHaveProperty("$pathname");
   });
 });

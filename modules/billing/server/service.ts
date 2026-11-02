@@ -115,8 +115,69 @@ async function applyStripeSubscription(
   return previous ? { previous, next: nextSubscription } : null;
 }
 
-export async function synchronizeStripeSubscription(subscription: Stripe.Subscription) {
-  await db.$transaction((tx) => applyStripeSubscription(tx, subscription));
+async function reportSubscriptionTransition(
+  transition: Awaited<ReturnType<typeof applyStripeSubscription>>,
+  observer: Pick<ServerAnalytics, "subscriptionStarted" | "subscriptionCancelled">
+) {
+  if (!transition) return;
+
+  try {
+    const { previous, next } = transition;
+    const owner = await db.storeMember.findFirst({
+      where: { storeId: previous.storeId, role: "OWNER" },
+      select: { userId: true },
+    });
+
+    if (!owner) return;
+
+    const priorPaid = previous.plan && previous.plan !== "FREE";
+    const priorActive = previous.status && ACTIVE_STATUSES.has(previous.status);
+
+    if (
+      next.plan &&
+      (next.status === "ACTIVE" || next.status === "TRIALING") &&
+      (!priorActive || !priorPaid)
+    ) {
+      observer.subscriptionStarted(
+        { distinctId: owner.userId },
+        { storeId: previous.storeId, plan: next.plan, billingStatus: next.status }
+      );
+    }
+
+    if (
+      priorPaid &&
+      ((next.cancelAtPeriodEnd && !previous.cancelAtPeriodEnd) ||
+        (next.status === "CANCELED" &&
+          previous.status !== "CANCELED" &&
+          !previous.cancelAtPeriodEnd))
+    ) {
+      observer.subscriptionCancelled(
+        { distinctId: owner.userId },
+        {
+          storeId: previous.storeId,
+          plan: next.plan ?? previous.plan ?? "FREE",
+          effectiveImmediately: next.status === "CANCELED",
+        }
+      );
+    }
+  } catch {
+    logger.error("Falha na captura do evento de assinatura.");
+  }
+}
+
+export async function synchronizeStripeSubscription(
+  subscription: Stripe.Subscription,
+  observer: Pick<
+    ServerAnalytics,
+    "subscriptionStartedReconciled" | "subscriptionCancelledReconciled"
+  > = analytics
+) {
+  const transition = await db.$transaction((tx) => applyStripeSubscription(tx, subscription));
+
+  await reportSubscriptionTransition(transition, {
+    subscriptionStarted: observer.subscriptionStartedReconciled,
+    subscriptionCancelled: observer.subscriptionCancelledReconciled,
+  });
 }
 
 async function retrieveSubscription(
@@ -576,48 +637,5 @@ export async function processStripeEvent(
     throw error;
   }
 
-  if (!transition) return;
-
-  try {
-    const { previous, next } = transition;
-    const owner = await db.storeMember.findFirst({
-      where: { storeId: previous.storeId, role: "OWNER" },
-      select: { userId: true },
-    });
-
-    if (!owner) return;
-
-    const priorPaid = previous.plan && previous.plan !== "FREE";
-    const priorActive = previous.status && ACTIVE_STATUSES.has(previous.status);
-
-    if (
-      next.plan &&
-      (next.status === "ACTIVE" || next.status === "TRIALING") &&
-      (!priorActive || !priorPaid)
-    ) {
-      observer.subscriptionStarted(
-        { distinctId: owner.userId },
-        { storeId: previous.storeId, plan: next.plan, billingStatus: next.status }
-      );
-    }
-
-    if (
-      priorPaid &&
-      ((next.cancelAtPeriodEnd && !previous.cancelAtPeriodEnd) ||
-        (next.status === "CANCELED" &&
-          previous.status !== "CANCELED" &&
-          !previous.cancelAtPeriodEnd))
-    ) {
-      observer.subscriptionCancelled(
-        { distinctId: owner.userId },
-        {
-          storeId: previous.storeId,
-          plan: next.plan ?? previous.plan ?? "FREE",
-          effectiveImmediately: next.status === "CANCELED",
-        }
-      );
-    }
-  } catch {
-    logger.error("Falha na captura do evento de assinatura.");
-  }
+  await reportSubscriptionTransition(transition, observer);
 }

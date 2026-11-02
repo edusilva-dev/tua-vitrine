@@ -291,6 +291,7 @@ Vocabulário inicial de `source`:
 | `catalog_service` | criação ou arquivamento confirmado no serviço de catálogo |
 | `storefront` | interação na vitrine pública real |
 | `stripe_webhook` | transição de assinatura confirmada pelo webhook Stripe |
+| `stripe_reconciliation` | transição confirmada ao consultar o Stripe antes do webhook |
 
 O contrato recebe objetos em `camelCase`, valida-os com schemas estritos e envia propriedades em
 `snake_case`. Planos reutilizam `billingPlanSchema` e `paidBillingPlanSchema`; não existe uma segunda
@@ -543,6 +544,7 @@ O sprint está pronto somente quando:
 | 2026-10-29 | replay com máscara máxima e consentimento | rollout conservador para dados não essenciais |
 | 2026-10-30 | browser expõe 4 eventos de interação e servidor 7 eventos de resultado | preservar a origem confiável de cada evento |
 | 2026-10-30 | `source` é derivado pelo contrato, não recebido do chamador | impedir valores livres e divergentes |
+| 2026-11-02 | reconciliação Stripe também emite transições confirmadas | retorno do checkout pode persistir o estado antes do webhook; capturar uma vez pela transição, com origem explícita |
 | 2026-10-30 | schemas de billing são a fonte dos nomes de plano | evitar enumeração duplicada |
 | 2026-10-30 | identidade usa somente o ID interno do Better Auth | evitar PII e manter correlação estável |
 | 2026-10-30 | troca de pessoa exige reset bem-sucedido antes do identify | impedir a união de duas pessoas no mesmo navegador |
