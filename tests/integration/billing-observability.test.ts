@@ -71,6 +71,18 @@ function webhook(
   } as unknown as Stripe.Event;
 }
 
+async function applyWebhook(
+  event: Stripe.Event,
+  target: Pick<typeof observer, "subscriptionStarted" | "subscriptionCancelled"> = observer,
+  current = event.data.object as Stripe.Subscription
+) {
+  await processStripeEvent(event, target, async (id) => {
+    expect(id).toBe(subscriptionId);
+
+    return current;
+  });
+}
+
 beforeAll(async () => {
   process.env.STRIPE_SECRET_KEY = "rk_test_billing_observability";
   process.env.STRIPE_WEBHOOK_SECRET = "whsec_billing_observability";
@@ -120,10 +132,10 @@ beforeEach(async () => {
 test("webhook captura primeira ativação uma vez e ignora mudança entre planos pagos", async () => {
   const started = webhook("trialing");
 
-  await processStripeEvent(started, observer);
-  await processStripeEvent(started, observer);
-  await processStripeEvent(webhook("active"), observer);
-  await processStripeEvent(webhook("active", { price: "PROFESSIONAL" }), observer);
+  await applyWebhook(started);
+  await applyWebhook(started);
+  await applyWebhook(webhook("active"));
+  await applyWebhook(webhook("active", { price: "PROFESSIONAL" }));
 
   expect(events).toHaveLength(1);
   expect(events[0]).toMatchObject({
@@ -135,10 +147,7 @@ test("webhook captura primeira ativação uma vez e ignora mudança entre planos
 });
 
 test("dois webhooks distintos concorrentes registram uma única ativação", async () => {
-  await Promise.all([
-    processStripeEvent(webhook("active"), observer),
-    processStripeEvent(webhook("active"), observer),
-  ]);
+  await Promise.all([applyWebhook(webhook("active")), applyWebhook(webhook("active"))]);
 
   expect(events.filter(({ event }) => event === "subscription_started")).toHaveLength(1);
 });
@@ -147,7 +156,7 @@ test("reconciliação anterior ao webhook preserva um único evento confirmado",
   const activated = webhook("active");
 
   await synchronizeStripeSubscription(activated.data.object as Stripe.Subscription, observer);
-  await processStripeEvent(activated, observer);
+  await applyWebhook(activated);
 
   expect(events).toHaveLength(1);
   expect(events[0]).toMatchObject({
@@ -158,7 +167,7 @@ test("reconciliação anterior ao webhook preserva um único evento confirmado",
   const scheduled = webhook("active", { cancelAtPeriodEnd: true });
 
   await synchronizeStripeSubscription(scheduled.data.object as Stripe.Subscription, observer);
-  await processStripeEvent(scheduled, observer);
+  await applyWebhook(scheduled);
 
   expect(events).toHaveLength(2);
   expect(events[1]).toMatchObject({
@@ -167,13 +176,32 @@ test("reconciliação anterior ao webhook preserva um único evento confirmado",
   });
 });
 
+test("snapshot antigo entregue depois da reconciliação não regride nem duplica a assinatura", async () => {
+  const current = webhook("active").data.object as Stripe.Subscription;
+
+  await synchronizeStripeSubscription(current, observer);
+
+  const stale = webhook("incomplete");
+
+  stale.type = "customer.subscription.created";
+  await applyWebhook(stale, observer, current);
+  await applyWebhook(webhook("active"), observer, current);
+
+  expect(await db.storeSubscription.findUniqueOrThrow({ where: { storeId } })).toMatchObject({
+    status: "ACTIVE",
+    plan: "ESSENTIAL",
+  });
+  expect(events.filter(({ event }) => event === "subscription_started")).toHaveLength(1);
+  expect(events[0]?.properties.source).toBe("stripe_reconciliation");
+});
+
 test("cancelamento agendado e conclusão não duplicam evento", async () => {
-  await processStripeEvent(webhook("active", { price: "PROFESSIONAL" }), observer);
+  await applyWebhook(webhook("active", { price: "PROFESSIONAL" }));
   const scheduled = webhook("active", { price: "PROFESSIONAL", cancelAtPeriodEnd: true });
 
-  await processStripeEvent(scheduled, observer);
-  await processStripeEvent(scheduled, observer);
-  await processStripeEvent(webhook("canceled", { price: "PROFESSIONAL" }), observer);
+  await applyWebhook(scheduled);
+  await applyWebhook(scheduled);
+  await applyWebhook(webhook("canceled", { price: "PROFESSIONAL" }));
 
   expect(events).toHaveLength(2);
   expect(events[1]).toMatchObject({
@@ -185,11 +213,8 @@ test("cancelamento agendado e conclusão não duplicam evento", async () => {
 });
 
 test("cancelamento junto da troca de plano informa o plano confirmado", async () => {
-  await processStripeEvent(webhook("active"), observer);
-  await processStripeEvent(
-    webhook("active", { price: "PROFESSIONAL", cancelAtPeriodEnd: true }),
-    observer
-  );
+  await applyWebhook(webhook("active"));
+  await applyWebhook(webhook("active", { price: "PROFESSIONAL", cancelAtPeriodEnd: true }));
 
   expect(events.at(-1)).toMatchObject({
     event: "subscription_cancelled",
@@ -198,7 +223,7 @@ test("cancelamento junto da troca de plano informa o plano confirmado", async ()
 });
 
 test("cancelamento imediato e falha do observador não revertem o webhook", async () => {
-  await processStripeEvent(webhook("active", { price: "PROFESSIONAL" }), observer);
+  await applyWebhook(webhook("active", { price: "PROFESSIONAL" }));
   const failing = {
     subscriptionStarted: observer.subscriptionStarted,
     subscriptionCancelled: () => {
@@ -207,8 +232,8 @@ test("cancelamento imediato e falha do observador não revertem o webhook", asyn
   };
   const cancelled = webhook("canceled", { price: "PROFESSIONAL" });
 
-  await processStripeEvent(cancelled, failing);
-  await processStripeEvent(cancelled, failing);
+  await applyWebhook(cancelled, failing);
+  await applyWebhook(cancelled, failing);
 
   expect(await db.storeSubscription.findUniqueOrThrow({ where: { storeId } })).toMatchObject({
     status: "CANCELED",

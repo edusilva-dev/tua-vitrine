@@ -585,22 +585,22 @@ export async function activateInternalTrial(context: StoreContext): Promise<void
 
 export async function processStripeEvent(
   event: Stripe.Event,
-  observer: Pick<ServerAnalytics, "subscriptionStarted" | "subscriptionCancelled"> = analytics
+  observer: Pick<ServerAnalytics, "subscriptionStarted" | "subscriptionCancelled"> = analytics,
+  retrieveCurrentSubscription: (id: string) => Promise<Stripe.Subscription> = (id) =>
+    getStripe().subscriptions.retrieve(id)
 ) {
-  let subscription: Stripe.Subscription | null = null;
+  if (await db.stripeWebhookEvent.findUnique({ where: { id: event.id }, select: { id: true } }))
+    return;
+
+  let subscriptionId: string | null = null;
 
   if (event.type.startsWith("customer.subscription.")) {
-    subscription = event.data.object as Stripe.Subscription;
+    subscriptionId = (event.data.object as Stripe.Subscription).id;
   } else if (event.type === "invoice.paid" || event.type === "invoice.payment_failed") {
     const invoice = event.data.object as Stripe.Invoice;
     const reference = invoice.parent?.subscription_details?.subscription;
 
-    if (reference) {
-      subscription =
-        typeof reference === "string"
-          ? await getStripe().subscriptions.retrieve(reference)
-          : reference;
-    }
+    if (reference) subscriptionId = typeof reference === "string" ? reference : reference.id;
   } else if (
     event.type === "checkout.session.completed" ||
     event.type === "checkout.session.async_payment_succeeded"
@@ -608,13 +608,10 @@ export async function processStripeEvent(
     const session = event.data.object as Stripe.Checkout.Session;
     const reference = session.subscription;
 
-    if (reference) {
-      subscription =
-        typeof reference === "string"
-          ? await getStripe().subscriptions.retrieve(reference)
-          : reference;
-    }
+    if (reference) subscriptionId = typeof reference === "string" ? reference : reference.id;
   }
+
+  const subscription = subscriptionId ? await retrieveCurrentSubscription(subscriptionId) : null;
 
   let transition: Awaited<ReturnType<typeof applyStripeSubscription>> = null;
 
