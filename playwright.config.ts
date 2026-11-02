@@ -9,6 +9,7 @@ if (new URL(databaseUrl).pathname !== "/tuavitrine_test") {
 }
 
 process.env.E2E_DATABASE_URL = databaseUrl;
+const observabilityEnabled = process.env.E2E_OBSERVABILITY === "1";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -37,7 +38,14 @@ export default defineConfig({
       APP_URL: "http://localhost:3100",
       BETTER_AUTH_SECRET: "test-only-secret-with-more-than-32-characters",
       E2E_AUTH_BYPASS: "1",
-      NEXT_PUBLIC_POSTHOG_DISABLED: "1",
+      NEXT_PUBLIC_POSTHOG_DISABLED: observabilityEnabled ? "0" : "1",
+      ...(observabilityEnabled
+        ? {
+            NEXT_PUBLIC_APP_ENV: "staging",
+            NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_e2e_test_only",
+            NEXT_PUBLIC_POSTHOG_HOST: "https://posthog.invalid",
+          }
+        : {}),
       STORAGE_DIR: "./work/test-storage",
     },
     timeout: 120000,

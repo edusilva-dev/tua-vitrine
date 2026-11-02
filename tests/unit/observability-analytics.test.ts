@@ -66,6 +66,26 @@ function createServerHarness(
 }
 
 describe("wrapper de observabilidade do browser", () => {
+  test("usa sendBeacon somente no clique que pode sair da página", () => {
+    const transports: Array<"sendBeacon" | undefined> = [];
+    const analytics = createBrowserAnalytics({
+      client: {
+        capture: (_eventName, _properties, _groups, transport) => {
+          transports.push(transport);
+        },
+      },
+      enabled: true,
+      environment: "staging",
+      release: null,
+      hasConsent: () => true,
+    });
+
+    analytics.catalogViewed({ storeId, plan: "FREE" });
+    analytics.whatsappClicked({ storeId, location: "store_hero" });
+
+    expect(transports).toEqual([undefined, "sendBeacon"]);
+  });
+
   test("captura apenas os quatro eventos de interação com propriedades comuns", () => {
     const { analytics, events } = createBrowserHarness();
 

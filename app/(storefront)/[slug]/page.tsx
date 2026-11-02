@@ -26,6 +26,7 @@ export default async function PublicStorePage({
       <AnalyticsIdentity userId={null} store={toAnalyticsStoreGroup(store, entitlements.plan)} />
       <StorefrontPage
         store={store}
+        plan={entitlements.plan}
         searchParams={searchParams}
         showFreeBranding={entitlements.plan === "FREE"}
       />

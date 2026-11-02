@@ -6,8 +6,9 @@
 
 ## Estado do sprint
 
-- **Status:** implementação em andamento; tarefas 01, 02, 03 e 04 implementadas; tarefa 05 com controle
-  técnico implementado e decisões de privacidade pendentes. Smoke test externo da tarefa 01 pendente.
+- **Status:** implementação em andamento; tarefas 01–04 implementadas; tarefa 05 com controle técnico
+  implementado e decisões de privacidade pendentes; tarefas 06–07 preparadas para
+  desenvolvimento/staging. Smoke test externo da tarefa 01 pendente.
 - **Tema:** product analytics e UX analytics com PostHog.
 - **Produto:** Tua Vitrine.
 - **Públicos observados:** lojistas autenticados e visitantes anônimos das vitrines públicas.
@@ -496,7 +497,7 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 | 04 | [Identificar e agrupar por loja](./tasks/04-store-identification.md) | 02, 03 | Implementada; inspeção externa depende da 05 |
 | 05 | [Implementar consentimento e política do servidor](./tasks/05-consent-and-server-privacy-policy.md) | 01–04 | Controle técnico implementado; aprovação da política e auditoria pendentes |
 | 06 | [Instrumentar eventos do lojista](./tasks/06-merchant-lifecycle-events.md) | 02–05 | Em implementação apenas para desenvolvimento/staging |
-| 07 | [Instrumentar vitrine, WhatsApp e billing](./tasks/07-storefront-whatsapp-and-billing-events.md) | 02–05 | Pendente |
+| 07 | [Instrumentar vitrine, WhatsApp e billing](./tasks/07-storefront-whatsapp-and-billing-events.md) | 02–05 | Em implementação apenas para desenvolvimento/staging |
 | 08 | [Habilitar replay e privacy masking](./tasks/08-session-replay-and-privacy-masking.md) | 01–05 | Pendente |
 | 09 | [Criar Activation Funnel](./tasks/09-activation-funnel.md) | 06, 07 | Pendente |
 | 10 | [Criar Product Health Dashboard](./tasks/10-product-health-dashboard.md) | 06, 07, 09 | Pendente |

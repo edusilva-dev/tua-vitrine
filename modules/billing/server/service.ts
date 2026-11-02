@@ -8,6 +8,7 @@ import { getEnv } from "@/lib/server/env";
 import { AppError } from "@/lib/server/http";
 import { logger } from "@/lib/server/logger";
 import { assertBillingEnabled, getStripe, getStripePriceIds } from "@/lib/server/stripe";
+import { analytics, type ServerAnalytics } from "@/modules/observability/server/analytics";
 import {
   type BillingPlan,
   billingPlanSchema,
@@ -75,30 +76,33 @@ async function applyStripeSubscription(
   const stripeCustomerId = customerId(subscription.customer);
   const nextSubscription = subscriptionData(subscription);
 
+  await tx.$queryRaw`SELECT "id" FROM "StoreSubscription" WHERE "stripeCustomerId" = ${stripeCustomerId} FOR UPDATE`;
+
+  const previous = await tx.storeSubscription.findUnique({
+    where: { stripeCustomerId },
+    select: { storeId: true, plan: true, status: true, cancelAtPeriodEnd: true },
+  });
+
   await tx.storeSubscription.updateMany({
     where: { stripeCustomerId },
     data: nextSubscription,
   });
 
-  const billing = await tx.storeSubscription.findUnique({
-    where: { stripeCustomerId },
-    select: { storeId: true },
-  });
   const resetProfessionalFeatures =
     nextSubscription.plan === "ESSENTIAL" &&
     (nextSubscription.status === "ACTIVE" || nextSubscription.status === "TRIALING");
   const resetToFree = ["CANCELED", "INCOMPLETE_EXPIRED"].includes(nextSubscription.status);
 
-  if (billing && (resetProfessionalFeatures || resetToFree)) {
+  if (previous && (resetProfessionalFeatures || resetToFree)) {
     await tx.store.update({
-      where: { id: billing.storeId },
+      where: { id: previous.storeId },
       data: {
         template: "grid",
         customization: { version: 1, tagline: "" },
         ...(resetToFree ? { primaryColor: "#2563eb" } : {}),
       },
     });
-    await tx.promotionCampaign.deleteMany({ where: { storeId: billing.storeId } });
+    await tx.promotionCampaign.deleteMany({ where: { storeId: previous.storeId } });
   }
 
   if (subscription.status === "trialing" || subscription.status === "active") {
@@ -107,6 +111,8 @@ async function applyStripeSubscription(
       data: { trialUsedAt: new Date() },
     });
   }
+
+  return previous ? { previous, next: nextSubscription } : null;
 }
 
 export async function synchronizeStripeSubscription(subscription: Stripe.Subscription) {
@@ -516,7 +522,10 @@ export async function activateInternalTrial(context: StoreContext): Promise<void
   });
 }
 
-export async function processStripeEvent(event: Stripe.Event) {
+export async function processStripeEvent(
+  event: Stripe.Event,
+  observer: Pick<ServerAnalytics, "subscriptionStarted" | "subscriptionCancelled"> = analytics
+) {
   let subscription: Stripe.Subscription | null = null;
 
   if (event.type.startsWith("customer.subscription.")) {
@@ -546,17 +555,69 @@ export async function processStripeEvent(event: Stripe.Event) {
     }
   }
 
+  let transition: Awaited<ReturnType<typeof applyStripeSubscription>> = null;
+
   try {
-    await db.$transaction(async (tx) => {
+    transition = await db.$transaction(async (tx) => {
       await tx.stripeWebhookEvent.create({ data: { id: event.id, type: event.type } });
 
-      if (!subscription) return;
+      if (!subscription) return null;
 
-      await applyStripeSubscription(tx, subscription);
+      return applyStripeSubscription(tx, subscription);
     });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return;
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002" &&
+      (await db.stripeWebhookEvent.findUnique({ where: { id: event.id } }))
+    )
+      return;
 
     throw error;
+  }
+
+  if (!transition) return;
+
+  try {
+    const { previous, next } = transition;
+    const owner = await db.storeMember.findFirst({
+      where: { storeId: previous.storeId, role: "OWNER" },
+      select: { userId: true },
+    });
+
+    if (!owner) return;
+
+    const priorPaid = previous.plan && previous.plan !== "FREE";
+    const priorActive = previous.status && ACTIVE_STATUSES.has(previous.status);
+
+    if (
+      next.plan &&
+      (next.status === "ACTIVE" || next.status === "TRIALING") &&
+      (!priorActive || !priorPaid)
+    ) {
+      observer.subscriptionStarted(
+        { distinctId: owner.userId },
+        { storeId: previous.storeId, plan: next.plan, billingStatus: next.status }
+      );
+    }
+
+    if (
+      priorPaid &&
+      ((next.cancelAtPeriodEnd && !previous.cancelAtPeriodEnd) ||
+        (next.status === "CANCELED" &&
+          previous.status !== "CANCELED" &&
+          !previous.cancelAtPeriodEnd))
+    ) {
+      observer.subscriptionCancelled(
+        { distinctId: owner.userId },
+        {
+          storeId: previous.storeId,
+          plan: next.plan ?? previous.plan ?? "FREE",
+          effectiveImmediately: next.status === "CANCELED",
+        }
+      );
+    }
+  } catch {
+    logger.error("Falha na captura do evento de assinatura.");
   }
 }

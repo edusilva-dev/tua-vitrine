@@ -62,3 +62,25 @@ em produção até a política definida no documento mestre ser aprovada e imple
 
 Ad blockers e rejeição de consentimento tornam a telemetria client-side incompleta. O dashboard não
 deve ser apresentado como contabilidade financeira nem substituir a fonte de billing.
+
+## Implementação técnica em 01/11/2026
+
+- A vitrine pública recebe o plano efetivo do servidor e emite `catalog_viewed` uma vez por montagem.
+  Abrir um detalhe emite `product_viewed`. A prévia administrativa não emite eventos PostHog nem
+  altera esse comportamento das métricas internas.
+- Hero, card sem variantes, detalhe e carrinho usam `whatsapp_clicked` antes de abrir o WhatsApp.
+  O card com variantes abre o detalhe; o clique para WhatsApp é contado quando o visitante escolhe
+  uma combinação comprável. O carrinho só captura depois de revalidar disponibilidade e preços.
+  Somente loja, localização, ID interno do produto quando aplicável e tamanho do carrinho são enviados.
+- O webhook registra `event.id` na mesma transação que aplica o estado. Após commit, uma passagem
+  de estado não pago para `TRIALING`/`ACTIVE` emite `subscription_started`. Mudanças entre planos
+  pagos atualizam o estado, sem chamar novamente um início de assinatura. Um agendamento de
+  cancelamento emite `subscription_cancelled` com `effective_immediately = false`; o encerramento
+  posterior não duplica esse marco. Um cancelamento direto usa `true`. A linha da assinatura é
+  bloqueada durante a transição para que dois webhooks distintos simultâneos não dupliquem o início.
+- Captura do servidor segue em `noop` em produção até a aprovação da política no índice. A captura
+  client-side requer concordância válida. A fonte de métricas do lojista no PostgreSQL permanece
+  separada; contagens podem divergir por consentimento, bloqueadores e falhas best-effort.
+- Inspeção externa no PostHog de desenvolvimento/staging e comparação amostral seguem pendentes.
+  A validação local usa o SDK real com host interceptado, sem enviar dados externos, e compara uma
+  visita PostHog com uma nova visita interna `STORE_VIEW` por montagem da vitrine.
