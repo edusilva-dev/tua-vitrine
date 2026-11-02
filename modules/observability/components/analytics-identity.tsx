@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import { browserAnalyticsConsent } from "@/modules/observability/client/browser-consent";
+import { unknownAnalyticsConsent } from "@/modules/observability/client/consent";
 import { analyticsIdentity, type BrowserIdentity } from "@/modules/observability/client/identity";
 import type { AnalyticsStoreGroup } from "@/modules/observability/contracts/store-group";
 
 export interface AnalyticsIdentityState {
   currentUserId: string | null;
   currentStoreFingerprint?: string | null;
+  consentRevision?: number;
 }
 
 export interface AnalyticsIdentityProps {
@@ -43,14 +46,29 @@ export function syncAnalyticsIdentity(
 }
 
 export function AnalyticsIdentity({ userId, store = null }: AnalyticsIdentityProps) {
+  const consent = useSyncExternalStore(
+    browserAnalyticsConsent.subscribe,
+    browserAnalyticsConsent.getSnapshot,
+    () => unknownAnalyticsConsent
+  );
   const state = useRef<AnalyticsIdentityState>({
     currentUserId: null,
     currentStoreFingerprint: null,
   });
 
   useEffect(() => {
+    if (state.current.consentRevision !== consent.revision) {
+      state.current = {
+        currentUserId: null,
+        currentStoreFingerprint: null,
+        consentRevision: consent.revision,
+      };
+    }
+
+    if (consent.status !== "accepted") return;
+
     syncAnalyticsIdentity(analyticsIdentity, state.current, userId, store);
-  }, [userId, store]);
+  }, [userId, store, consent]);
 
   return null;
 }

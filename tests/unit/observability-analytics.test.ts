@@ -303,7 +303,7 @@ describe("wrapper de observabilidade do servidor", () => {
 describe("limite arquitetural dos SDKs do PostHog", () => {
   test("restringe imports diretos aos adaptadores e ao bootstrap", async () => {
     const allowed = new Set([
-      "instrumentation-client.ts",
+      "modules/observability/client/browser-consent.ts",
       "modules/observability/client/analytics.ts",
       "modules/observability/client/identity.ts",
       "modules/observability/server/posthog.ts",
