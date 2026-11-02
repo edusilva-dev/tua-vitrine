@@ -2,6 +2,8 @@ import "server-only";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { betterAuth } from "better-auth/minimal";
 import { after } from "next/server";
+import { z } from "zod";
+import { analytics } from "@/modules/observability/server/analytics";
 import { db } from "./db";
 import { getEnv } from "./env";
 import { logger } from "./logger";
@@ -21,6 +23,33 @@ function createAuth() {
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: getTrustedOrigins(env.APP_URL),
     database: prismaAdapter(db, { provider: "postgresql", transaction: true }),
+    databaseHooks: {
+      user: {
+        create: {
+          after: async (user, context) => {
+            try {
+              const body = z
+                .object({ callbackURL: z.string().optional() })
+                .safeParse(context?.body);
+              const callback = body.success ? body.data.callbackURL : undefined;
+              const plan = callback
+                ? new URL(callback, env.APP_URL).searchParams.get("plano")
+                : null;
+              const signupPlan =
+                plan === "essencial"
+                  ? "ESSENTIAL"
+                  : plan === "profissional"
+                    ? "PROFESSIONAL"
+                    : "FREE";
+
+              analytics.accountCreated({ distinctId: user.id }, { signupPlan });
+            } catch {
+              logger.error("Falha na captura do evento de criação de conta.");
+            }
+          },
+        },
+      },
+    },
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 6,

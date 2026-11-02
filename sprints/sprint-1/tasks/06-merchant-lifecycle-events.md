@@ -71,3 +71,24 @@ criados sem expô-los desnecessariamente na resposta pública.
 Quando captura e transação não puderem ser atômicas, preferir pequena chance de perda a bloquear ou
 duplicar a operação. Registrar essa característica; um outbox só será considerado se dados reais
 mostrarem necessidade.
+
+## Implementação técnica em 31/10/2026
+
+- O hook `user.create.after` do Better Auth captura `account_created` após a criação da conta.
+  `signup_plan` vem do plano escolhido no retorno do cadastro e usa `FREE` quando ausente. O hook
+  executa uma vez por registro criado; uma tentativa rejeitada não cria outro registro.
+- `store_created` ocorre após a criação da loja e de seu vínculo com o proprietário. O formulário
+  de novo produto registra `product_creation_started` em cada abertura, inclusive ao retomar a
+  etapa do primeiro produto no onboarding.
+- A criação manual emite `product_created` após o commit e, na primeira ativação da loja, também
+  `store_published`. A transição condicional `DRAFT` → `ACTIVE` impede duas publicações simultâneas.
+  Edição e retry com chave já processada não emitem esses eventos. A importação preserva os IDs apenas
+  internamente e emite um evento por produto persistido. A importação exige onboarding concluído;
+  uma assinatura ativa em loja `DRAFT` não contorna a publicação do primeiro produto.
+- Exclusão simples e em lote emitem somente contagem e operação após o arquivamento; nenhuma lista
+  de IDs ou nomes vai ao PostHog. Um retry concorrente sem arquivamento efetivo não emite evento.
+  Falhas de captura são registradas sem payload e não bloqueiam as operações principais. Sem outbox,
+  uma falha após o commit pode perder o evento.
+- A captura server-side permanece em `noop` em produção até a aprovação da política registrada no
+  índice do sprint. Testes automatizados usam observador local; a inspeção manual no projeto PostHog
+  de desenvolvimento/staging continua pendente.

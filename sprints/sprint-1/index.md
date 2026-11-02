@@ -194,8 +194,8 @@ aprovar e documentar uma base legal, finalidade, retenção e mecanismo de oposi
    captura server-side, inclusive em webhooks. Uma preferência apenas em cookie/localStorage não
    satisfaz este caminho.
 
-O caminho escolhido deve ser registrado neste documento antes da implementação das tarefas 06 e 07.
-Até lá, o adaptador server-side opera em noop em produção. Esta é uma decisão de engenharia
+O caminho escolhido deve ser registrado neste documento antes da ativação em produção dos eventos
+das tarefas 06 e 07. Até lá, o adaptador server-side opera em noop em produção. Esta é uma decisão de engenharia
 conservadora, não parecer jurídico. A política final, prazos de retenção e textos devem ser aprovados
 pelo responsável do produto.
 
@@ -204,6 +204,12 @@ base legal dos eventos server-side. Portanto, o `noop` de produção permanece o
 para webhooks. A preferência do navegador não autoriza captura no servidor. A escolha entre
 consentimento persistido no servidor e legítimo interesse com oposição, bem como retenção e acesso,
 continua pendente; as tarefas 06 e 07 não devem habilitar eventos de produção antes desse registro.
+
+Em 31/10/2026, o responsável expressou a preferência de produto por um aviso informativo e coleta
+contínua. Essa preferência ainda não define a base legal nem o alcance da coleta. A tarefa 06 pode
+preparar eventos de resultado em desenvolvimento e staging, preservando o `noop` server-side em
+produção. Consentimento do navegador e Session Replay não mudam antes de uma decisão específica
+sobre esses canais. A ativação em produção permanece bloqueada pela avaliação e aprovação da política.
 
 ## Ferramentas escolhidas
 
@@ -489,14 +495,15 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 | 03 | [Identificar o usuário autenticado](./tasks/03-user-identification.md) | 02 | Implementada; inspeção externa depende da 05 |
 | 04 | [Identificar e agrupar por loja](./tasks/04-store-identification.md) | 02, 03 | Implementada; inspeção externa depende da 05 |
 | 05 | [Implementar consentimento e política do servidor](./tasks/05-consent-and-server-privacy-policy.md) | 01–04 | Controle técnico implementado; aprovação da política e auditoria pendentes |
-| 06 | [Instrumentar eventos do lojista](./tasks/06-merchant-lifecycle-events.md) | 02–05 | Pendente |
+| 06 | [Instrumentar eventos do lojista](./tasks/06-merchant-lifecycle-events.md) | 02–05 | Em implementação apenas para desenvolvimento/staging |
 | 07 | [Instrumentar vitrine, WhatsApp e billing](./tasks/07-storefront-whatsapp-and-billing-events.md) | 02–05 | Pendente |
 | 08 | [Habilitar replay e privacy masking](./tasks/08-session-replay-and-privacy-masking.md) | 01–05 | Pendente |
 | 09 | [Criar Activation Funnel](./tasks/09-activation-funnel.md) | 06, 07 | Pendente |
 | 10 | [Criar Product Health Dashboard](./tasks/10-product-health-dashboard.md) | 06, 07, 09 | Pendente |
 | 11 | [Validar e liberar o rollout](./tasks/11-validation-and-rollout.md) | 01–10 | Pendente |
 
-Tarefas 06 e 07 só começam após a decisão da tarefa 05 estar registrada. Tarefas 09 e 10 só começam
+Tarefas 06 e 07 podem ser preparadas em desenvolvimento/staging após a decisão técnica da tarefa 05;
+a captura em produção exige a aprovação da política. Tarefas 09 e 10 só começam
 depois de os eventos aparecerem no projeto de desenvolvimento/staging com propriedades corretas. A
 produção só é habilitada após concluir a tarefa 11.
 

@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { db } from "@/lib/server/db";
+import { getEntitlements } from "@/modules/billing/server/entitlements";
 import { importProducts } from "@/modules/catalog/server/import/service";
+import { saveProduct } from "@/modules/catalog/server/service";
 import { createStore, saveWhatsapp } from "@/modules/stores/server/service";
 
 const url = new URL(process.env.DATABASE_URL ?? "http://invalid");
@@ -17,6 +19,19 @@ beforeAll(async () => {
 
   storeId = store.id;
   await saveWhatsapp({ storeId }, { whatsapp: "+5511999999999" });
+  await saveProduct(
+    { storeId },
+    {
+      name: "Primeiro produto",
+      description: "",
+      priceCents: 1000,
+      discountPriceCents: null,
+      available: true,
+      categoryName: "",
+      assetIds: [],
+      variants: [],
+    }
+  );
 });
 
 afterAll(async () => {
@@ -72,11 +87,43 @@ describe("confirmação da importação de produtos", () => {
       importProducts({ storeId }, { rows }, randomUUID(), { enabled: false, productLimit: 10 })
     ).rejects.toThrow("planos Essencial e Profissional");
     await expect(
-      importProducts({ storeId }, { rows }, randomUUID(), { enabled: true, productLimit: 3 })
+      importProducts({ storeId }, { rows }, randomUUID(), { enabled: true, productLimit: 4 })
     ).rejects.toThrow("permite importar mais 1 produto");
 
     expect(
       await db.product.count({ where: { storeId, name: { startsWith: "Produto importado" } } })
     ).toBe(2);
+  });
+
+  test("assinatura ativa não permite importar antes do primeiro produto", async () => {
+    const draft = await createStore({
+      name: "Rascunho com assinatura",
+      slug: `draft-import-${randomUUID().slice(0, 8)}`,
+    });
+
+    try {
+      await saveWhatsapp({ storeId: draft.id }, { whatsapp: "+5511999999999" });
+      await db.storeSubscription.create({
+        data: {
+          storeId: draft.id,
+          stripeCustomerId: randomUUID(),
+          plan: "ESSENTIAL",
+          status: "ACTIVE",
+        },
+      });
+      const allowance = await getEntitlements({ storeId: draft.id });
+
+      expect(allowance.canImportProducts).toBe(true);
+      await expect(
+        importProducts({ storeId: draft.id }, { rows }, randomUUID(), {
+          enabled: allowance.canImportProducts,
+          productLimit: allowance.productLimit,
+        })
+      ).rejects.toThrow("Cadastre o primeiro produto");
+      expect((await db.store.findUnique({ where: { id: draft.id } }))?.status).toBe("DRAFT");
+      expect(await db.product.count({ where: { storeId: draft.id } })).toBe(0);
+    } finally {
+      await db.store.delete({ where: { id: draft.id } });
+    }
   });
 });
