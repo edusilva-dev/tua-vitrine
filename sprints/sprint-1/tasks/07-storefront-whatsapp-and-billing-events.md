@@ -91,6 +91,10 @@ deve ser apresentado como contabilidade financeira nem substituir a fonte de bil
   separada; contagens podem divergir por consentimento, bloqueadores e falhas best-effort.
 - Antes do envio pelo SDK web, propriedades automáticas de URL, caminho, busca, referrer e campanhas
   são removidas, inclusive quando a vitrine recebe parâmetros de busca.
-- Inspeção externa no PostHog de desenvolvimento/staging e comparação amostral seguem pendentes.
-  A validação local usa o SDK real com host interceptado, sem enviar dados externos, e compara uma
-  visita PostHog com uma nova visita interna `STORE_VIEW` por montagem da vitrine.
+- Em 04/11/2026, o projeto PostHog de desenvolvimento (ID `710815`) recebeu uma visita real da
+  vitrine local após consentimento e uma abertura de produto: um `catalog_viewed` e um
+  `product_viewed`, ambos com `environment = development`, `schema_version = 1.0` e grupo da loja.
+  A amostra local registrou dois `STORE_VIEW` internos no mesmo período, pois a primeira visita
+  ocorreu antes do consentimento. Os eventos PostHog recebidos não tinham URL nem referrer.
+  Cliques de WhatsApp e marcos de billing ainda precisam de verificação externa no ambiente de
+  staging; testes automatizados continuam usando host interceptado, sem enviar dados reais.
