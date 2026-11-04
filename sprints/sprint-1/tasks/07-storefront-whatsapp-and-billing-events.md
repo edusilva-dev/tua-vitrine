@@ -91,8 +91,9 @@ deve ser apresentado como contabilidade financeira nem substituir a fonte de bil
   separada; contagens podem divergir por consentimento, bloqueadores e falhas best-effort.
 - Antes do envio pelo SDK web, propriedades automáticas de URL, caminho, busca, referrer e campanhas
   são removidas, inclusive quando a vitrine recebe parâmetros de busca. Os eventos explícitos do
-  navegador recebem `$screen_name` com a rota padronizada (`/[slug]` ou `/admin/products`), sem
-  expor o slug real, URL completa ou query string.
+  navegador recebem `$screen_name` com o caminho real da vitrine (por exemplo,
+  `/cafe-do-bairro`) ou a rota fixa `/admin/products`, sem domínio, query string ou fragmento.
+  Somente um segmento de slug normalizado é aceito na vitrine.
 - Em 04/11/2026, o projeto PostHog de desenvolvimento (ID `710815`) recebeu uma visita real da
   vitrine local após consentimento e uma abertura de produto: um `catalog_viewed` e um
   `product_viewed`, ambos com `environment = development`, `schema_version = 1.0` e grupo da loja.
@@ -102,4 +103,5 @@ deve ser apresentado como contabilidade financeira nem substituir a fonte de bil
   staging; testes automatizados continuam usando host interceptado, sem enviar dados reais.
 - A auditoria do projeto PostHog em 04/11/2026 encontrou também `product_viewed` e
   `whatsapp_clicked`. Os eventos `$identify`, `$groupidentify` e `$set` são de identidade/grupo do
-  SDK; não são novos marcos de produto. Uma nova captura local confirmou `$screen_name = /[slug]`.
+  SDK; não são novos marcos de produto. A captura local após a correção confirmou o caminho real
+  no `$screen_name`.

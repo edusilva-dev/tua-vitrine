@@ -55,7 +55,7 @@ test("vitrine captura catálogo, detalhe e as quatro origens de WhatsApp sem cap
   expect(catalog?.properties).toMatchObject({
     store_id: fixtures.firstStore,
     plan: "FREE",
-    $screen_name: "/[slug]",
+    $screen_name: `/${fixtures.firstSlug}`,
   });
   expect(captured().filter((event) => event.event === "catalog_viewed")).toHaveLength(1);
 
@@ -74,7 +74,7 @@ test("vitrine captura catálogo, detalhe e as quatro origens de WhatsApp sem cap
       properties: {
         store_id: fixtures.firstStore,
         product_id: fixtures.product,
-        $screen_name: "/[slug]",
+        $screen_name: `/${fixtures.firstSlug}`,
       },
     });
   await page.getByRole("combobox", { name: "Escolha uma opção" }).click();
@@ -105,7 +105,7 @@ test("vitrine captura catálogo, detalhe e as quatro origens de WhatsApp sem cap
   expect(whatsapp).toHaveLength(3);
 
   for (const event of whatsapp) {
-    expect(event.properties.$screen_name).toBe("/[slug]");
+    expect(event.properties.$screen_name).toBe(`/${fixtures.firstSlug}`);
     expect(event.properties).not.toHaveProperty("phone");
     expect(event.properties).not.toHaveProperty("message");
     expect(event.properties).not.toHaveProperty("price");

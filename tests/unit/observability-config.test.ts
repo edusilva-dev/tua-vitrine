@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   createBrowserPostHogOptions,
   isBrowserPostHogEnabled,
+  screenNameForEvent,
   stripNavigationProperties,
 } from "@/modules/observability/client/posthog";
 
@@ -69,13 +70,12 @@ describe("configuração pública do PostHog", () => {
       token: "phc_test",
       store_id: "22222222-2222-4222-8222-222222222222",
       $groups: { store: "22222222-2222-4222-8222-222222222222" },
-      $screen_name: "/[slug]",
     });
     expect(JSON.stringify(event)).not.toContain("segredo");
     expect(event?.properties).not.toHaveProperty("$pathname");
   });
 
-  test("usa rota padronizada somente nos eventos explícitos do navegador", () => {
+  test("usa o caminho real somente nos eventos explícitos do navegador", () => {
     const productForm = stripNavigationProperties({
       uuid: "44444444-4444-4444-8444-444444444444",
       event: "product_creation_started",
@@ -89,5 +89,9 @@ describe("configuração pública do PostHog", () => {
 
     expect(productForm?.properties).toEqual({ $screen_name: "/admin/products" });
     expect(sdkIdentity?.properties).toEqual({});
+    expect(screenNameForEvent("catalog_viewed", "/cafe-do-bairro")).toBe("/cafe-do-bairro");
+    expect(screenNameForEvent("product_viewed", "/cafe-do-bairro/")).toBe("/cafe-do-bairro");
+    expect(screenNameForEvent("whatsapp_clicked", "/cafe-do-bairro?q=segredo")).toBeNull();
+    expect(screenNameForEvent("$groupidentify", "/cafe-do-bairro")).toBeNull();
   });
 });

@@ -14,6 +14,16 @@ function removeNavigationFields(properties: Record<string, unknown>) {
   }
 }
 
+export function screenNameForEvent(eventName: string, pathname: string | undefined) {
+  if (eventName === "product_creation_started") return "/admin/products";
+
+  if (!["catalog_viewed", "product_viewed", "whatsapp_clicked"].includes(eventName)) return null;
+
+  if (!pathname || !/^\/[a-z0-9-]+\/?$/.test(pathname)) return null;
+
+  return pathname.replace(/\/$/, "");
+}
+
 export const stripNavigationProperties: BeforeSendFn = (event) => {
   if (event.properties) removeNavigationFields(event.properties);
 
@@ -22,11 +32,12 @@ export const stripNavigationProperties: BeforeSendFn = (event) => {
   if (event.$set_once) removeNavigationFields(event.$set_once);
 
   if (event.properties) {
-    if (["catalog_viewed", "product_viewed", "whatsapp_clicked"].includes(event.event)) {
-      event.properties.$screen_name = "/[slug]";
-    } else if (event.event === "product_creation_started") {
-      event.properties.$screen_name = "/admin/products";
-    }
+    const screenName = screenNameForEvent(
+      event.event,
+      typeof window === "undefined" ? undefined : window.location.pathname
+    );
+
+    if (screenName) event.properties.$screen_name = screenName;
   }
 
   return event;
