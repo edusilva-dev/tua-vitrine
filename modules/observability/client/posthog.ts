@@ -21,6 +21,14 @@ export const stripNavigationProperties: BeforeSendFn = (event) => {
 
   if (event.$set_once) removeNavigationFields(event.$set_once);
 
+  if (event.properties) {
+    if (["catalog_viewed", "product_viewed", "whatsapp_clicked"].includes(event.event)) {
+      event.properties.$screen_name = "/[slug]";
+    } else if (event.event === "product_creation_started") {
+      event.properties.$screen_name = "/admin/products";
+    }
+  }
+
   return event;
 };
 

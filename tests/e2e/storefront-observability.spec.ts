@@ -52,7 +52,11 @@ test("vitrine captura catálogo, detalhe e as quatro origens de WhatsApp sem cap
 
   const catalog = captured().find((event) => event.event === "catalog_viewed");
 
-  expect(catalog?.properties).toMatchObject({ store_id: fixtures.firstStore, plan: "FREE" });
+  expect(catalog?.properties).toMatchObject({
+    store_id: fixtures.firstStore,
+    plan: "FREE",
+    $screen_name: "/[slug]",
+  });
   expect(captured().filter((event) => event.event === "catalog_viewed")).toHaveLength(1);
 
   await page.getByRole("link", { name: /Conversar com a loja/ }).click();
@@ -66,7 +70,13 @@ test("vitrine captura catálogo, detalhe e as quatro origens de WhatsApp sem cap
   await page.getByRole("button", { name: "Ver Cookie com chocolate" }).click();
   await expect
     .poll(() => captured().find((event) => event.event === "product_viewed"))
-    .toMatchObject({ properties: { store_id: fixtures.firstStore, product_id: fixtures.product } });
+    .toMatchObject({
+      properties: {
+        store_id: fixtures.firstStore,
+        product_id: fixtures.product,
+        $screen_name: "/[slug]",
+      },
+    });
   await page.getByRole("combobox", { name: "Escolha uma opção" }).click();
   await page.getByRole("option", { name: /Dupla/ }).click();
   await page.getByRole("link", { name: "Perguntar no WhatsApp" }).click();
@@ -95,6 +105,7 @@ test("vitrine captura catálogo, detalhe e as quatro origens de WhatsApp sem cap
   expect(whatsapp).toHaveLength(3);
 
   for (const event of whatsapp) {
+    expect(event.properties.$screen_name).toBe("/[slug]");
     expect(event.properties).not.toHaveProperty("phone");
     expect(event.properties).not.toHaveProperty("message");
     expect(event.properties).not.toHaveProperty("price");

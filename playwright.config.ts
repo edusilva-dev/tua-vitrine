@@ -38,6 +38,8 @@ export default defineConfig({
       APP_URL: "http://localhost:3100",
       BETTER_AUTH_SECRET: "test-only-secret-with-more-than-32-characters",
       E2E_AUTH_BYPASS: "1",
+      POSTHOG_PROJECT_TOKEN: "",
+      POSTHOG_HOST: "",
       NEXT_PUBLIC_POSTHOG_DISABLED: observabilityEnabled ? "0" : "1",
       ...(observabilityEnabled
         ? {

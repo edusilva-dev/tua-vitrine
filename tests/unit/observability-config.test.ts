@@ -69,8 +69,25 @@ describe("configuração pública do PostHog", () => {
       token: "phc_test",
       store_id: "22222222-2222-4222-8222-222222222222",
       $groups: { store: "22222222-2222-4222-8222-222222222222" },
+      $screen_name: "/[slug]",
     });
     expect(JSON.stringify(event)).not.toContain("segredo");
     expect(event?.properties).not.toHaveProperty("$pathname");
+  });
+
+  test("usa rota padronizada somente nos eventos explícitos do navegador", () => {
+    const productForm = stripNavigationProperties({
+      uuid: "44444444-4444-4444-8444-444444444444",
+      event: "product_creation_started",
+      properties: { $current_url: "https://example.test/admin/products?draft=secret" },
+    });
+    const sdkIdentity = stripNavigationProperties({
+      uuid: "55555555-5555-4555-8555-555555555555",
+      event: "$identify",
+      properties: { $current_url: "https://example.test/admin/products?draft=secret" },
+    });
+
+    expect(productForm?.properties).toEqual({ $screen_name: "/admin/products" });
+    expect(sdkIdentity?.properties).toEqual({});
   });
 });
