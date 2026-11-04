@@ -18,7 +18,12 @@ import {
 } from "@/modules/observability/contracts/events";
 
 export interface BrowserAnalyticsClient {
-  capture(eventName: string, properties: AnalyticsProperties, groups: { store: string }): unknown;
+  capture(
+    eventName: string,
+    properties: AnalyticsProperties,
+    groups: { store: string },
+    transport?: "sendBeacon"
+  ): unknown;
 }
 
 export interface BrowserAnalyticsOptions {
@@ -51,7 +56,11 @@ function safelyReportError(reportError: ((error: unknown) => void) | undefined, 
 export function createBrowserAnalytics(options: BrowserAnalyticsOptions): BrowserAnalytics {
   const strict = options.strict ?? process.env.NODE_ENV !== "production";
 
-  function capture<Payload>(definition: AnalyticsEventDefinition<Payload>, payload: Payload) {
+  function capture<Payload>(
+    definition: AnalyticsEventDefinition<Payload>,
+    payload: Payload,
+    transport?: "sendBeacon"
+  ) {
     if (!options.enabled || !options.environment) return;
 
     try {
@@ -76,7 +85,7 @@ export function createBrowserAnalytics(options: BrowserAnalyticsOptions): Browse
 
       if (typeof storeId !== "string") return;
 
-      options.client.capture(event.name, event.properties, { store: storeId });
+      options.client.capture(event.name, event.properties, { store: storeId }, transport);
     } catch (error) {
       safelyReportError(options.reportError, error);
     }
@@ -87,7 +96,8 @@ export function createBrowserAnalytics(options: BrowserAnalyticsOptions): Browse
       capture(observabilityEvents.productCreationStarted, payload),
     catalogViewed: (payload) => capture(observabilityEvents.catalogViewed, payload),
     productViewed: (payload) => capture(observabilityEvents.productViewed, payload),
-    whatsappClicked: (payload) => capture(observabilityEvents.whatsappClicked, payload),
+    whatsappClicked: (payload) =>
+      capture(observabilityEvents.whatsappClicked, payload, "sendBeacon"),
   };
 }
 
@@ -102,8 +112,12 @@ const enabled = isBrowserPostHogEnabled(runtime);
 
 export const analytics = createBrowserAnalytics({
   client: {
-    capture: (eventName, properties, groups) =>
-      posthog.capture(eventName, { ...properties, $groups: groups }),
+    capture: (eventName, properties, groups, transport) =>
+      posthog.capture(
+        eventName,
+        { ...properties, $groups: groups },
+        transport ? { transport } : undefined
+      ),
   },
   enabled,
   environment: enabled ? runtime.environment : undefined,

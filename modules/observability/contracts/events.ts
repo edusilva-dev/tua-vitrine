@@ -23,6 +23,7 @@ const sourceSchema = z.enum([
   "catalog_service",
   "storefront",
   "stripe_webhook",
+  "stripe_reconciliation",
 ]);
 const creationMethodSchema = z.enum(["manual", "import"]);
 const deletionOperationSchema = z.enum(["single", "bulk"]);
@@ -252,6 +253,16 @@ const subscriptionCancelled: AnalyticsEventDefinition<SubscriptionCancelledPaylo
   }),
 };
 
+const subscriptionStartedReconciled: AnalyticsEventDefinition<SubscriptionStartedPayload> = {
+  ...subscriptionStarted,
+  source: "stripe_reconciliation",
+};
+
+const subscriptionCancelledReconciled: AnalyticsEventDefinition<SubscriptionCancelledPayload> = {
+  ...subscriptionCancelled,
+  source: "stripe_reconciliation",
+};
+
 export const observabilityEvents = {
   accountCreated,
   storeCreated,
@@ -264,6 +275,8 @@ export const observabilityEvents = {
   whatsappClicked,
   subscriptionStarted,
   subscriptionCancelled,
+  subscriptionStartedReconciled,
+  subscriptionCancelledReconciled,
 };
 
 export function prepareAnalyticsEvent<Payload>(

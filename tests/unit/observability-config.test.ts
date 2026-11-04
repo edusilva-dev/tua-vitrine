@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
   createBrowserPostHogOptions,
   isBrowserPostHogEnabled,
+  screenNameForEvent,
+  stripNavigationProperties,
 } from "@/modules/observability/client/posthog";
 
 describe("configuração pública do PostHog", () => {
@@ -44,5 +46,52 @@ describe("configuração pública do PostHog", () => {
     expect(isBrowserPostHogEnabled({ ...runtime, environment: "production" })).toBe(false);
     expect(isBrowserPostHogEnabled({ ...runtime, nodeEnv: "test" })).toBe(false);
     expect(isBrowserPostHogEnabled({ ...runtime, disabled: "1" })).toBe(false);
+  });
+
+  test("remove URL, busca, referrer e campanha antes do envio", () => {
+    const event = stripNavigationProperties({
+      uuid: "33333333-3333-4333-8333-333333333333",
+      event: "catalog_viewed",
+      properties: {
+        token: "phc_test",
+        store_id: "22222222-2222-4222-8222-222222222222",
+        $groups: { store: "22222222-2222-4222-8222-222222222222" },
+        $current_url: "https://example.test/loja?q=segredo",
+        $referrer: "https://example.test/?token=segredo",
+        $initial_referrer: "https://example.test/?token=segredo",
+        utm_campaign: "segredo",
+        $pathname: "/loja",
+        $set_once: { $initial_current_url: "https://example.test/?q=segredo" },
+      },
+      $set_once: { $initial_referrer: "https://example.test/?q=segredo" },
+    });
+
+    expect(event?.properties).toMatchObject({
+      token: "phc_test",
+      store_id: "22222222-2222-4222-8222-222222222222",
+      $groups: { store: "22222222-2222-4222-8222-222222222222" },
+    });
+    expect(JSON.stringify(event)).not.toContain("segredo");
+    expect(event?.properties).not.toHaveProperty("$pathname");
+  });
+
+  test("usa o caminho real somente nos eventos explícitos do navegador", () => {
+    const productForm = stripNavigationProperties({
+      uuid: "44444444-4444-4444-8444-444444444444",
+      event: "product_creation_started",
+      properties: { $current_url: "https://example.test/admin/products?draft=secret" },
+    });
+    const sdkIdentity = stripNavigationProperties({
+      uuid: "55555555-5555-4555-8555-555555555555",
+      event: "$identify",
+      properties: { $current_url: "https://example.test/admin/products?draft=secret" },
+    });
+
+    expect(productForm?.properties).toEqual({ $screen_name: "/admin/products" });
+    expect(sdkIdentity?.properties).toEqual({});
+    expect(screenNameForEvent("catalog_viewed", "/cafe-do-bairro")).toBe("/cafe-do-bairro");
+    expect(screenNameForEvent("product_viewed", "/cafe-do-bairro/")).toBe("/cafe-do-bairro");
+    expect(screenNameForEvent("whatsapp_clicked", "/cafe-do-bairro?q=segredo")).toBeNull();
+    expect(screenNameForEvent("$groupidentify", "/cafe-do-bairro")).toBeNull();
   });
 });

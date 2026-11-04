@@ -8,6 +8,7 @@ import { getEnv } from "@/lib/server/env";
 import { AppError } from "@/lib/server/http";
 import { logger } from "@/lib/server/logger";
 import { assertBillingEnabled, getStripe, getStripePriceIds } from "@/lib/server/stripe";
+import { analytics, type ServerAnalytics } from "@/modules/observability/server/analytics";
 import {
   type BillingPlan,
   billingPlanSchema,
@@ -75,30 +76,33 @@ async function applyStripeSubscription(
   const stripeCustomerId = customerId(subscription.customer);
   const nextSubscription = subscriptionData(subscription);
 
+  await tx.$queryRaw`SELECT "id" FROM "StoreSubscription" WHERE "stripeCustomerId" = ${stripeCustomerId} FOR UPDATE`;
+
+  const previous = await tx.storeSubscription.findUnique({
+    where: { stripeCustomerId },
+    select: { storeId: true, plan: true, status: true, cancelAtPeriodEnd: true },
+  });
+
   await tx.storeSubscription.updateMany({
     where: { stripeCustomerId },
     data: nextSubscription,
   });
 
-  const billing = await tx.storeSubscription.findUnique({
-    where: { stripeCustomerId },
-    select: { storeId: true },
-  });
   const resetProfessionalFeatures =
     nextSubscription.plan === "ESSENTIAL" &&
     (nextSubscription.status === "ACTIVE" || nextSubscription.status === "TRIALING");
   const resetToFree = ["CANCELED", "INCOMPLETE_EXPIRED"].includes(nextSubscription.status);
 
-  if (billing && (resetProfessionalFeatures || resetToFree)) {
+  if (previous && (resetProfessionalFeatures || resetToFree)) {
     await tx.store.update({
-      where: { id: billing.storeId },
+      where: { id: previous.storeId },
       data: {
         template: "grid",
         customization: { version: 1, tagline: "" },
         ...(resetToFree ? { primaryColor: "#2563eb" } : {}),
       },
     });
-    await tx.promotionCampaign.deleteMany({ where: { storeId: billing.storeId } });
+    await tx.promotionCampaign.deleteMany({ where: { storeId: previous.storeId } });
   }
 
   if (subscription.status === "trialing" || subscription.status === "active") {
@@ -107,10 +111,107 @@ async function applyStripeSubscription(
       data: { trialUsedAt: new Date() },
     });
   }
+
+  return previous ? { previous, next: nextSubscription } : null;
 }
 
-export async function synchronizeStripeSubscription(subscription: Stripe.Subscription) {
-  await db.$transaction((tx) => applyStripeSubscription(tx, subscription));
+async function reportSubscriptionTransition(
+  transition: Awaited<ReturnType<typeof applyStripeSubscription>>,
+  observer: Pick<ServerAnalytics, "subscriptionStarted" | "subscriptionCancelled">
+) {
+  if (!transition) return;
+
+  try {
+    const { previous, next } = transition;
+    const owner = await db.storeMember.findFirst({
+      where: { storeId: previous.storeId, role: "OWNER" },
+      select: { userId: true },
+    });
+
+    if (!owner) return;
+
+    const priorPaid = previous.plan && previous.plan !== "FREE";
+    const priorActive = previous.status && ACTIVE_STATUSES.has(previous.status);
+
+    if (
+      next.plan &&
+      (next.status === "ACTIVE" || next.status === "TRIALING") &&
+      (!priorActive || !priorPaid)
+    ) {
+      observer.subscriptionStarted(
+        { distinctId: owner.userId },
+        { storeId: previous.storeId, plan: next.plan, billingStatus: next.status }
+      );
+    }
+
+    if (
+      priorPaid &&
+      ((next.cancelAtPeriodEnd && !previous.cancelAtPeriodEnd) ||
+        (next.status === "CANCELED" &&
+          previous.status !== "CANCELED" &&
+          !previous.cancelAtPeriodEnd))
+    ) {
+      observer.subscriptionCancelled(
+        { distinctId: owner.userId },
+        {
+          storeId: previous.storeId,
+          plan: next.plan ?? previous.plan ?? "FREE",
+          effectiveImmediately: next.status === "CANCELED",
+        }
+      );
+    }
+  } catch {
+    logger.error("Falha na captura do evento de assinatura.");
+  }
+}
+
+export async function synchronizeStripeSubscription(
+  subscription: Stripe.Subscription,
+  observer: Pick<
+    ServerAnalytics,
+    "subscriptionStartedReconciled" | "subscriptionCancelledReconciled"
+  > = analytics,
+  retrieveCurrentSubscription: (id: string) => Promise<Stripe.Subscription> = (id) =>
+    getStripe().subscriptions.retrieve(id)
+) {
+  const stripeCustomerId = customerId(subscription.customer);
+  const staleVersion = Symbol("Stripe subscription changed during reconciliation");
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const before = await db.$queryRaw<Array<{ id: string; version: string }>>`
+      SELECT "id", xmin::text AS "version" FROM "StoreSubscription"
+      WHERE "stripeCustomerId" = ${stripeCustomerId}`;
+    const currentSubscription = await retrieveCurrentSubscription(subscription.id);
+
+    if (customerId(currentSubscription.customer) !== stripeCustomerId)
+      throw new Error("A assinatura consultada pertence a outro cliente Stripe.");
+
+    try {
+      const transition = await db.$transaction(async (tx) => {
+        const current = await tx.$queryRaw<Array<{ id: string; version: string }>>`
+          SELECT "id", xmin::text AS "version" FROM "StoreSubscription"
+          WHERE "stripeCustomerId" = ${stripeCustomerId} FOR UPDATE`;
+
+        if (current[0]?.id !== before[0]?.id || current[0]?.version !== before[0]?.version)
+          throw staleVersion;
+
+        return applyStripeSubscription(tx, currentSubscription);
+      });
+
+      await reportSubscriptionTransition(transition, {
+        subscriptionStarted: observer.subscriptionStartedReconciled,
+        subscriptionCancelled: observer.subscriptionCancelledReconciled,
+      });
+
+      return currentSubscription;
+    } catch (error) {
+      if (error === staleVersion) continue;
+
+      throw error;
+    }
+  }
+
+  throw new Error("A assinatura mudou durante a reconciliação com o Stripe.");
 }
 
 async function retrieveSubscription(
@@ -426,10 +527,9 @@ export async function getBillingStatus(context: StoreContext, checkoutSessionId?
       );
 
       if (liveSubscription) {
-        const liveData = subscriptionData(liveSubscription);
+        const confirmed = await synchronizeStripeSubscription(liveSubscription);
 
-        await synchronizeStripeSubscription(liveSubscription);
-        billing = { ...billing, ...liveData };
+        billing = { ...billing, ...subscriptionData(confirmed) };
       }
     } catch (error) {
       logger.warn(
@@ -516,21 +616,30 @@ export async function activateInternalTrial(context: StoreContext): Promise<void
   });
 }
 
-export async function processStripeEvent(event: Stripe.Event) {
-  let subscription: Stripe.Subscription | null = null;
+export async function processStripeEvent(
+  event: Stripe.Event,
+  observer: Pick<ServerAnalytics, "subscriptionStarted" | "subscriptionCancelled"> = analytics,
+  retrieveCurrentSubscription: (id: string) => Promise<Stripe.Subscription> = (id) =>
+    getStripe().subscriptions.retrieve(id)
+) {
+  if (await db.stripeWebhookEvent.findUnique({ where: { id: event.id }, select: { id: true } }))
+    return;
+
+  let subscriptionId: string | null = null;
+  let stripeCustomerId: string | null = null;
 
   if (event.type.startsWith("customer.subscription.")) {
-    subscription = event.data.object as Stripe.Subscription;
+    const current = event.data.object as Stripe.Subscription;
+
+    subscriptionId = current.id;
+    stripeCustomerId = customerId(current.customer);
   } else if (event.type === "invoice.paid" || event.type === "invoice.payment_failed") {
     const invoice = event.data.object as Stripe.Invoice;
     const reference = invoice.parent?.subscription_details?.subscription;
 
-    if (reference) {
-      subscription =
-        typeof reference === "string"
-          ? await getStripe().subscriptions.retrieve(reference)
-          : reference;
-    }
+    if (reference) subscriptionId = typeof reference === "string" ? reference : reference.id;
+
+    if (invoice.customer) stripeCustomerId = customerId(invoice.customer);
   } else if (
     event.type === "checkout.session.completed" ||
     event.type === "checkout.session.async_payment_succeeded"
@@ -538,25 +647,55 @@ export async function processStripeEvent(event: Stripe.Event) {
     const session = event.data.object as Stripe.Checkout.Session;
     const reference = session.subscription;
 
-    if (reference) {
-      subscription =
-        typeof reference === "string"
-          ? await getStripe().subscriptions.retrieve(reference)
-          : reference;
+    if (reference) subscriptionId = typeof reference === "string" ? reference : reference.id;
+
+    if (session.customer) stripeCustomerId = customerId(session.customer);
+  }
+
+  let transition: Awaited<ReturnType<typeof applyStripeSubscription>> = null;
+  const staleVersion = Symbol("Stripe subscription changed during retrieval");
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const before = stripeCustomerId
+      ? await db.$queryRaw<Array<{ id: string; version: string }>>`
+          SELECT "id", xmin::text AS "version" FROM "StoreSubscription"
+          WHERE "stripeCustomerId" = ${stripeCustomerId}`
+      : null;
+    const subscription = subscriptionId ? await retrieveCurrentSubscription(subscriptionId) : null;
+
+    try {
+      transition = await db.$transaction(async (tx) => {
+        await tx.stripeWebhookEvent.create({ data: { id: event.id, type: event.type } });
+
+        if (!subscription) return null;
+
+        const liveCustomerId = customerId(subscription.customer);
+
+        const current = await tx.$queryRaw<Array<{ id: string; version: string }>>`
+          SELECT "id", xmin::text AS "version" FROM "StoreSubscription"
+          WHERE "stripeCustomerId" = ${liveCustomerId} FOR UPDATE`;
+
+        if (current[0]?.id !== before?.[0]?.id || current[0]?.version !== before?.[0]?.version)
+          throw staleVersion;
+
+        return applyStripeSubscription(tx, subscription);
+      });
+      await reportSubscriptionTransition(transition, observer);
+
+      return;
+    } catch (error) {
+      if (error === staleVersion) continue;
+
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002" &&
+        (await db.stripeWebhookEvent.findUnique({ where: { id: event.id } }))
+      )
+        return;
+
+      throw error;
     }
   }
 
-  try {
-    await db.$transaction(async (tx) => {
-      await tx.stripeWebhookEvent.create({ data: { id: event.id, type: event.type } });
-
-      if (!subscription) return;
-
-      await applyStripeSubscription(tx, subscription);
-    });
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return;
-
-    throw error;
-  }
+  throw new Error("A assinatura mudou durante a consulta ao Stripe.");
 }

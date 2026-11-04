@@ -51,7 +51,15 @@ export interface ServerAnalytics {
   productCreated(identity: ServerAnalyticsIdentity, payload: ProductCreatedPayload): void;
   productDeleted(identity: ServerAnalyticsIdentity, payload: ProductDeletedPayload): void;
   subscriptionStarted(identity: ServerAnalyticsIdentity, payload: SubscriptionStartedPayload): void;
+  subscriptionStartedReconciled(
+    identity: ServerAnalyticsIdentity,
+    payload: SubscriptionStartedPayload
+  ): void;
   subscriptionCancelled(
+    identity: ServerAnalyticsIdentity,
+    payload: SubscriptionCancelledPayload
+  ): void;
+  subscriptionCancelledReconciled(
     identity: ServerAnalyticsIdentity,
     payload: SubscriptionCancelledPayload
   ): void;
@@ -139,8 +147,12 @@ export function createServerAnalytics(options: ServerAnalyticsOptions): ServerAn
       capture(observabilityEvents.productDeleted, identity, payload),
     subscriptionStarted: (identity, payload) =>
       capture(observabilityEvents.subscriptionStarted, identity, payload),
+    subscriptionStartedReconciled: (identity, payload) =>
+      capture(observabilityEvents.subscriptionStartedReconciled, identity, payload),
     subscriptionCancelled: (identity, payload) =>
       capture(observabilityEvents.subscriptionCancelled, identity, payload),
+    subscriptionCancelledReconciled: (identity, payload) =>
+      capture(observabilityEvents.subscriptionCancelledReconciled, identity, payload),
   };
 }
 

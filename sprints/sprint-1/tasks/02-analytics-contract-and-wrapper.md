@@ -57,7 +57,9 @@ camada fica em `modules/observability`.
 ## Observações
 
 IDs internos não são PII direta, mas continuam dados pseudonimizados. Não permitir e-mail, nome,
-telefone, slug, mensagem, descrição, termo de busca, URL completa ou objeto livre no contrato.
+telefone, slug como propriedade independente, mensagem, descrição, termo de busca, URL completa ou
+objeto livre no contrato. O caminho público da vitrine pode aparecer somente em `$screen_name` dos
+eventos do navegador, sem domínio, query string ou fragmento.
 
 ## Resultado da implementação
 

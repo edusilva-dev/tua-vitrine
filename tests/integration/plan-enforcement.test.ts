@@ -172,7 +172,7 @@ test("Free bloqueia cor e campanha, e Profissional libera campanha", async () =>
     logoAssetId: null,
     customization: { version: 1, tagline: "Profissional" },
   });
-  await processStripeEvent({
+  const updateEvent = {
     id: `evt_${randomUUID()}`,
     type: "customer.subscription.updated",
     data: {
@@ -192,7 +192,13 @@ test("Free bloqueia cor e campanha, e Profissional libera campanha", async () =>
         },
       },
     },
-  } as unknown as Stripe.Event);
+  } as unknown as Stripe.Event;
+
+  await processStripeEvent(
+    updateEvent,
+    undefined,
+    async () => updateEvent.data.object as Stripe.Subscription
+  );
 
   expect(await db.store.findUniqueOrThrow({ where: { id: storeId } })).toMatchObject({
     primaryColor: "#ff0000",
@@ -260,7 +266,7 @@ test("retorno do checkout reconcilia a assinatura e encerra a oferta de trial", 
   });
 
   try {
-    await synchronizeStripeSubscription({
+    const current = {
       id: `sub_${checkoutStoreId}`,
       customer: stripeCustomerId,
       status: "active",
@@ -274,7 +280,9 @@ test("retorno do checkout reconcilia a assinatura e encerra a oferta de trial", 
           },
         ],
       },
-    } as unknown as Stripe.Subscription);
+    } as unknown as Stripe.Subscription;
+
+    await synchronizeStripeSubscription(current, undefined, async () => current);
 
     expect(
       await db.storeSubscription.findUniqueOrThrow({ where: { storeId: checkoutStoreId } })

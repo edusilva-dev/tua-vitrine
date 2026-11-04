@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import { money } from "@/lib/format";
 import type { ProductDTO } from "@/modules/catalog/contracts";
+import { analytics } from "@/modules/observability/client/analytics";
 import type { StoreDTO } from "@/modules/stores/contracts";
 import { type CartLine, lineKey, resolveCart } from "../selection";
 import { cartMessage, whatsappLink } from "../whatsapp";
@@ -24,12 +25,14 @@ export function CartSheet({
   cart,
   setCart,
   store,
+  preview = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   cart: CartLine[];
   setCart: (cart: CartLine[]) => void;
   store: StoreDTO;
+  preview?: boolean;
 }) {
   const [products, setProducts] = useState<ProductDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,6 +126,9 @@ export function CartSheet({
 
         return;
       }
+
+      if (!preview)
+        analytics.whatsappClicked({ storeId: store.id, location: "cart", cartSize: fresh.length });
 
       window.location.assign(
         whatsappLink(store.whatsapp, cartMessage(store.name, store.url, fresh))
