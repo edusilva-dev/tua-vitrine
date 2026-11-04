@@ -79,7 +79,9 @@ deve ser apresentado como contabilidade financeira nem substituir a fonte de bil
   posterior não duplica esse marco. Um cancelamento direto usa `true`. A linha da assinatura é
   bloqueada durante a transição para que dois webhooks distintos simultâneos não dupliquem o início.
   O processamento recupera a assinatura atual da API Stripe pelo ID do evento antes de aplicá-la;
-  snapshots antigos entregues fora de ordem não revertem uma reconciliação mais recente.
+  snapshots antigos entregues fora de ordem não revertem uma reconciliação mais recente. Se a linha
+  mudar enquanto a API responde, uma nova consulta é feita antes de gravar; após três conflitos, o
+  webhook falha para permitir reentrega sem marcar o `event.id` como processado.
 - A consulta ao Stripe no retorno do checkout ou na reconciliação do painel pode aplicar a mesma
   transição antes do webhook. Nesse caso, o evento nasce após o commit da reconciliação confirmada,
   com `source = stripe_reconciliation`; o webhook posterior encontra o estado já aplicado e não

@@ -593,14 +593,20 @@ export async function processStripeEvent(
     return;
 
   let subscriptionId: string | null = null;
+  let stripeCustomerId: string | null = null;
 
   if (event.type.startsWith("customer.subscription.")) {
-    subscriptionId = (event.data.object as Stripe.Subscription).id;
+    const current = event.data.object as Stripe.Subscription;
+
+    subscriptionId = current.id;
+    stripeCustomerId = customerId(current.customer);
   } else if (event.type === "invoice.paid" || event.type === "invoice.payment_failed") {
     const invoice = event.data.object as Stripe.Invoice;
     const reference = invoice.parent?.subscription_details?.subscription;
 
     if (reference) subscriptionId = typeof reference === "string" ? reference : reference.id;
+
+    if (invoice.customer) stripeCustomerId = customerId(invoice.customer);
   } else if (
     event.type === "checkout.session.completed" ||
     event.type === "checkout.session.async_payment_succeeded"
@@ -609,30 +615,54 @@ export async function processStripeEvent(
     const reference = session.subscription;
 
     if (reference) subscriptionId = typeof reference === "string" ? reference : reference.id;
-  }
 
-  const subscription = subscriptionId ? await retrieveCurrentSubscription(subscriptionId) : null;
+    if (session.customer) stripeCustomerId = customerId(session.customer);
+  }
 
   let transition: Awaited<ReturnType<typeof applyStripeSubscription>> = null;
+  const staleVersion = Symbol("Stripe subscription changed during retrieval");
 
-  try {
-    transition = await db.$transaction(async (tx) => {
-      await tx.stripeWebhookEvent.create({ data: { id: event.id, type: event.type } });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const before = stripeCustomerId
+      ? await db.$queryRaw<Array<{ id: string; version: string }>>`
+          SELECT "id", xmin::text AS "version" FROM "StoreSubscription"
+          WHERE "stripeCustomerId" = ${stripeCustomerId}`
+      : null;
+    const subscription = subscriptionId ? await retrieveCurrentSubscription(subscriptionId) : null;
 
-      if (!subscription) return null;
+    try {
+      transition = await db.$transaction(async (tx) => {
+        await tx.stripeWebhookEvent.create({ data: { id: event.id, type: event.type } });
 
-      return applyStripeSubscription(tx, subscription);
-    });
-  } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002" &&
-      (await db.stripeWebhookEvent.findUnique({ where: { id: event.id } }))
-    )
+        if (!subscription) return null;
+
+        const liveCustomerId = customerId(subscription.customer);
+
+        const current = await tx.$queryRaw<Array<{ id: string; version: string }>>`
+          SELECT "id", xmin::text AS "version" FROM "StoreSubscription"
+          WHERE "stripeCustomerId" = ${liveCustomerId} FOR UPDATE`;
+
+        if (current[0]?.id !== before?.[0]?.id || current[0]?.version !== before?.[0]?.version)
+          throw staleVersion;
+
+        return applyStripeSubscription(tx, subscription);
+      });
+      await reportSubscriptionTransition(transition, observer);
+
       return;
+    } catch (error) {
+      if (error === staleVersion) continue;
 
-    throw error;
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002" &&
+        (await db.stripeWebhookEvent.findUnique({ where: { id: event.id } }))
+      )
+        return;
+
+      throw error;
+    }
   }
 
-  await reportSubscriptionTransition(transition, observer);
+  throw new Error("A assinatura mudou durante a consulta ao Stripe.");
 }

@@ -195,6 +195,49 @@ test("snapshot antigo entregue depois da reconciliação não regride nem duplic
   expect(events[0]?.properties.source).toBe("stripe_reconciliation");
 });
 
+test("consulta Stripe atrasada não reativa assinatura após cancelamento concorrente", async () => {
+  const active = webhook("active").data.object as Stripe.Subscription;
+  const canceled = webhook("canceled").data.object as Stripe.Subscription;
+
+  await synchronizeStripeSubscription(active, observer);
+
+  let releaseFirst: (() => void) | undefined;
+  let firstRequested: (() => void) | undefined;
+  const firstRequestedPromise = new Promise<void>((resolve) => {
+    firstRequested = resolve;
+  });
+  const firstResponse = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  let retrieves = 0;
+  const delayed = processStripeEvent(webhook("active"), observer, async () => {
+    retrieves++;
+
+    if (retrieves === 1) {
+      firstRequested?.();
+      await firstResponse;
+
+      return active;
+    }
+
+    return canceled;
+  });
+
+  await firstRequestedPromise;
+  await applyWebhook(webhook("canceled"), observer, canceled);
+  releaseFirst?.();
+  await delayed;
+
+  expect(retrieves).toBe(2);
+  expect(await db.storeSubscription.findUniqueOrThrow({ where: { storeId } })).toMatchObject({
+    status: "CANCELED",
+  });
+  expect(events.map(({ event }) => event)).toEqual([
+    "subscription_started",
+    "subscription_cancelled",
+  ]);
+});
+
 test("cancelamento agendado e conclusão não duplicam evento", async () => {
   await applyWebhook(webhook("active", { price: "PROFESSIONAL" }));
   const scheduled = webhook("active", { price: "PROFESSIONAL", cancelAtPeriodEnd: true });
