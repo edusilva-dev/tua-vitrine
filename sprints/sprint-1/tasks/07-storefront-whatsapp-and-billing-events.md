@@ -85,7 +85,9 @@ deve ser apresentado como contabilidade financeira nem substituir a fonte de bil
 - A consulta ao Stripe no retorno do checkout ou na reconciliação do painel pode aplicar a mesma
   transição antes do webhook. Nesse caso, o evento nasce após o commit da reconciliação confirmada,
   com `source = stripe_reconciliation`; o webhook posterior encontra o estado já aplicado e não
-  duplica a captura. Essa origem é distinta de `stripe_webhook`.
+  duplica a captura. Essa origem é distinta de `stripe_webhook`. A reconciliação consulta novamente
+  a assinatura atual e compara a versão da linha após a resposta da Stripe; se um webhook alterou a
+  linha nesse intervalo, ela repete a consulta em vez de aplicar o snapshot atrasado.
 - Captura do servidor segue em `noop` em produção até a aprovação da política no índice. A captura
   client-side requer concordância válida. A fonte de métricas do lojista no PostgreSQL permanece
   separada; contagens podem divergir por consentimento, bloqueadores e falhas best-effort.

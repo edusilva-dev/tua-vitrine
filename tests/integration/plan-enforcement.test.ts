@@ -266,7 +266,7 @@ test("retorno do checkout reconcilia a assinatura e encerra a oferta de trial", 
   });
 
   try {
-    await synchronizeStripeSubscription({
+    const current = {
       id: `sub_${checkoutStoreId}`,
       customer: stripeCustomerId,
       status: "active",
@@ -280,7 +280,9 @@ test("retorno do checkout reconcilia a assinatura e encerra a oferta de trial", 
           },
         ],
       },
-    } as unknown as Stripe.Subscription);
+    } as unknown as Stripe.Subscription;
+
+    await synchronizeStripeSubscription(current, undefined, async () => current);
 
     expect(
       await db.storeSubscription.findUniqueOrThrow({ where: { storeId: checkoutStoreId } })

@@ -170,14 +170,48 @@ export async function synchronizeStripeSubscription(
   observer: Pick<
     ServerAnalytics,
     "subscriptionStartedReconciled" | "subscriptionCancelledReconciled"
-  > = analytics
+  > = analytics,
+  retrieveCurrentSubscription: (id: string) => Promise<Stripe.Subscription> = (id) =>
+    getStripe().subscriptions.retrieve(id)
 ) {
-  const transition = await db.$transaction((tx) => applyStripeSubscription(tx, subscription));
+  const stripeCustomerId = customerId(subscription.customer);
+  const staleVersion = Symbol("Stripe subscription changed during reconciliation");
 
-  await reportSubscriptionTransition(transition, {
-    subscriptionStarted: observer.subscriptionStartedReconciled,
-    subscriptionCancelled: observer.subscriptionCancelledReconciled,
-  });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const before = await db.$queryRaw<Array<{ id: string; version: string }>>`
+      SELECT "id", xmin::text AS "version" FROM "StoreSubscription"
+      WHERE "stripeCustomerId" = ${stripeCustomerId}`;
+    const currentSubscription = await retrieveCurrentSubscription(subscription.id);
+
+    if (customerId(currentSubscription.customer) !== stripeCustomerId)
+      throw new Error("A assinatura consultada pertence a outro cliente Stripe.");
+
+    try {
+      const transition = await db.$transaction(async (tx) => {
+        const current = await tx.$queryRaw<Array<{ id: string; version: string }>>`
+          SELECT "id", xmin::text AS "version" FROM "StoreSubscription"
+          WHERE "stripeCustomerId" = ${stripeCustomerId} FOR UPDATE`;
+
+        if (current[0]?.id !== before[0]?.id || current[0]?.version !== before[0]?.version)
+          throw staleVersion;
+
+        return applyStripeSubscription(tx, currentSubscription);
+      });
+
+      await reportSubscriptionTransition(transition, {
+        subscriptionStarted: observer.subscriptionStartedReconciled,
+        subscriptionCancelled: observer.subscriptionCancelledReconciled,
+      });
+
+      return currentSubscription;
+    } catch (error) {
+      if (error === staleVersion) continue;
+
+      throw error;
+    }
+  }
+
+  throw new Error("A assinatura mudou durante a reconciliação com o Stripe.");
 }
 
 async function retrieveSubscription(
@@ -493,10 +527,9 @@ export async function getBillingStatus(context: StoreContext, checkoutSessionId?
       );
 
       if (liveSubscription) {
-        const liveData = subscriptionData(liveSubscription);
+        const confirmed = await synchronizeStripeSubscription(liveSubscription);
 
-        await synchronizeStripeSubscription(liveSubscription);
-        billing = { ...billing, ...liveData };
+        billing = { ...billing, ...subscriptionData(confirmed) };
       }
     } catch (error) {
       logger.warn(
