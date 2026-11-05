@@ -3,6 +3,59 @@ import { gunzipSync } from "node:zlib";
 import { expect, test } from "@playwright/test";
 import { fixtures } from "../setup/e2e-fixtures";
 
+interface ReplayChunk {
+  type: number;
+  cv?: string;
+  data: unknown;
+}
+
+interface CapturedEvent {
+  event: string;
+  properties: Record<string, unknown>;
+}
+
+function replayChunks(payloads: string[]) {
+  return payloads.flatMap((payload) => {
+    const parsed = JSON.parse(payload) as CapturedEvent & { batch?: CapturedEvent[] };
+    const events = parsed.batch ?? [parsed];
+
+    return events.flatMap((event) => {
+      const data = event.properties.$snapshot_data;
+
+      return event.event === "$snapshot" && Array.isArray(data) ? (data as ReplayChunk[]) : [];
+    });
+  });
+}
+
+function decodedReplay(chunks: ReplayChunk[]) {
+  return chunks
+    .map((chunk) => {
+      const parts = [JSON.stringify(chunk)];
+
+      if (chunk.cv !== "2024-10") return parts.join(" ");
+
+      if (typeof chunk.data === "string") {
+        parts.push(gunzipSync(Buffer.from(chunk.data, "latin1")).toString());
+
+        return parts.join(" ");
+      }
+
+      if (chunk.data && typeof chunk.data === "object") {
+        for (const [key, value] of Object.entries(chunk.data)) {
+          if (
+            ["texts", "attributes", "adds", "removes"].includes(key) &&
+            typeof value === "string"
+          ) {
+            parts.push(gunzipSync(Buffer.from(value, "latin1")).toString());
+          }
+        }
+      }
+
+      return parts.join(" ");
+    })
+    .join(" ");
+}
+
 test.skip(process.env.E2E_OBSERVABILITY !== "1", "Executar com E2E_OBSERVABILITY=1.");
 
 test("replay exige aceite, mascara dados e para na prévia e após revogação", async ({
@@ -84,11 +137,44 @@ test("replay exige aceite, mascara dados e para na prévia e após revogação",
     document.body.append(hidden);
   });
   await page.mouse.click(100, 200);
-  await expect.poll(() => payloads.join(" "), { timeout: 20000 }).toContain('"$snapshot"');
-  expect(payloads.join(" ")).not.toContain("url-sentinel");
-  expect(payloads.join(" ")).not.toContain("visible-sentinel");
-  expect(payloads.join(" ")).not.toContain("attribute-sentinel");
-  expect(payloads.join(" ")).not.toContain("hidden-sentinel");
+  await expect
+    .poll(() => replayChunks(payloads).some((chunk) => chunk.type === 2), { timeout: 20000 })
+    .toBe(true);
+  await page.evaluate(() => {
+    const sensitive = document.querySelector("[data-secret]");
+
+    if (!sensitive) throw new Error("Elemento sentinela ausente.");
+
+    sensitive.textContent = "mutation-sentinel";
+    sensitive.setAttribute("data-secret", "mutation-attribute-sentinel");
+  });
+  await page.mouse.click(120, 220);
+  await expect
+    .poll(
+      () =>
+        replayChunks(payloads).some(
+          (chunk) =>
+            chunk.type === 3 &&
+            typeof chunk.data === "object" &&
+            chunk.data !== null &&
+            "source" in chunk.data &&
+            chunk.data.source === 0
+        ),
+      { timeout: 20000 }
+    )
+    .toBe(true);
+  const replayPayload = `${payloads.join(" ")} ${decodedReplay(replayChunks(payloads))}`;
+
+  for (const sentinel of [
+    "url-sentinel",
+    "visible-sentinel",
+    "attribute-sentinel",
+    "hidden-sentinel",
+    "mutation-sentinel",
+    "mutation-attribute-sentinel",
+  ]) {
+    expect(replayPayload).not.toContain(sentinel);
+  }
 
   await context.addCookies([
     {

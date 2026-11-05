@@ -17,8 +17,10 @@ export function ReplayController() {
   );
 
   useEffect(() => {
+    if (consent.revision === 0) return;
+
     syncBrowserReplay(pathname, consent.status);
-  }, [consent.status, pathname]);
+  }, [consent.revision, consent.status, pathname]);
 
   return null;
 }

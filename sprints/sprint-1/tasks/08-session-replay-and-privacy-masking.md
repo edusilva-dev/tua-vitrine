@@ -78,3 +78,12 @@ classificado como público/seguro. Qualquer dado proibido visível bloqueia o ro
 - O projeto PostHog de desenvolvimento `710815` já permite gravação e está configurado com retenção
   de 30 dias. Acesso, política final e auditoria de sentinelas ainda dependem de validação.
 - A ativação em produção continua bloqueada pela decisão da tarefa 05 e pela auditoria desta tarefa.
+
+## Evidência local inicial
+
+- Playwright em desktop e 390 px interceptou o host PostHog de teste: sem snapshot antes do aceite;
+  FullSnapshot e Mutation após aceite/interação; sem novos snapshots no preview ou após revogação.
+- O teste descompactou o request e os campos gzip internos dos snapshots antes de procurar sentinelas
+  de query string, texto, atributo e campo oculto. Nenhuma sentinela apareceu no payload decodificado.
+- Lint, typecheck, testes e build passaram. A auditoria manual de todas as telas e a inspeção da
+  gravação no PostHog de desenvolvimento ainda são pendentes e bloqueiam a conclusão da tarefa.
