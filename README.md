@@ -5,7 +5,7 @@ pelo WhatsApp e assinaturas Stripe.
 
 ## Stack
 
-- Bun 1.3.14
+- Bun 1.4.4
 - Next.js 16, React 19 e TypeScript strict
 - Prisma 7 e PostgreSQL
 - shadcn/ui
