@@ -45,7 +45,7 @@ funcional, de privacidade, custos e operação.
 - [x] funil e dashboard de desenvolvimento refletem a coorte sintética nas consultas individuais;
 - [ ] retenção, acesso, owner e kill switch estão documentados;
 - [x] produção tem aprovação de produto/privacidade ou permanece desabilitada;
-- [ ] revisão independente não possui achados P0/P1/P2 abertos.
+- [x] revisão independente do SHA `1e85881` não possui achados P0/P1/P2 abertos.
 
 ## Validação
 
@@ -105,3 +105,17 @@ configuração e registrar a pendência de forma explícita.
    definir alertas de volume/custo e programar avaliações após 24 horas, 7 dias e 30 dias.
 
 Nenhuma captura de produção foi habilitada neste pré-rollout.
+
+## Acompanhamento — 05/11/2026
+
+- O [PR #20](https://github.com/edusilva-dev/tua-vitrine/pull/20) está em draft contra `staging`.
+  As duas execuções de Quality do SHA `1e85881` passaram, incluindo E2E e autenticação. O revisor
+  independente aprovou o SHA sem achados P0–P3.
+- O status do deploy da Vercel permanece `pending` desde 19h46 UTC; não há Preview validado. A
+  conexão disponível não permite inspecionar esse projeto Vercel (403). Isso não altera o resultado
+  dos checks de Quality nem comprova o deploy em staging.
+- A leitura do esquema de eventos do [projeto PostHog de desenvolvimento](https://us.posthog.com/project/710815)
+  confirma `account_created`, `store_created`, `store_published`, `product_created`, `catalog_viewed`,
+  `product_viewed` e `whatsapp_clicked`. `product_creation_started`, `product_deleted`,
+  `subscription_started` e `subscription_cancelled` ainda não aparecem. Os testes locais validam os
+  pontos de emissão, mas a ingestão real desses quatro eventos continua pendente.
