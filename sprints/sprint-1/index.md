@@ -9,7 +9,8 @@
 - **Status:** implementação em andamento; tarefas 01–04 implementadas; tarefa 05 com controle técnico
   implementado e decisões de privacidade pendentes; tarefas 06–07 preparadas para
   desenvolvimento/staging; tarefa 08 em implementação não produtiva; tarefa 09 validada no projeto de
-  desenvolvimento, com versão oficial pendente. Auditoria de replay pendente.
+  desenvolvimento, com versão oficial pendente; tarefa 10 montada no projeto de desenvolvimento,
+  com validação visual e versão oficial pendentes. Auditoria de replay pendente.
 - **Tema:** product analytics e UX analytics com PostHog.
 - **Produto:** Tua Vitrine.
 - **Públicos observados:** lojistas autenticados e visitantes anônimos das vitrines públicas.
@@ -504,7 +505,7 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 | 07 | [Instrumentar vitrine, WhatsApp e billing](./tasks/07-storefront-whatsapp-and-billing-events.md) | 02–05 | Em implementação apenas para desenvolvimento/staging |
 | 08 | [Habilitar replay e privacy masking](./tasks/08-session-replay-and-privacy-masking.md) | 01–05 | Em implementação não produtiva; auditoria bloqueante pendente |
 | 09 | [Criar Activation Funnel](./tasks/09-activation-funnel.md) | 06, 07 | Validada em desenvolvimento; versão oficial de produção pendente |
-| 10 | [Criar Product Health Dashboard](./tasks/10-product-health-dashboard.md) | 06, 07, 09 | Pendente |
+| 10 | [Criar Product Health Dashboard](./tasks/10-product-health-dashboard.md) | 06, 07, 09 | Dashboard de desenvolvimento montado; validação visual e versão oficial pendentes |
 | 11 | [Validar e liberar o rollout](./tasks/11-validation-and-rollout.md) | 01–10 | Pendente |
 
 Tarefas 06 e 07 podem ser preparadas em desenvolvimento/staging após a decisão técnica da tarefa 05;
