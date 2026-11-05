@@ -140,6 +140,15 @@ test("replay exige aceite, mascara dados e para na prévia e após revogação",
   await expect
     .poll(() => replayChunks(payloads).some((chunk) => chunk.type === 2), { timeout: 20000 })
     .toBe(true);
+  const mutationsBeforeChange = replayChunks(payloads).filter(
+    (chunk) =>
+      chunk.type === 3 &&
+      typeof chunk.data === "object" &&
+      chunk.data !== null &&
+      "source" in chunk.data &&
+      chunk.data.source === 0
+  ).length;
+
   await page.evaluate(() => {
     const sensitive = document.querySelector("[data-secret]");
 
@@ -152,14 +161,14 @@ test("replay exige aceite, mascara dados e para na prévia e após revogação",
   await expect
     .poll(
       () =>
-        replayChunks(payloads).some(
+        replayChunks(payloads).filter(
           (chunk) =>
             chunk.type === 3 &&
             typeof chunk.data === "object" &&
             chunk.data !== null &&
             "source" in chunk.data &&
             chunk.data.source === 0
-        ),
+        ).length > mutationsBeforeChange,
       { timeout: 20000 }
     )
     .toBe(true);
