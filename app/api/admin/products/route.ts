@@ -1,4 +1,4 @@
-import { assertAdminAccess, getAdminContext } from "@/lib/server/context";
+import { assertAdminAccess, getAdminContext, getAdminIdentity } from "@/lib/server/context";
 import { handle, jsonBody } from "@/lib/server/http";
 import { archiveProducts, listProducts, saveProduct } from "@/modules/catalog/server/service";
 
@@ -20,6 +20,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   return handle(async () => {
     await assertAdminAccess(true);
+    const { userId } = await getAdminIdentity();
 
     return Response.json(
       {
@@ -27,7 +28,8 @@ export async function POST(request: Request) {
           await getAdminContext(),
           await jsonBody(request),
           undefined,
-          request.headers.get("idempotency-key") ?? undefined
+          request.headers.get("idempotency-key") ?? undefined,
+          userId ?? undefined
         ),
       },
       { status: 201 }
@@ -38,9 +40,14 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   return handle(async () => {
     await assertAdminAccess(true);
+    const { userId } = await getAdminIdentity();
 
     return Response.json({
-      data: await archiveProducts(await getAdminContext(), await jsonBody(request)),
+      data: await archiveProducts(
+        await getAdminContext(),
+        await jsonBody(request),
+        userId ?? undefined
+      ),
     });
   });
 }

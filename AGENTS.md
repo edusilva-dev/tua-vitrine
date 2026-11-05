@@ -1,6 +1,6 @@
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
@@ -10,11 +10,25 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Instruções do tua-vitrine
 
+## Referência obrigatória
+
+- Antes de implementar ou revisar código, leia `DEVELOPMENT.md`. Ele é a referência canônica para
+  organização, TypeScript, ambiente, backend, frontend, testes e estilo.
+- Cada demanda que altera arquivos usa `codex/<task>` em kebab-case.
+  Crie a branch antes de editar; continuação reutiliza a branch da mesma tarefa.
+  Nunca implemente diretamente em `master`, `main` ou `staging`.
+- Toda entrega exige revisor independente do autor, inclusive correções feitas pelo orquestrador.
+  O revisor não edita. Mudanças após a revisão exigem nova revisão do delta e da integração.
+- Somente o orquestrador faz commits, push e abre PR. Merge é sempre manual pelo usuário.
+  Revisão indisponível, achados bloqueantes ou validação incompleta mantêm o PR em draft.
+- Instruções não substituem permissões, testes, CI ou proteção de branch. Não afrouxe esses controles
+  para concluir uma tarefa. Não carregue segredos ou payloads sensíveis em contextos de agentes.
+
 ## Produto e stack
 
 SaaS simples para um pequeno lojista manter uma loja, uma vitrine pública em `/[slug]` e fechar vendas pelo WhatsApp. Implemente a menor solução completa; evite camadas, dependências e infraestrutura especulativas.
 
-Stack fixa: Bun 1.3.14, Next.js 16 App Router, React 19, TypeScript strict, Prisma 7/PostgreSQL, shadcn/ui, Better Auth, Stripe, Resend, Neon, Vercel e Cloudflare R2.
+Stack fixa: Bun 1.4.4, Next.js 16 App Router, React 19, TypeScript strict, Prisma 7/PostgreSQL, shadcn/ui, Better Auth, Stripe, Resend, Neon, Vercel e Cloudflare R2.
 
 - Use somente Bun; não use npm, pnpm ou Yarn.
 - Procure código e componentes existentes antes de criar novos.
@@ -86,8 +100,10 @@ Para cada tarefa:
 3. Entregue o fluxo inteiro necessário: contrato, servidor, UI, teste e documentação pertinente.
 4. Adicione regressão para lógica, tenant, plano, cobrança, auth, storage ou bug recorrente.
 5. Rode `bun run lint`, `bun run typecheck` e testes relacionados. Para mudança relevante, rode também `bun test` e `bun run build`; use Playwright para fluxos/layout.
-6. Revise `git diff --check`, segredos e gerados. Faça commit objetivo e push na branch atual. Nunca faça amend/force push sem pedido.
-7. Informe resultado, validações e hash do commit.
+6. Confira `git diff --check`, segredos e gerados. Faça commit objetivo na branch da tarefa e solicite
+   revisão independente do SHA. Corrija achados em novos commits e peça nova revisão.
+7. Faça push e abra PR com critérios de aceite, evidências, SHA revisado e pendências. Aguarde CI;
+   não faça merge, amend ou force push. Informe resultado, validações, hash e link do PR.
 
 Comandos principais: `bun run dev`, `bun run db:deploy`, `bun run lint`, `bun run typecheck`, `bun test`, `bun run build`, `bun run test:e2e`, `bun run test:auth`.
 

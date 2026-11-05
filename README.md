@@ -5,7 +5,7 @@ pelo WhatsApp e assinaturas Stripe.
 
 ## Stack
 
-- Bun 1.3.14
+- Bun 1.4.4
 - Next.js 16, React 19 e TypeScript strict
 - Prisma 7 e PostgreSQL
 - shadcn/ui
@@ -50,6 +50,7 @@ lint, TypeScript, testes, build e Playwright.
 A produção oficial usa Vercel, Neon PostgreSQL, Cloudflare R2, Resend e Stripe. Consulte:
 
 - [Arquitetura](docs/architecture.md)
+- [Regras de desenvolvimento](DEVELOPMENT.md)
 - [Deploy na Vercel](docs/vercel-deployment.md)
 - [Operação](docs/operations.md)
 - [Armazenamento](docs/storage.md)

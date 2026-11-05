@@ -23,6 +23,7 @@ import {
 import { money } from "@/lib/format";
 import type { ProductDTO } from "@/modules/catalog/contracts";
 import { productPrice } from "@/modules/catalog/pricing";
+import { analytics } from "@/modules/observability/client/analytics";
 import type { StoreDTO } from "@/modules/stores/contracts";
 import type { CartLine } from "../selection";
 import { whatsappLink } from "../whatsapp";
@@ -31,6 +32,7 @@ import { ProductImage } from "./product-image";
 export function ProductDetail({
   product,
   store,
+  preview = false,
   liked,
   ready,
   onLike,
@@ -39,6 +41,7 @@ export function ProductDetail({
 }: {
   product: ProductDTO;
   store: StoreDTO;
+  preview?: boolean;
   liked: boolean;
   ready: boolean;
   onLike: () => void;
@@ -175,6 +178,14 @@ export function ProductDetail({
                       href={whatsappLink(store.whatsapp, message)}
                       target="_blank"
                       rel="noreferrer"
+                      onClick={() => {
+                        if (!preview)
+                          analytics.whatsappClicked({
+                            storeId: store.id,
+                            location: "product_detail",
+                            productId: product.id,
+                          });
+                      }}
                     >
                       <MessageCircle />
                       Perguntar no WhatsApp

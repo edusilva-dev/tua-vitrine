@@ -27,6 +27,7 @@ export default async function ProductsPage({
 
   return (
     <ProductManager
+      storeId={context.storeId}
       products={products}
       categories={categories}
       canImportProducts={entitlements.canImportProducts}

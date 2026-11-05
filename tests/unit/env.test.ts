@@ -94,6 +94,85 @@ describe("configuração dos ambientes", () => {
     );
   });
 
+  test("PostHog é opcional e exige conjuntos completos quando habilitado", () => {
+    expect(parseEnv(local)).toMatchObject({
+      POSTHOG_BROWSER_ENABLED: false,
+      POSTHOG_SERVER_ENABLED: false,
+    });
+    expect(() =>
+      parseEnv({ ...local, NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_browser_only" })
+    ).toThrow(/browser juntos/);
+    expect(() => parseEnv({ ...local, POSTHOG_PROJECT_TOKEN: "phc_server_only" })).toThrow(
+      /servidor juntos/
+    );
+    expect(
+      parseEnv({
+        ...local,
+        NEXT_PUBLIC_APP_ENV: "development",
+        NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_browser_project",
+        NEXT_PUBLIC_POSTHOG_HOST: "https://eu.i.posthog.com",
+      })
+    ).toMatchObject({ POSTHOG_BROWSER_ENABLED: true, POSTHOG_SERVER_ENABLED: false });
+  });
+
+  test("PostHog valida origem, ambiente, release e projeto compartilhado", () => {
+    const posthog = {
+      ...local,
+      NEXT_PUBLIC_APP_ENV: "staging",
+      NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_project_staging",
+      NEXT_PUBLIC_POSTHOG_HOST: "https://eu.i.posthog.com/",
+      POSTHOG_PROJECT_TOKEN: "phc_project_staging",
+      POSTHOG_HOST: "https://eu.i.posthog.com/",
+      APP_RELEASE: "commit-abc123",
+    };
+
+    expect(parseEnv(posthog)).toMatchObject({
+      POSTHOG_BROWSER_ENABLED: true,
+      POSTHOG_SERVER_ENABLED: true,
+      NEXT_PUBLIC_POSTHOG_HOST: "https://eu.i.posthog.com",
+      POSTHOG_HOST: "https://eu.i.posthog.com",
+    });
+    expect(() => parseEnv({ ...posthog, POSTHOG_HOST: "https://us.i.posthog.com" })).toThrow(
+      /mesmo host/
+    );
+    expect(() =>
+      parseEnv({ ...posthog, NEXT_PUBLIC_POSTHOG_HOST: "https://eu.i.posthog.com/capture" })
+    ).toThrow(/origem HTTPS/);
+    expect(() => parseEnv({ ...posthog, APP_RELEASE: undefined })).toThrow(/servidor juntos/);
+  });
+
+  test("PostHog server-side fica noop em testes e produção", () => {
+    const configured = {
+      ...local,
+      NEXT_PUBLIC_APP_ENV: "production",
+      NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_project_production",
+      NEXT_PUBLIC_POSTHOG_HOST: "https://us.i.posthog.com",
+      POSTHOG_PROJECT_TOKEN: "phc_project_production",
+      POSTHOG_HOST: "https://us.i.posthog.com",
+      APP_RELEASE: "commit-production",
+    };
+
+    expect(parseEnv(configured)).toMatchObject({
+      POSTHOG_BROWSER_ENABLED: false,
+      POSTHOG_SERVER_ENABLED: false,
+    });
+    expect(
+      parseEnv({ ...configured, NODE_ENV: "test", NEXT_PUBLIC_APP_ENV: "staging" })
+        .POSTHOG_SERVER_ENABLED
+    ).toBe(false);
+    expect(
+      parseEnv({
+        ...configured,
+        NEXT_PUBLIC_APP_ENV: "staging",
+        NEXT_PUBLIC_POSTHOG_DISABLED: "1",
+      })
+    ).toMatchObject({
+      POSTHOG_DISABLED: true,
+      POSTHOG_BROWSER_ENABLED: false,
+      POSTHOG_SERVER_ENABLED: false,
+    });
+  });
+
   test("URL pública do R2 aceita somente uma origem HTTPS", () => {
     expect(() => parseEnv({ ...production, R2_PUBLIC_URL: "http://assets.example" })).toThrow();
     expect(() =>

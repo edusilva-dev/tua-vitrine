@@ -1,0 +1,30 @@
+schema: spec-driven
+
+context: |
+  Language: Portuguese
+  All artifacts must be written in Portuguese.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+  SaaS tua-vitrine: Bun 1.3.14, Next.js 16, React 19, Prisma 7/PostgreSQL.
+  Read AGENTS.md and only the relevant domain docs; preserve server-side tenant and plan checks.
+  Architecture decisions live in docs/architecture.md; specs describe intended behavior.
+  Use bun run spec -- <arguments> instead of a global openspec executable.
+
+rules:
+  proposal:
+    - State acceptance criteria and exclusions; do not expand the authorized scope.
+  design:
+    - Identify risks, shared contracts, dependencies and safe parallel work boundaries.
+    - Preserve the fixed stack and reuse existing implementation patterns.
+  tasks:
+    - Include focused regression tests, integrated checks and independent code review.
+    - Separate implementation from review; only the orchestrator operates Git.
+
+operations:
+  apply:
+    guidance:
+      - Follow the tua-orchestrate and tua-deliver skills; one codex/<change-id> branch per demand.
+      - Do not overwrite another agent's files or run shared-database tests concurrently.
+  archive:
+    guidance:
+      - Archive only after implementation and verification; report missing evidence as pending.
+      - Archival does not authorize merge. PR merge remains manual.
