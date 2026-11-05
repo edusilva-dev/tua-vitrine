@@ -37,7 +37,9 @@ export default function PrivacyPage() {
           A preferência de análises fica no armazenamento local deste navegador até ser alterada,
           apagada por você ou substituída por uma nova versão da escolha. Os identificadores do SDK
           de análises ficam em memória durante a página e são resetados ao revogar. Não há captura
-          automática de páginas, interações ou gravação de sessão habilitada.
+          automática de páginas ou interações. Em desenvolvimento e staging, uma amostra das sessões
+          consentidas pode ser gravada com textos e campos mascarados, fora de telas sensíveis e da
+          prévia administrativa. A gravação permanece desligada em produção.
         </p>
         <p>
           Cookies necessários de autenticação e a seleção de loja permitem usar a conta. Carrinho e

@@ -3,11 +3,13 @@
 import posthog from "posthog-js";
 import {
   ANALYTICS_CONSENT_KEY,
+  type AnalyticsConsentStatus,
   createAnalyticsConsent,
 } from "@/modules/observability/client/consent";
 import {
   createBrowserPostHogOptions,
   isBrowserPostHogEnabled,
+  replayAllowedPath,
 } from "@/modules/observability/client/posthog";
 
 const runtime = {
@@ -90,9 +92,13 @@ export const browserAnalyticsConsent = createAnalyticsConsent({
       posthog.opt_in_capturing({ captureEventName: false });
       posthog.register({ environment: runtime.environment });
     },
-    optOut: () => posthog.opt_out_capturing(),
+    optOut() {
+      posthog.stopSessionRecording();
+      posthog.opt_out_capturing();
+    },
     reset() {
       requestGeneration += 1;
+      posthog.stopSessionRecording();
       posthog.reset(true);
     },
     clearConsent: () => posthog.clear_opt_in_out_capturing(),
@@ -100,6 +106,29 @@ export const browserAnalyticsConsent = createAnalyticsConsent({
   },
   reportError: (error) => globalThis.reportError(error),
 });
+
+export function stopBrowserReplay() {
+  if (!isBrowserPostHogEnabled(runtime) || posthog.config?.disable_session_recording !== false)
+    return;
+
+  posthog.stopSessionRecording();
+}
+
+export function syncBrowserReplay(pathname: string, consentStatus: AnalyticsConsentStatus) {
+  if (!isBrowserPostHogEnabled(runtime)) return;
+
+  if (
+    consentStatus !== "accepted" ||
+    !browserAnalyticsConsent.hasConsent() ||
+    !replayAllowedPath(pathname)
+  ) {
+    stopBrowserReplay();
+
+    return;
+  }
+
+  if (!posthog.sessionRecordingStarted()) posthog.startSessionRecording();
+}
 
 export function initializeBrowserAnalyticsConsent() {
   browserAnalyticsConsent.start();

@@ -8,7 +8,8 @@
 
 - **Status:** implementação em andamento; tarefas 01–04 implementadas; tarefa 05 com controle técnico
   implementado e decisões de privacidade pendentes; tarefas 06–07 preparadas para
-  desenvolvimento/staging. Smoke test externo da tarefa 01 pendente.
+  desenvolvimento/staging; tarefa 08 em implementação não produtiva. Smoke test externo da tarefa 01
+  e auditoria de replay pendentes.
 - **Tema:** product analytics e UX analytics com PostHog.
 - **Produto:** Tua Vitrine.
 - **Públicos observados:** lojistas autenticados e visitantes anônimos das vitrines públicas.
@@ -499,7 +500,7 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 | 05 | [Implementar consentimento e política do servidor](./tasks/05-consent-and-server-privacy-policy.md) | 01–04 | Controle técnico implementado; aprovação da política e auditoria pendentes |
 | 06 | [Instrumentar eventos do lojista](./tasks/06-merchant-lifecycle-events.md) | 02–05 | Em implementação apenas para desenvolvimento/staging |
 | 07 | [Instrumentar vitrine, WhatsApp e billing](./tasks/07-storefront-whatsapp-and-billing-events.md) | 02–05 | Em implementação apenas para desenvolvimento/staging |
-| 08 | [Habilitar replay e privacy masking](./tasks/08-session-replay-and-privacy-masking.md) | 01–05 | Pendente |
+| 08 | [Habilitar replay e privacy masking](./tasks/08-session-replay-and-privacy-masking.md) | 01–05 | Em implementação não produtiva; auditoria bloqueante pendente |
 | 09 | [Criar Activation Funnel](./tasks/09-activation-funnel.md) | 06, 07 | Pendente |
 | 10 | [Criar Product Health Dashboard](./tasks/10-product-health-dashboard.md) | 06, 07, 09 | Pendente |
 | 11 | [Validar e liberar o rollout](./tasks/11-validation-and-rollout.md) | 01–10 | Pendente |
@@ -550,3 +551,4 @@ O sprint está pronto somente quando:
 | 2026-10-30 | troca de pessoa exige reset bem-sucedido antes do identify | impedir a união de duas pessoas no mesmo navegador |
 | 2026-10-30 | consentimento deve ser reaplicado após reset na tarefa 05 | o reset do SDK também limpa seu estado de consentimento |
 | 2026-10-30 | aviso de consentimento com apenas “Eu concordo” no rodapé | pedido do responsável; sem aceite, analytics permanece desligado e revogação segue disponível nas preferências |
+| 2026-11-04 | replay restrito a rotas classificadas, com amostragem de 100% no desenvolvimento local, 10% em staging e máscara máxima | permitir auditoria controlada antes de qualquer rollout em produção |

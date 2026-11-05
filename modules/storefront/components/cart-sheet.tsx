@@ -142,7 +142,7 @@ export function CartSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col sm:max-w-md">
+      <SheetContent className="ph-no-capture flex w-full flex-col sm:max-w-md">
         <SheetHeader className="border-b pb-5">
           <SheetTitle className="flex items-center gap-2 text-xl">
             <ShoppingBag className="size-5" />

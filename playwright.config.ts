@@ -43,7 +43,7 @@ export default defineConfig({
       NEXT_PUBLIC_POSTHOG_DISABLED: observabilityEnabled ? "0" : "1",
       ...(observabilityEnabled
         ? {
-            NEXT_PUBLIC_APP_ENV: "staging",
+            NEXT_PUBLIC_APP_ENV: "development",
             NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_e2e_test_only",
             NEXT_PUBLIC_POSTHOG_HOST: "https://posthog.invalid",
           }
