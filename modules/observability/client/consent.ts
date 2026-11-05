@@ -160,6 +160,9 @@ export function createAnalyticsConsent(options: AnalyticsConsentOptions) {
       capturing = false;
       options.provider.reset();
       apply(snapshot.status);
+      snapshot = { ...snapshot, revision: snapshot.revision + 1 };
+
+      for (const listener of listeners) listener();
     },
   };
 }

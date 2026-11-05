@@ -1,5 +1,35 @@
 import type { BeforeSendFn } from "posthog-js";
 
+export function replayAllowedPath(pathname: string) {
+  return (
+    (/^\/[a-z0-9-]+\/?$/.test(pathname) &&
+      ![
+        "/cadastro",
+        "/entrar",
+        "/recuperar-senha",
+        "/redefinir-senha",
+        "/verificar-email",
+        "/vitrine",
+      ].includes(pathname.replace(/\/$/, ""))) ||
+    ["/admin", "/admin/products", "/admin/metrics", "/admin/promotions"].includes(pathname)
+  );
+}
+
+export function maskReplayNetworkRequest<
+  T extends { name: string; initiatorType?: string; method?: string; isInitial?: boolean },
+>(request: T): T | null {
+  if (request.initiatorType || request.method || request.isInitial) return null;
+
+  try {
+    const base = typeof window === "undefined" ? "http://localhost" : window.location.origin;
+    const url = new URL(request.name, base);
+
+    return { ...request, name: `${url.origin}${url.pathname}` };
+  } catch {
+    return null;
+  }
+}
+
 function removeNavigationFields(properties: Record<string, unknown>) {
   for (const [key, value] of Object.entries(properties)) {
     if (/url|referr|pathname|search|query|utm|campaign|gclid|fbclid/i.test(key)) {
@@ -67,9 +97,23 @@ export function createBrowserPostHogOptions(config: EnabledBrowserPostHogRuntime
     capture_heatmaps: false,
     capture_exceptions: false,
     disable_session_recording: true,
+    enable_recording_console_log: false,
+    disable_capture_url_hashes: true,
+    session_recording: {
+      maskAllInputs: true,
+      maskTextSelector: "*",
+      maskAllElementAttributes: true,
+      blockSelector: 'input[type="hidden"], input[type="file"], .ph-no-capture',
+      captureJsonLd: false,
+      captureCanvas: { recordCanvas: false },
+      recordHeaders: false,
+      recordBody: false,
+      maskCapturedNetworkRequestFn: maskReplayNetworkRequest,
+      sampleRate: config.environment === "development" ? 1 : 0.1,
+    },
     disable_surveys: true,
     advanced_disable_feature_flags: true,
-    advanced_disable_flags: true,
+    advanced_disable_flags: false,
     capture_performance: false,
     capture_dead_clicks: false,
     request_batching: false,

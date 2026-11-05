@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import { AnalyticsConsent } from "@/modules/observability/components/analytics-consent";
+import { ReplayController } from "@/modules/observability/components/replay-controller";
 
 const montserratHeading = Montserrat({ subsets: ["latin"], variable: "--font-heading" });
 
@@ -43,6 +44,7 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="light">
           <Toaster />
           <AnalyticsConsent placement="banner" />
+          <ReplayController />
           {children}
           <AnalyticsConsent placement="settings" />
         </ThemeProvider>

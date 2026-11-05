@@ -77,7 +77,7 @@ export function StorefrontFeedbackDialog({
   return (
     <Dialog open={open} onOpenChange={(next) => !sending && setOpen(next)}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
+      <DialogContent className="ph-no-capture">
         <DialogHeader>
           <DialogTitle>Como foi sua experiência?</DialogTitle>
           <DialogDescription>

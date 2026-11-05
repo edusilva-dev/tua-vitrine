@@ -109,11 +109,18 @@ describe("consentimento analítico versionado", () => {
 
   test("reset de logout/troca de conta preserva e reaplica consentimento aceito", () => {
     const { consent, calls } = harness();
+    const notifications: number[] = [];
+
+    consent.subscribe(() => notifications.push(consent.getSnapshot().revision));
 
     consent.choose("accepted");
+    const beforeReset = consent.getSnapshot().revision;
+
     consent.resetIdentity();
     expect(consent.hasConsent()).toBe(true);
     expect(consent.getSnapshot().status).toBe("accepted");
+    expect(consent.getSnapshot().revision).toBe(beforeReset + 1);
+    expect(notifications).toEqual([beforeReset, beforeReset + 1]);
     expect(calls).toEqual(["initialize", "optIn", "reset", "optIn"]);
   });
 

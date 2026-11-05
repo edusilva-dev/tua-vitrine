@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
   createBrowserPostHogOptions,
   isBrowserPostHogEnabled,
+  maskReplayNetworkRequest,
+  replayAllowedPath,
   screenNameForEvent,
   stripNavigationProperties,
 } from "@/modules/observability/client/posthog";
@@ -21,9 +23,21 @@ describe("configuração pública do PostHog", () => {
       capture_heatmaps: false,
       capture_exceptions: false,
       disable_session_recording: true,
+      enable_recording_console_log: false,
+      disable_capture_url_hashes: true,
+      session_recording: {
+        maskAllInputs: true,
+        maskTextSelector: "*",
+        maskAllElementAttributes: true,
+        captureJsonLd: false,
+        captureCanvas: { recordCanvas: false },
+        recordHeaders: false,
+        recordBody: false,
+        sampleRate: 0.1,
+      },
       disable_surveys: true,
       advanced_disable_feature_flags: true,
-      advanced_disable_flags: true,
+      advanced_disable_flags: false,
       capture_performance: false,
       capture_dead_clicks: false,
       request_batching: false,
@@ -32,6 +46,39 @@ describe("configuração pública do PostHog", () => {
       opt_out_persistence_by_default: true,
       persistence: "memory",
     });
+  });
+
+  test("replay só permite vitrine e telas administrativas classificadas", () => {
+    expect(replayAllowedPath("/cafe-do-bairro")).toBe(true);
+    expect(replayAllowedPath("/admin/products")).toBe(true);
+    expect(replayAllowedPath("/admin/metrics")).toBe(true);
+    expect(replayAllowedPath("/admin/preview")).toBe(false);
+    expect(replayAllowedPath("/admin/billing")).toBe(false);
+    expect(replayAllowedPath("/admin/support")).toBe(false);
+    expect(replayAllowedPath("/cadastro")).toBe(false);
+    expect(replayAllowedPath("/redefinir-senha")).toBe(false);
+  });
+
+  test("desenvolvimento grava sessões de teste e staging amostra 10%", () => {
+    expect(
+      createBrowserPostHogOptions({
+        projectToken: "phc_project_development",
+        host: "https://us.i.posthog.com",
+        environment: "development",
+      }).session_recording.sampleRate
+    ).toBe(1);
+  });
+
+  test("replay elimina parâmetros e rejeita metadados de rede", () => {
+    expect(
+      maskReplayNetworkRequest({ name: "https://example.test/loja?q=sentinela#secret" })
+    ).toEqual({ name: "https://example.test/loja" });
+    expect(
+      maskReplayNetworkRequest({ name: "https://example.test/api?token=sentinela", method: "GET" })
+    ).toBeNull();
+    expect(
+      maskReplayNetworkRequest({ name: "https://example.test/loja?q=sentinela", isInitial: true })
+    ).toBeNull();
   });
 
   test("inicializa apenas com configuração pública completa em ambiente permitido", () => {
