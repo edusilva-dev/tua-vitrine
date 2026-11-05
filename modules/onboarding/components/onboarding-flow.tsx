@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, ArrowRight, Check, Loader2, Store } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { api } from "@/lib/client/http";
 import { cn } from "@/lib/utils";
 import { ProductForm } from "@/modules/catalog/components/product-manager";
+import { analytics } from "@/modules/observability/client/analytics";
 import {
   normalizeSlug,
   type StoreDTO,
@@ -34,6 +35,7 @@ export function OnboardingFlow({
   const [step, setStep] = useState(newStore ? 1 : Math.min(store?.onboardingStep ?? 1, 3));
   const [error, setError] = useState("");
   const slugEdited = useRef(Boolean(store?.slug));
+  const productFormTracked = useRef(false);
   const identity = useForm<{ name: string; slug: string }>({
     resolver: zodResolver(storeIdentitySchema),
     defaultValues: {
@@ -48,6 +50,19 @@ export function OnboardingFlow({
   const nameField = identity.register("name");
   const slugField = identity.register("slug");
   const whatsappField = contact.register("whatsapp");
+
+  useEffect(() => {
+    if (step !== 3) {
+      productFormTracked.current = false;
+
+      return;
+    }
+
+    if (!current || productFormTracked.current) return;
+
+    productFormTracked.current = true;
+    analytics.productCreationStarted({ storeId: current.id });
+  }, [step, current]);
 
   async function saveIdentity(values: { name: string; slug: string }) {
     setError("");
@@ -74,12 +89,12 @@ export function OnboardingFlow({
     setError("");
 
     try {
-      setCurrent(
-        await api<StoreDTO>("/api/admin/onboarding/whatsapp", {
-          method: "PUT",
-          body: JSON.stringify(values),
-        })
-      );
+      const saved = await api<StoreDTO>("/api/admin/onboarding/whatsapp", {
+        method: "PUT",
+        body: JSON.stringify(values),
+      });
+
+      setCurrent(saved);
       setStep(3);
       router.refresh();
     } catch (cause) {

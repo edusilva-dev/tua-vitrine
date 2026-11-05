@@ -12,23 +12,30 @@ jobs:
           POSTGRES_USER: tuavitrine
           POSTGRES_PASSWORD: tuavitrine_local
           POSTGRES_DB: tuavitrine_test
-        ports: ["55432:5432"]
+        ports: ["5432"]
         options: >-
           --health-cmd "pg_isready -U tuavitrine -d tuavitrine_test"
           --health-interval 5s --health-timeout 3s --health-retries 10
     env:
       APP_URL: http://localhost:3000
       BETTER_AUTH_SECRET: test-only-secret-with-more-than-32-characters
-      DATABASE_URL: postgresql://tuavitrine:tuavitrine_local@localhost:55432/tuavitrine_test
-      E2E_DATABASE_URL: postgresql://tuavitrine:tuavitrine_local@localhost:55432/tuavitrine_test
       STORAGE_DIR: ./work/test-storage
     steps:
       - uses: actions/checkout@v4
+      - name: Configure test database URLs
+        env:
+          POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
+        run: |
+          printf 'DATABASE_URL=postgresql://tuavitrine:tuavitrine_local@localhost:%s/tuavitrine_test\n' "$POSTGRES_PORT" >> "$GITHUB_ENV"
+          printf 'TEST_DATABASE_URL=postgresql://tuavitrine:tuavitrine_local@localhost:%s/tuavitrine_test\n' "$POSTGRES_PORT" >> "$GITHUB_ENV"
+          printf 'E2E_DATABASE_URL=postgresql://tuavitrine:tuavitrine_local@localhost:%s/tuavitrine_test\n' "$POSTGRES_PORT" >> "$GITHUB_ENV"
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.14
+          bun-version: 1.4.4
       - run: bun install --frozen-lockfile
       - run: bun run audit
+      - run: bun run harness:check
+      - run: bun run spec -- validate --all --strict
       - run: bun run db:generate
       - run: bun run db:deploy
       - run: bun run check

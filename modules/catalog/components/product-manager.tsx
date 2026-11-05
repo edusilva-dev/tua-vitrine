@@ -47,6 +47,7 @@ import {
   productInputSchema,
   variantLabel,
 } from "@/modules/catalog/contracts";
+import { analytics } from "@/modules/observability/client/analytics";
 import { ProductImportDialog } from "./product-import-dialog";
 import { ProductPublicationDialog } from "./product-publication-dialog";
 
@@ -521,6 +522,7 @@ export function ProductForm({
 }
 
 export function ProductManager({
+  storeId,
   products,
   categories,
   canImportProducts = false,
@@ -530,6 +532,7 @@ export function ProductManager({
   initialQuery = "",
   initialCategory = "",
 }: {
+  storeId: string;
   products: ProductListDTO;
   categories: CategoryDTO[];
   canImportProducts?: boolean;
@@ -640,6 +643,7 @@ export function ProductManager({
             onClick={() => {
               setEditing(null);
               setDirty(false);
+              analytics.productCreationStarted({ storeId });
             }}
           >
             <Plus size={17} />
@@ -816,7 +820,7 @@ export function ProductManager({
         </div>
       )}
       {selectedIds.size > 0 && (
-        <div className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-2xl flex-wrap items-center gap-2 rounded-xl border bg-background/95 p-3 shadow-xl backdrop-blur sm:flex-nowrap">
+        <div className="product-bulk-actions fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-2xl flex-wrap items-center gap-2 rounded-xl border bg-background/95 p-3 shadow-xl backdrop-blur sm:flex-nowrap">
           <p className="mr-auto min-w-fit text-sm font-medium" aria-live="polite">
             {selectedIds.size}{" "}
             {selectedIds.size === 1 ? "produto selecionado" : "produtos selecionados"}

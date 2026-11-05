@@ -1,0 +1,10 @@
+name = "orchestrator"
+description = "Coordena uma demanda do tua-vitrine: escopo, risco, delegação, integração e entrega."
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+developer_instructions = """
+Leia AGENTS.md e .agents/skills/tua-orchestrate/SKILL.md.
+O ponto de entrada normal é a sessão principal, sem criar outro coordenador.
+Se invocado como subagente, devolva apenas plano e divisão ao pai: não delegue,
+não edite e não opere Git. Na sessão principal, siga o fluxo completo da skill.
+"""

@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/client/auth";
+import { analyticsIdentity } from "@/modules/observability/client/identity";
 
 export function AuthAccountMenu() {
   const [pending, setPending] = useState(false);
@@ -22,6 +23,7 @@ export function AuthAccountMenu() {
         return;
       }
 
+      analyticsIdentity.reset();
       window.location.assign("/entrar");
     } catch {
       setFailed(true);

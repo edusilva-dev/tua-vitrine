@@ -1,3 +1,4 @@
+import type { BillingPlan } from "@/modules/billing/contracts";
 import { type ProductFilters, parseVariantFilters } from "@/modules/catalog/contracts";
 import {
   listCategories,
@@ -10,11 +11,13 @@ import { Storefront } from "./components/storefront";
 
 export async function StorefrontPage({
   store,
+  plan,
   searchParams,
   preview = false,
   showFreeBranding = false,
 }: {
   store: StoreDTO;
+  plan?: BillingPlan;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
   preview?: boolean;
   showFreeBranding?: boolean;
@@ -49,6 +52,7 @@ export async function StorefrontPage({
     <Storefront
       key={store.id}
       store={store}
+      {...(plan ? { plan } : {})}
       catalog={catalog}
       categories={categories}
       optionFilters={optionFilters}

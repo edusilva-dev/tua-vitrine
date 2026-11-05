@@ -12,6 +12,7 @@ passar a resolver uma versão igualmente segura sem intervenção.
 
 O CI executa `bun run audit` logo após a instalação congelada. A auditoria ignora apenas
 `GHSA-vfj7-8cjw-p6xm`, de `braces`, porque o registry ainda não oferece uma versão corrigida e o
-pacote chega exclusivamente pela CLI de desenvolvimento do shadcn. Remova a exceção assim que uma
+pacote chega pelas CLIs de desenvolvimento do shadcn e do OpenSpec, sem uso na aplicação.
+Remova a exceção assim que uma
 versão segura estiver disponível. Uma atualização do lockfile só deve ser aceita quando auditoria,
 lint, TypeScript, testes e build continuarem passando.

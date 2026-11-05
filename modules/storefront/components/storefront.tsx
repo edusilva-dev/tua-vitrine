@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { money } from "@/lib/format";
+import type { BillingPlan } from "@/modules/billing/contracts";
 import type {
   CategoryDTO,
   ProductDTO,
@@ -41,6 +42,7 @@ import type {
 import { encodeVariantFilter } from "@/modules/catalog/contracts";
 import { productPrice } from "@/modules/catalog/pricing";
 import { StorefrontFeedbackDialog } from "@/modules/feedback/components/storefront-feedback-dialog";
+import { analytics } from "@/modules/observability/client/analytics";
 import type { PublicPromotionCampaignDTO } from "@/modules/promotions/contracts";
 import type { StoreDTO } from "@/modules/stores/contracts";
 import { type CartLine, lineKey } from "../selection";
@@ -58,6 +60,7 @@ function selectedVariantFilter(filters: ProductFilters, name: string): string {
 
 export function Storefront({
   store,
+  plan,
   catalog,
   categories,
   optionFilters,
@@ -68,6 +71,7 @@ export function Storefront({
   promotionActive = false,
 }: {
   store: StoreDTO;
+  plan?: BillingPlan;
   catalog: ProductListDTO;
   categories: CategoryDTO[];
   optionFilters: ProductOptionFilterDTO[];
@@ -165,6 +169,9 @@ export function Storefront({
     const eventId = crypto.randomUUID();
 
     impression.current = eventId;
+
+    if (plan) analytics.catalogViewed({ storeId: store.id, plan });
+
     const payload = JSON.stringify({ eventId, type: "STORE_VIEW" });
 
     void fetch(`/api/stores/${store.slug}/events`, {
@@ -172,7 +179,7 @@ export function Storefront({
       headers: { "Content-Type": "application/json" },
       body: payload,
     }).catch(() => undefined);
-  }, [preview, store.slug]);
+  }, [plan, preview, store.id, store.slug]);
 
   useEffect(() => {
     if (!favoritesOnly) return;
@@ -223,6 +230,8 @@ export function Storefront({
   function openProduct(product: ProductDTO) {
     setSelected(product);
     void track("PRODUCT_VIEW", product.id);
+
+    if (!preview) analytics.productViewed({ storeId: store.id, productId: product.id });
   }
 
   function addToCart(line: CartLine) {
@@ -338,7 +347,7 @@ export function Storefront({
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-5 pb-20 sm:px-8">
+      <main className="storefront-main mx-auto max-w-6xl px-5 sm:px-8">
         <section className="relative my-7 overflow-hidden rounded-3xl border bg-card px-7 py-9 sm:my-9 sm:px-10 sm:py-12">
           <div className="pointer-events-none absolute -right-16 -top-32 size-96 rounded-full border-[55px] border-primary/5" />
           <p className="relative mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
@@ -360,6 +369,10 @@ export function Storefront({
                 )}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() => {
+                  if (!preview)
+                    analytics.whatsappClicked({ storeId: store.id, location: "store_hero" });
+                }}
               >
                 <MessageCircle />
                 Conversar com a loja
@@ -653,7 +666,14 @@ export function Storefront({
                           return;
                         }
 
-                        if (store.whatsapp)
+                        if (store.whatsapp) {
+                          if (!preview)
+                            analytics.whatsappClicked({
+                              storeId: store.id,
+                              location: "product_card",
+                              productId: product.id,
+                            });
+
                           window.open(
                             whatsappLink(
                               store.whatsapp,
@@ -662,6 +682,7 @@ export function Storefront({
                             "_blank",
                             "noopener,noreferrer"
                           );
+                        }
                       }}
                     >
                       <MessageCircle />
@@ -794,6 +815,7 @@ export function Storefront({
           key={selected.id}
           product={selected}
           store={store}
+          preview={preview}
           liked={selection.likes.includes(selected.id)}
           ready={selection.ready}
           onLike={() => selection.toggleLike(selected.id)}
@@ -807,6 +829,7 @@ export function Storefront({
         cart={selection.cart}
         setCart={selection.setCart}
         store={store}
+        preview={preview}
       />
     </div>
   );
