@@ -34,17 +34,17 @@ funcional, de privacidade, custos e operação.
 
 ## Critérios de aceite
 
-- [ ] lint, typecheck, testes relacionados, suíte completa e build passam;
-- [ ] busca confirma SDK restrito aos adaptadores/bootstrap;
+- [x] lint, typecheck, testes relacionados, suíte completa e build passam no pré-rollout local;
+- [x] busca confirma SDK restrito aos adaptadores/bootstrap;
 - [ ] os 11 eventos foram exercitados com resultado esperado;
-- [ ] eventos não duplicam em retries previstos;
-- [ ] PostHog indisponível não bloqueia fluxos;
+- [x] eventos não duplicam em retries previstos nos testes de integração;
+- [x] PostHog indisponível não bloqueia fluxos nos testes de integração;
 - [ ] rejeição/revogação interrompe captura client-side/replay e a política server-side aprovada é
   respeitada;
 - [ ] auditoria não encontra PII, segredo, query string ou conteúdo livre;
-- [ ] funil e dashboard refletem a coorte sintética;
+- [x] funil e dashboard de desenvolvimento refletem a coorte sintética nas consultas individuais;
 - [ ] retenção, acesso, owner e kill switch estão documentados;
-- [ ] produção tem aprovação de produto/privacidade ou permanece desabilitada;
+- [x] produção tem aprovação de produto/privacidade ou permanece desabilitada;
 - [ ] revisão independente não possui achados P0/P1/P2 abertos.
 
 ## Validação
@@ -67,3 +67,41 @@ Executar, no mínimo:
 Não habilitar produção parcialmente para “gerar dados” se os controles de privacidade estiverem
 pendentes. Se o rollout for bloqueado apenas por decisão externa, deixar o código desabilitado por
 configuração e registrar a pendência de forma explícita.
+
+## Pré-rollout local — 05/11/2026
+
+- O PR [#19](https://github.com/edusilva-dev/tua-vitrine/pull/19) permanece em draft contra
+  `staging`. As duas execuções de Quality do SHA `36bd21e` passaram. A branch `staging` ainda não
+  recebeu essa cadeia; o check do Vercel Preview permanecia pendente na última consulta.
+- Com Bun 1.4.4, `bun run check` passou (lint, typecheck e 155 testes) e `bun run build` passou.
+  Os 52 testes de observabilidade relacionados também passaram isoladamente.
+- `E2E_OBSERVABILITY=1` executou em desktop e mobile os quatro cenários de vitrine e replay, com
+  ingestão interceptada em `posthog.invalid`: quatro passaram. A inspeção inclui as quatro origens
+  de WhatsApp, preview sem captura, aceite/revogação, máscara de sentinelas e remoção de query string.
+  O teste passou a decodificar também o envio `sendBeacon` em base64; a rodada inicial falhou por
+  assumir apenas gzip. Um replay mobile excedeu o prazo na rodada inicial, mas passou isolado e na
+  rodada completa seguinte. Essa instabilidade ainda precisa ser observada em staging.
+- A busca de imports encontrou `posthog-js` somente em `modules/observability/client` e
+  `posthog-node` somente em `modules/observability/server/posthog.ts`. Os testes de integração
+  cobrem retries, concorrência, idempotência de billing e telemetria best-effort.
+- O [dashboard de desenvolvimento](https://us.posthog.com/project/710815/dashboard/2308370) e
+  os dois funis reproduzem a coorte sintética nas consultas individuais. Sete dos onze eventos
+  constam nos dados do projeto; `product_creation_started`, `product_deleted`,
+  `subscription_started` e `subscription_cancelled` ainda não possuem evidência de ingestão real.
+- O [procedimento de desligamento](../../../docs/observability/posthog-deployment.md#desligamento-e-retomada)
+  usa `NEXT_PUBLIC_POSTHOG_DISABLED=1` e novo deploy. Produção permanece em `noop` para browser e
+  servidor; a decisão da tarefa 05 sobre base legal server-side continua pendente.
+
+## Pendências bloqueantes
+
+1. Integrar a cadeia em `staging`, configurar somente o projeto PostHog não produtivo, conferir
+   `environment = staging` e `release`, e executar a matriz dos onze eventos com dados conhecidos.
+2. Inspecionar eventos brutos e replays no projeto de staging, comparar vitrine com métricas internas
+   e auditar cadastro, login, onboarding, produtos, settings, suporte, billing e carrinho. Não
+   registrar payloads ou dados pessoais neste documento.
+3. Definir e aprovar política, responsável pelo acesso, retenção e oposição do canal server-side;
+   revisar permissões e retenção do projeto de produção e só então considerar a ativação.
+4. Validar filtros e números do dashboard/funis em staging, revisar visualmente com o administrador,
+   definir alertas de volume/custo e programar avaliações após 24 horas, 7 dias e 30 dias.
+
+Nenhuma captura de produção foi habilitada neste pré-rollout.

@@ -10,7 +10,8 @@
   implementado e decisões de privacidade pendentes; tarefas 06–07 preparadas para
   desenvolvimento/staging; tarefa 08 em implementação não produtiva; tarefa 09 validada no projeto de
   desenvolvimento, com versão oficial pendente; tarefa 10 montada no projeto de desenvolvimento,
-  com validação visual e versão oficial pendentes. Auditoria de replay pendente.
+  com validação visual e versão oficial pendentes; tarefa 11 em pré-rollout local, aguardando
+  integração em staging. Auditoria de replay pendente.
 - **Tema:** product analytics e UX analytics com PostHog.
 - **Produto:** Tua Vitrine.
 - **Públicos observados:** lojistas autenticados e visitantes anônimos das vitrines públicas.
@@ -506,7 +507,7 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 | 08 | [Habilitar replay e privacy masking](./tasks/08-session-replay-and-privacy-masking.md) | 01–05 | Em implementação não produtiva; auditoria bloqueante pendente |
 | 09 | [Criar Activation Funnel](./tasks/09-activation-funnel.md) | 06, 07 | Validada em desenvolvimento; versão oficial de produção pendente |
 | 10 | [Criar Product Health Dashboard](./tasks/10-product-health-dashboard.md) | 06, 07, 09 | Dashboard de desenvolvimento montado; validação visual e versão oficial pendentes |
-| 11 | [Validar e liberar o rollout](./tasks/11-validation-and-rollout.md) | 01–10 | Pendente |
+| 11 | [Validar e liberar o rollout](./tasks/11-validation-and-rollout.md) | 01–10 | Pré-rollout local em andamento; staging e produção pendentes |
 
 Tarefas 06 e 07 podem ser preparadas em desenvolvimento/staging após a decisão técnica da tarefa 05;
 a captura em produção exige a aprovação da política. Tarefas 09 e 10 só começam

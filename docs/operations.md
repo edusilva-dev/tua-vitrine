@@ -24,6 +24,11 @@ Arquivos .env reais nunca são versionados. .env.example documenta o ambiente lo
 Depois de cada deploy, valide cadastro, confirmação de e-mail, login, painel, upload de imagem,
 vitrine pública, checkout e portal de cobrança. Consulte os logs da Vercel para falhas de runtime.
 
+Para a telemetria PostHog, confira ambiente, release e consentimento antes de validar eventos. O
+procedimento de desligamento e retomada fica em
+[`docs/observability/posthog-deployment.md`](./observability/posthog-deployment.md#desligamento-e-retomada).
+O rollout de produção permanece bloqueado pelas decisões de privacidade do Sprint 1.
+
 ## Backup e restauração
 
 O Neon é a fonte do catálogo e o Cloudflare R2 é a fonte das imagens. A política de recuperação deve

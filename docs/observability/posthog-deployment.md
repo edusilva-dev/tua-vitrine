@@ -27,6 +27,23 @@ legal ainda precisam de decisão registrada antes de habilitar esse canal.
 `NEXT_PUBLIC_POSTHOG_DISABLED=1` funciona como kill switch para ambos os SDKs e é definido
 obrigatoriamente pelos servidores dos testes E2E.
 
+## Desligamento e retomada
+
+O kill switch é uma configuração de deploy, não um controle instantâneo de sessões já abertas:
+
+1. defina `NEXT_PUBLIC_POSTHOG_DISABLED=1` apenas no ambiente/branch afetado da Vercel e faça novo
+   deploy; o browser e o servidor passam a operar em `noop` no novo deployment;
+2. confira no deployment novo que aceitar análises não gera requests de ingestão e que cadastro,
+   catálogo, WhatsApp e cobrança continuam funcionando;
+3. compare a contagem de eventos por `environment` e `release` no projeto PostHog antes e depois da
+   troca. Requisições já iniciadas e abas com bundle antigo podem terminar; comunique esse limite;
+4. para retomar, remova o flag ou defina `0`, faça outro deploy e repita o smoke test não produtivo.
+
+Na ausência de configuração do PostHog, os adaptadores também operam em `noop`. Remova conjuntos
+completos de token e host; retirar apenas uma variável faz a validação do ambiente falhar. Em
+produção, o código mantém a captura desabilitada mesmo sem o kill switch até a aprovação e liberação
+registradas no sprint. Não habilite produção apenas para gerar dados de teste.
+
 ## Rede e CSP
 
 O projeto não define uma Content Security Policy atualmente. Se uma CSP for adicionada, validar as

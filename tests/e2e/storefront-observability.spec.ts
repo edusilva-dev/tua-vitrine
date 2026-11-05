@@ -15,13 +15,31 @@ test("vitrine captura catálogo, detalhe e as quatro origens de WhatsApp sem cap
 }) => {
   const requests: string[] = [];
   const captured = () =>
-    requests.flatMap((body) => (JSON.parse(body) as { batch: CapturedEvent[] }).batch);
+    requests.flatMap((body) => {
+      const payload = JSON.parse(body) as {
+        batch?: CapturedEvent[];
+        event?: string;
+        properties?: Record<string, unknown>;
+      };
+
+      return (
+        payload.batch ?? (payload.event && payload.properties ? [payload as CapturedEvent] : [])
+      );
+    });
 
   await context.route("https://posthog.invalid/**", async (route) => {
     if (route.request().method() === "POST") {
       const body = route.request().postDataBuffer();
 
-      if (body) requests.push(gunzipSync(body).toString("utf8"));
+      if (body) {
+        const decoded =
+          body[0] === 0x1f && body[1] === 0x8b
+            ? gunzipSync(body).toString("utf8")
+            : body.toString();
+        const encoded = new URLSearchParams(decoded).get("data");
+
+        requests.push(encoded ? Buffer.from(encoded, "base64").toString("utf8") : decoded);
+      }
     }
 
     await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
