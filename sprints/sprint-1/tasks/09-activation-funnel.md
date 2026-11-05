@@ -61,3 +61,34 @@ dados.
 
 Não incluir assinatura como requisito de ativação neste sprint. Conversão comercial pode virar um
 segundo funil após a qualidade dos dados ser comprovada.
+
+## Validação no projeto de desenvolvimento — 05/11/2026
+
+Projeto PostHog `710815`; insights criados pelo administrador do projeto, Eduardo Silva:
+
+| Insight de validação | Unidade | Filtro e breakdown | Link |
+| --- | --- | --- | --- |
+| Merchant Onboarding Funnel — Sprint 1 (dev validation) | pessoa | `environment = development`; `signup_plan` no primeiro passo | [Abrir](https://us.posthog.com/project/710815/insights/zI7e7bXe) |
+| Store Activation Funnel — Sprint 1 (dev validation) | grupo `store` (índice 0) | `environment = development`; propriedade `plan` do grupo | [Abrir](https://us.posthog.com/project/710815/insights/3KuO71Fo) |
+| Store Activation by WhatsApp Location — Sprint 1 (dev validation) | grupo `store` (índice 0) | `environment = development`; `location` atribuída ao quinto passo | [Abrir](https://us.posthog.com/project/710815/insights/qkGBPmH9) |
+
+Os três usam ordem sequencial e janela de conversão de 14 dias. O primeiro produto é filtrado por
+`is_first_product = true`. A visualização mostra conversão desde o início; a opção de conversão
+relativa ao passo anterior permanece disponível no insight.
+
+Um fluxo sintético local completou cadastro, confirmação de e-mail, criação da loja, primeiro
+produto, publicação, abertura da vitrine e clique no WhatsApp. A consulta salva retornou uma pessoa
+convertida nos quatro passos e um grupo `store` convertido nos cinco passos. Visitas e cliques
+repetidos da mesma loja não aumentaram a contagem do grupo. As três tentativas de cadastro anteriores
+que não chegaram à loja permanecem nos dados de desenvolvimento: por isso o funil do lojista mostra
+quatro entradas e 25% de conversão, enquanto o de loja mostra uma entrada e 100%.
+
+`source` identifica a origem técnica fixa de cada evento (`better_auth`, `onboarding`,
+`catalog_service` ou `storefront`), não uma origem de aquisição. Um breakdown por `source` neste funil
+seria constante ou atribuiria um valor diferente a cada passo; não mede canal de entrada. Ele só
+será salvo quando houver um atributo de aquisição classificado e instrumentado em tarefa própria.
+
+Os insights acima são apenas para validar desenvolvimento. Ainda faltam o projeto/fluxo de produção,
+o filtro `environment = production` nos insights oficiais, a auditoria de replay e a política da
+tarefa 05. Consentimento, bloqueadores de anúncios e a combinação de eventos server/client podem
+reduzir a conversão observada. A tarefa 09 permanece aberta até a validação da versão oficial.
