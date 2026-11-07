@@ -3,6 +3,19 @@
 Use um bloco por defeito ou oportunidade. Não registrar segredos, cookies, tokens, conteúdo de
 e-mail, dados pessoais ou financeiros.
 
+## Execução STG-2026-11-07-01
+
+- Alvo: `https://staging.usetuavitrine.com.br`
+- Janela da rodada: `2026-11-07T10:58:57-03:00` a `2026-11-07T11:06:00-03:00`
+- Sessão: conta Free criada na rodada e vitrine `loja-qa-59705592`
+- Fingerprint do build revalidado na mesma sessão: CSS `897c64b49cd07410` e
+  `main-app-dad5a851ae48121e.js`
+- Evidência: observação visual e árvore de acessibilidade do navegador interno; nenhum artefato
+  contém e-mail, cookie, token ou credencial.
+
+O fingerprint é formado pelos hashes dos assets servidos pelo alias durante a rodada. Ele permite
+distinguir este build depois que `staging` apontar para um novo deployment.
+
 ## Resumo
 
 | ID | Severidade | Área | Viewport | Status | Título |
@@ -22,7 +35,7 @@ e-mail, dados pessoais ou financeiros.
 - Severidade: `P3`
 - Tipo: `usabilidade | configuração`
 - Status: `confirmado`
-- Ambiente/deploy: staging
+- Ambiente/deploy: `STG-2026-11-07-01`
 - Data/hora da observação: `2026-11-07T10:58:57-03:00`
 - Página/fluxo: `/admin/onboarding`, etapa “Sua loja”
 - Plano e sessão: Free autenticado
@@ -53,7 +66,7 @@ Critério de aceite:
 - Severidade: `P2`
 - Tipo: `usabilidade | regra de negócio`
 - Status: `confirmado`
-- Ambiente/deploy: staging
+- Ambiente/deploy: `STG-2026-11-07-01`
 - Data/hora da observação: `2026-11-07T10:58:57-03:00`
 - Página/fluxo: primeiro produto do onboarding e `/admin/products`
 - Plano e sessão: Free autenticado
@@ -86,7 +99,7 @@ Critério de aceite:
 - Severidade: `P2`
 - Tipo: `usabilidade | responsividade`
 - Status: `confirmado`
-- Ambiente/deploy: staging
+- Ambiente/deploy: `STG-2026-11-07-01`
 - Data/hora da observação: `2026-11-07T10:58:57-03:00`
 - Página/fluxo: shell `/admin/*`
 - Plano e sessão: Free autenticado
@@ -104,7 +117,8 @@ Passos:
 
 Evidência:
 
-- Captura visual da rodada mostrou apenas os primeiros destinos e scrollbar horizontal nativa.
+- Em 390 x 844 px, a árvore de acessibilidade expôs os sete destinos, mas visualmente o viewport
+  mostrou somente os primeiros itens e uma scrollbar horizontal nativa no menu.
 
 Critério de aceite:
 
@@ -117,7 +131,7 @@ Critério de aceite:
 - Severidade: `P2`
 - Tipo: `usabilidade | responsividade`
 - Status: `confirmado`
-- Ambiente/deploy: staging
+- Ambiente/deploy: `STG-2026-11-07-01`
 - Data/hora da observação: `2026-11-07T10:58:57-03:00`
 - Página/fluxo: `/{slug}`, ação “Ver detalhes”
 - Plano e sessão: vitrine Free anônima
@@ -136,8 +150,9 @@ Passos:
 
 Evidência:
 
-- Capturas visuais da rodada mostraram conteúdo da página atravessando a superfície do dialog nos
-  dois viewports; AX manteve título, preço, quantidade, carrinho e fechamento acessíveis.
+- Em 390 x 844 e 1440 x 900 px, card, rodapé e textos da página permaneceram visíveis através da
+  superfície do dialog; a árvore de acessibilidade manteve título, preço, quantidade, carrinho e
+  fechamento disponíveis.
 
 Critério de aceite:
 
@@ -150,7 +165,7 @@ Critério de aceite:
 - Severidade: `P2`
 - Tipo: `funcional | usabilidade | integração`
 - Status: `confirmado`
-- Ambiente/deploy: staging
+- Ambiente/deploy: `STG-2026-11-07-01`
 - Data/hora da observação: `2026-11-07T10:58:57-03:00`
 - Página/fluxo: `/admin/support`
 - Plano e sessão: Free autenticado
@@ -185,7 +200,7 @@ Critério de aceite:
 - Severidade: `P3`
 - Tipo: `usabilidade | conversão`
 - Status: `confirmado`
-- Ambiente/deploy: staging
+- Ambiente/deploy: `STG-2026-11-07-01`
 - Data/hora da observação: `2026-11-07T10:58:57-03:00`
 - Página/fluxo: `/admin/promotions`
 - Plano e sessão: Free autenticado
@@ -215,7 +230,7 @@ Critério de aceite:
 - Severidade: `P3`
 - Tipo: `conteúdo | usabilidade`
 - Status: `confirmado`
-- Ambiente/deploy: staging
+- Ambiente/deploy: `STG-2026-11-07-01`
 - Data/hora da observação: `2026-11-07T10:58:57-03:00`
 - Página/fluxo: `/admin/settings`
 - Plano e sessão: Free autenticado
