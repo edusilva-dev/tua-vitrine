@@ -7,19 +7,19 @@ e-mail, dados pessoais ou financeiros.
 
 | ID | Severidade | Área | Viewport | Status | Título |
 | --- | --- | --- | --- | --- | --- |
-| QA-001 | P2 | Onboarding | Todos | confirmado | URL da vitrine mostra localhost em staging |
-| QA-002 | P2 | Catálogo | Todos | novo | Preço zero é publicado sem explicação |
+| QA-001 | P3 | Onboarding | Todos | confirmado | URL da vitrine mostra localhost em staging |
+| QA-002 | P2 | Catálogo | Todos | confirmado | Preço zero é publicado sem explicação |
 | QA-003 | P2 | Admin | 390 px | confirmado | Menu horizontal parece overflow da página |
-| QA-004 | P1 | Vitrine | 390 e 1440 px | confirmado | Detalhe do produto fica transparente e ilegível |
-| QA-005 | P1 | Suporte | Todos | confirmado | Canal de suporte indisponível e cópia contraditória |
-| QA-006 | P2 | Campanhas | Todos | confirmado | Bloqueio do Free não oferece caminho de upgrade |
+| QA-004 | P2 | Vitrine | 390 e 1440 px | confirmado | Detalhe do produto fica transparente e ilegível |
+| QA-005 | P2 | Suporte | Todos | confirmado | Canal de suporte indisponível e cópia contraditória |
+| QA-006 | P3 | Campanhas | Todos | confirmado | Bloqueio do Free não oferece caminho de upgrade |
 | QA-007 | P3 | Configurações | Todos | confirmado | QR code ainda usa texto de protótipo/local |
 
 ## Achados confirmados
 
 ### QA-001 — URL da vitrine mostra localhost em staging
 
-- Severidade: `P2`
+- Severidade: `P3`
 - Tipo: `usabilidade | configuração`
 - Status: `confirmado`
 - Ambiente/deploy: staging
@@ -32,6 +32,16 @@ Esperado: o prefixo do slug usa `https://staging.usetuavitrine.com.br/`.
 
 Atual: o formulário mostra `localhost:3000/`, reduzindo confiança e sugerindo um endereço inválido.
 
+Passos:
+
+1. Criar uma conta Free em staging e confirmar o e-mail.
+2. Abrir `/admin/onboarding` na etapa “Sua loja”.
+3. Digitar um nome e observar o prefixo exibido antes do slug.
+
+Evidência:
+
+- Observação visual reproduzida em staging: `localhost:3000 / loja-qa-59705592`.
+
 Critério de aceite:
 
 - [ ] Derivar o prefixo da origem pública configurada.
@@ -42,7 +52,7 @@ Critério de aceite:
 
 - Severidade: `P2`
 - Tipo: `usabilidade | regra de negócio`
-- Status: `novo`
+- Status: `confirmado`
 - Ambiente/deploy: staging
 - Data/hora da observação: `2026-11-07T10:58:57-03:00`
 - Página/fluxo: primeiro produto do onboarding e `/admin/products`
@@ -54,6 +64,16 @@ gratuito/sem preço.
 
 Atual: informar somente “Produto QA” conclui o onboarding e publica o item como `R$ 0,00`. O
 contrato aceita zero, mas a interface não explica a consequência.
+
+Passos:
+
+1. Avançar até “Primeiro produto” no onboarding Free.
+2. Preencher apenas o nome e manter “Preço normal” em `R$ 0,00`.
+3. Selecionar “Adicionar produto” e abrir `/admin/products`.
+
+Evidência:
+
+- Toast “Produto adicionado à vitrine” e card publicado `Produto QA — R$ 0,00`.
 
 Critério de aceite:
 
@@ -76,6 +96,16 @@ Esperado: destinos administrativos são descobertos sem parecer que o layout vaz
 
 Atual: a navegação corta destinos e exibe uma barra de rolagem horizontal nativa muito evidente.
 
+Passos:
+
+1. Abrir qualquer rota `/admin/*` em 390 x 844 px.
+2. Observar o menu abaixo do seletor da loja.
+3. Tentar descobrir Estatísticas, Assinatura, Minha vitrine e Suporte.
+
+Evidência:
+
+- Captura visual da rodada mostrou apenas os primeiros destinos e scrollbar horizontal nativa.
+
 Critério de aceite:
 
 - [ ] Menu comunica que há mais destinos ou usa padrão móvel próprio.
@@ -84,7 +114,7 @@ Critério de aceite:
 
 ### QA-004 — Detalhe do produto fica transparente e ilegível
 
-- Severidade: `P1`
+- Severidade: `P2`
 - Tipo: `usabilidade | responsividade`
 - Status: `confirmado`
 - Ambiente/deploy: staging
@@ -98,6 +128,17 @@ Esperado: o dialog tem superfície opaca, conteúdo legível e separação clara
 Atual: card, rodapé e textos da página aparecem através do dialog. Título, preço e ações ficam
 sobrepostos ou com contraste insuficiente. Adicionar ao carrinho ainda funciona e `Esc` fecha.
 
+Passos:
+
+1. Abrir a vitrine pública e selecionar “Ver detalhes” em um produto.
+2. Repetir em 390 x 844 e 1440 x 900 px.
+3. Comparar o texto do dialog com o card e o rodapé ao fundo.
+
+Evidência:
+
+- Capturas visuais da rodada mostraram conteúdo da página atravessando a superfície do dialog nos
+  dois viewports; AX manteve título, preço, quantidade, carrinho e fechamento acessíveis.
+
 Critério de aceite:
 
 - [ ] Superfície do dialog usa fundo opaco e tokens corretos.
@@ -106,7 +147,7 @@ Critério de aceite:
 
 ### QA-005 — Canal de suporte indisponível e cópia contraditória
 
-- Severidade: `P1`
+- Severidade: `P2`
 - Tipo: `funcional | usabilidade | integração`
 - Status: `confirmado`
 - Ambiente/deploy: staging
@@ -115,10 +156,23 @@ Critério de aceite:
 - Plano e sessão: Free autenticado
 - Viewport/navegador: 390 x 844 px, navegador interno
 
-Esperado: canal de suporte funcional ou alternativa clara antes da publicação.
+Esperado: canal de suporte funcional ou alternativa clara antes da publicação; feedback da
+plataforma deve continuar identificado como um fluxo separado.
 
 Atual: a página diz que a mensagem vai direto para a equipe, mas logo abaixo informa “Canal em
-configuração” e não oferece formulário ou contato alternativo.
+configuração” e não oferece formulário de suporte ou contato alternativo. O formulário de feedback
+da plataforma continua disponível mais abaixo, mas não substitui um pedido que exige resposta.
+
+Passos:
+
+1. Abrir `/admin/support` autenticado.
+2. Comparar a introdução “Sua mensagem vai direto para a equipe” com o card seguinte.
+3. Verificar separadamente o formulário “Ajude a melhorar a plataforma”.
+
+Evidência:
+
+- Estado visível “Canal em configuração” sem formulário de suporte; formulário de feedback da
+  plataforma presente com tipo, nota e comentário opcional.
 
 Critério de aceite:
 
@@ -128,7 +182,7 @@ Critério de aceite:
 
 ### QA-006 — Bloqueio do Free não oferece caminho de upgrade
 
-- Severidade: `P2`
+- Severidade: `P3`
 - Tipo: `usabilidade | conversão`
 - Status: `confirmado`
 - Ambiente/deploy: staging
@@ -140,6 +194,16 @@ Critério de aceite:
 Esperado: explicar o bloqueio e oferecer CTA para conhecer/assinar o Profissional.
 
 Atual: a página termina após informar que o recurso é exclusivo do Profissional.
+
+Passos:
+
+1. Entrar com uma loja Free.
+2. Abrir `/admin/promotions`.
+3. Verificar as ações disponíveis após o card de bloqueio.
+
+Evidência:
+
+- Estado visível contém apenas a explicação do plano Profissional, sem link ou botão para billing.
 
 Critério de aceite:
 
@@ -161,6 +225,17 @@ Esperado: instrução compatível com a URL pública exibida.
 
 Atual: o card afirma “Neste protótipo, o link usa o endereço local configurado”, embora mostre a
 URL pública de staging.
+
+Passos:
+
+1. Abrir `/admin/settings` em staging.
+2. Localizar o card “Do balcão para a vitrine”.
+3. Comparar a URL pública exibida com o texto abaixo de “Gerar QR code”.
+
+Evidência:
+
+- URL exibida em `https://staging.usetuavitrine.com.br/...` e texto visível sobre protótipo/endereço
+  local no mesmo card.
 
 Critério de aceite:
 
