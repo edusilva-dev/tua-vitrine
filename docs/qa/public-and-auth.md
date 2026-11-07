@@ -65,4 +65,3 @@ avaliado durante o teste de descoberta.
 - [ ] Cookie de seleção nunca autoriza loja sem membership.
 - [ ] Rotas administrativas anônimas redirecionam sem expor dados.
 - [ ] Mensagens e logs não contêm senha, token, cookie ou conteúdo de e-mail.
-

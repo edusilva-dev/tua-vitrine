@@ -16,6 +16,7 @@ e-mail, dados pessoais ou financeiros.
 - Tipo: `funcional | usabilidade | acessibilidade | responsividade | integração | segurança`
 - Status: `novo | confirmado | em correção | pronto para reteste | resolvido | não corrigir`
 - Ambiente/deploy:
+- Data/hora da observação (ISO 8601 com timezone):
 - Página/fluxo:
 - Plano e sessão:
 - Viewport/navegador:

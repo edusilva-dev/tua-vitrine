@@ -68,4 +68,3 @@
 - [ ] Visitas/visualizações/likes públicos são idempotentes conforme contrato.
 - [ ] Feedback geral e de busca vazia envia motivo, nota e comentário.
 - [ ] Rate limit/erro de feedback preserva contexto e não coleta dado pessoal.
-

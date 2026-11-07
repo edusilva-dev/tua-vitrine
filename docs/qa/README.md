@@ -94,4 +94,3 @@ evidência. Não anexar tokens, cookies, payloads pessoais, conteúdo de e-mails
 - [ ] `git diff --check`
 - [ ] Health live/ready em staging
 - [ ] Deploy e commit de staging registrados
-

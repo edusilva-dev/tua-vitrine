@@ -18,12 +18,15 @@ restauração. A limpeza ampla é uma exceção; preferir registros com prefixo 
 campanha.
 
 - [ ] Export/branch de restauração criado.
+- [ ] Inventário recuperável do R2 criado, com bucket, prefixo, `storageKey`, tamanho e checksum.
+- [ ] Cópia/exportação dos objetos R2 afetados concluída antes de qualquer cascade no banco.
 - [ ] Sessões e contas de QA identificadas.
 - [ ] Lojas, memberships, produtos, categorias, assets, eventos e feedbacks relacionados listados.
-- [ ] Referências e ordem de exclusão revisadas contra o schema Prisma.
+- [ ] Referências e ordem DB/R2 revisadas contra o schema Prisma, preservando `storageKey` antes da exclusão.
 - [ ] Objetos R2 órfãos identificados em dry-run.
 - [ ] Operação destrutiva confirmada imediatamente antes da execução.
-- [ ] Contagens pós-limpeza e health checks registrados.
+- [ ] Restauração de amostra DB/R2 verificada antes da limpeza.
+- [ ] Contagens pós-limpeza, objetos R2 esperados e health checks registrados.
 
 Não executar `db push`, seed, migração destrutiva, `rateLimit.deleteMany()` global nem fixtures E2E
 contra staging.
@@ -78,6 +81,7 @@ indisponibilidade e rastreabilidade de cobrança são critérios mínimos.
 - [ ] Evidências sem dados sensíveis.
 - [ ] Dados `qa-` removidos seletivamente.
 - [ ] Objetos R2 descartáveis removidos.
+- [ ] IDs de customer, subscription, checkout session e test clock registrados e encerrados/removidos.
+- [ ] Stripe sem eventos/webhooks de teste pendentes capazes de repovoar o banco.
 - [ ] Contas/sessões de QA encerradas conforme necessidade.
 - [ ] Staging retorna ao estado saudável.
-

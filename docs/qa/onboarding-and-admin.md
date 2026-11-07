@@ -10,6 +10,9 @@ Aplicar todos os cenários em desktop e 390 px, com teclado nos fluxos críticos
 - [ ] Refresh/retorno retoma `onboardingStep` correto.
 - [ ] `?new=1` cria outra loja sem reutilizar dados indevidos.
 - [ ] Free limita a uma imagem; planos pagos aceitam até cinco.
+- [ ] Entrada pelo Free permanece Free e não preenche/inicia trial ao criar o primeiro produto.
+- [ ] Entrada pelo Essencial/Profissional inicia um único trial Profissional de 14 dias.
+- [ ] Trial expira após 14 dias e não reinicia ao refazer onboarding ou criar outro produto.
 - [ ] Troca de etapa move foco e anuncia erros.
 - [ ] Indicador de passos, prefixo de slug e submit sticky cabem em 390 px.
 
@@ -81,4 +84,3 @@ Aplicar todos os cenários em desktop e 390 px, com teclado nos fluxos críticos
 - [ ] Busca, filtros, paginação, favorito, detalhe e carrinho não geram métricas.
 - [ ] Feedback público fica oculto.
 - [ ] Links internos permanecem no preview quando aplicável.
-
