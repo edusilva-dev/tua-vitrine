@@ -19,7 +19,7 @@ distinguir este build depois que `staging` apontar para um novo deployment.
 ## Execução STG-2026-11-08-01
 
 - Alvo: `https://staging.usetuavitrine.com.br`
-- Janela da rodada: `2026-11-08T12:38:00-03:00` a `2026-11-08T12:46:00-03:00`
+- Janela da rodada: `2026-11-08T12:38:00-03:00` a `2026-11-08T13:06:00-03:00`
 - Sessão: mesma conta da rodada anterior; Free no início e trial Profissional ativado durante o QA
 - Fingerprint do build: CSS `897c64b49cd07410` e `main-app-dad5a851ae48121e.js`
 - Arquivo de upload: `public/assets/icone-tua-vitrine.png` do workspace de origem, PNG de
@@ -44,7 +44,7 @@ distinguir este build depois que `staging` apontar para um novo deployment.
 | QA-010 | P3 | Billing | Desktop | confirmado | Checkout diverge da marca e do nome do plano |
 | QA-011 | P3 | Catálogo | 390 px | confirmado | Modal perde foco e busca não tem nome acessível |
 | QA-012 | P3 | Cadastro | 390 px | confirmado | Senha tem rótulo incorreto e não pode ser revelada |
-| QA-013 | P2 | Onboarding | Todos | em investigação | Slug deixa de acompanhar o nome após redirecionamento |
+| QA-013 | P2 | Onboarding | Fluxo | confirmado | Slug deixa de acompanhar o nome após remount |
 | QA-014 | P3 | Admin | 390 px | confirmado | Controles recorrentes têm alvos táteis pequenos |
 
 ## Achados confirmados
@@ -156,8 +156,10 @@ Direção recomendada:
 
 Critério de aceite:
 
-- [ ] Menu comunica que há mais destinos ou usa padrão móvel próprio.
-- [ ] Página não apresenta scrollbar horizontal global.
+- [ ] Rota ativa está visível ao carregar qualquer destino administrativo.
+- [ ] Menu móvel não depende de rolagem horizontal e oferece os sete destinos.
+- [ ] Cabeçalho móvel é compacto e não repete nome da loja/ações em faixas empilhadas.
+- [ ] Página não apresenta scrollbar horizontal global ou interna no menu.
 - [ ] Retestar todos os destinos em 390 px e por teclado.
 
 ### QA-004 — Detalhe do produto fica transparente e ilegível
@@ -463,30 +465,39 @@ Critério de aceite:
 - [ ] Preservar valor e foco ao alternar; usar nome acessível que reflita a próxima ação.
 - [ ] Retestar teclado e 390 px.
 
-### QA-013 — Slug deixa de acompanhar o nome após redirecionamento
+### QA-013 — Slug deixa de acompanhar o nome após remount
 
 - Severidade: `P2`
 - Tipo: `funcional | usabilidade | consistência`
-- Status: `em investigação`
+- Status: `confirmado`
 - Ambiente/deploy: `STG-2026-11-08-01`
 - Data/hora do relato: `2026-11-08T13:00:00-03:00`
 - Página/fluxo: onboarding da loja → redirecionamento para o admin/configurações
 - Plano e sessão: nova conta autenticada
-- Viewport/navegador: relatado em teste exploratório externo
+- Viewport/navegador: comportamento de estado independente do viewport; confirmado por inspeção
+  e regressão automatizada local
 
-Esperado: enquanto o slug ainda for derivado automaticamente e não tiver sido editado pelo
-usuário, alterar o nome da loja mantém o slug sincronizado mesmo após a transição de etapa/tela.
+Esperado: durante o draft/onboarding, enquanto o slug ainda for derivado automaticamente e não
+tiver sido editado pelo usuário, alterar o nome da loja mantém o slug sincronizado mesmo após o
+componente ser remontado. O slug de uma loja já publicada continua imutável pela regra existente.
 
-Atual relatado: o slug acompanha o nome na primeira etapa, mas a sincronização para após avançar e
-ser redirecionado ao admin. A causa e a tela exata de destino ainda precisam de confirmação no código
-e em um novo cadastro.
+Atual: o slug acompanha o nome na primeira montagem, mas a referência `slugEdited` era inicializada
+como editada para qualquer loja que já tivesse slug. Ao remontar o onboarding com o draft persistido,
+a derivação parava mesmo quando o slug ainda correspondia exatamente ao nome anterior.
+
+Evidência:
+
+- Inspeção da inicialização de `slugEdited` no fluxo de onboarding.
+- Regressão local cobre remount, nova alteração de nome e preservação de slug manual.
+- O serviço continua impedindo alteração do slug de loja publicada.
 
 Critério de aceite:
 
-- [ ] Definir uma única regra de derivação para onboarding e configurações.
+- [ ] Aplicar a derivação somente ao draft/onboarding.
 - [ ] Continuar sincronizando enquanto o slug estiver intocado/derivado do nome anterior.
 - [ ] Nunca sobrescrever um slug alterado manualmente.
-- [ ] Adicionar regressão para a transição entre etapas e retestar com nova conta.
+- [ ] Preservar a imutabilidade do slug de loja publicada.
+- [ ] Manter regressão para remount/transição entre etapas e retestar com nova conta.
 
 ### QA-014 — Controles recorrentes têm alvos táteis pequenos
 
