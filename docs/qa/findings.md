@@ -472,7 +472,7 @@ Critério de aceite:
 - Status: `confirmado`
 - Ambiente/deploy: `STG-2026-11-08-01`
 - Data/hora do relato: `2026-11-08T13:00:00-03:00`
-- Página/fluxo: onboarding da loja → redirecionamento para o admin/configurações
+- Página/fluxo: onboarding persistido → remount → retorno à etapa “Sua loja”
 - Plano e sessão: nova conta autenticada
 - Viewport/navegador: comportamento de estado independente do viewport; confirmado por inspeção
   e regressão automatizada local
