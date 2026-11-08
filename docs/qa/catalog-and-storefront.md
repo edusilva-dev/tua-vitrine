@@ -1,5 +1,13 @@
 # QA — catálogo e vitrine
 
+## Evidências STG-2026-11-08-01
+
+- Edição abre com nome, preço, disponibilidade e limite de imagens corretos para o plano.
+- PNG válido não concluiu o upload; registrado em `QA-008`.
+- Importação fica bloqueada no Free e é liberada imediatamente no trial Profissional.
+- Dialog de publicação informa o limite de 1.000 produtos e lista o item publicado, mas a busca
+  não tem nome acessível e o foco não retorna ao gatilho; registrado em `QA-011`.
+
 ## `/admin/products` — listagem
 
 - [ ] Vazio inicial difere de busca/filtro sem resultado.

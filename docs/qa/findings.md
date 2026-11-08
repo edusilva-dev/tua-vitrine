@@ -16,6 +16,16 @@ e-mail, dados pessoais ou financeiros.
 O fingerprint é formado pelos hashes dos assets servidos pelo alias durante a rodada. Ele permite
 distinguir este build depois que `staging` apontar para um novo deployment.
 
+## Execução STG-2026-11-08-01
+
+- Alvo: `https://staging.usetuavitrine.com.br`
+- Janela da rodada: `2026-11-08T12:38:00-03:00` a `2026-11-08T12:46:00-03:00`
+- Sessão: mesma conta da rodada anterior; Free no início e trial Profissional ativado durante o QA
+- Fingerprint do build: CSS `897c64b49cd07410` e `main-app-dad5a851ae48121e.js`
+- Arquivo de upload: PNG público do projeto, 1.254 × 1.254 px e 274.015 bytes
+- Billing: checkout Stripe em test mode aberto sem preencher pagamento ou concluir assinatura
+- Evidência: observação visual, DOM e árvore de acessibilidade do navegador interno.
+
 ## Resumo
 
 | ID | Severidade | Área | Viewport | Status | Título |
@@ -27,6 +37,10 @@ distinguir este build depois que `staging` apontar para um novo deployment.
 | QA-005 | P2 | Suporte | Todos | confirmado | Canal de suporte indisponível e cópia contraditória |
 | QA-006 | P3 | Campanhas | Todos | confirmado | Bloqueio do Free não oferece caminho de upgrade |
 | QA-007 | P3 | Configurações | Todos | confirmado | QR code ainda usa texto de protótipo/local |
+| QA-008 | P2 | Storage | 390 px | confirmado | Upload de PNG válido falha com erro genérico |
+| QA-009 | P2 | Configurações | 390 px | confirmado | WhatsApp salvo não hidrata no formulário |
+| QA-010 | P2 | Billing | Todos | confirmado | Checkout diverge da marca e do nome do plano |
+| QA-011 | P2 | Catálogo | 390 px | confirmado | Modal perde foco e busca não tem nome acessível |
 
 ## Achados confirmados
 
@@ -256,6 +270,147 @@ Critério de aceite:
 
 - [ ] Remover a referência a protótipo/endereço local.
 - [ ] Confirmar que o QR code usa a origem pública configurada.
+
+### QA-008 — Upload de PNG válido falha com erro genérico
+
+- Severidade: `P2`
+- Tipo: `funcional | integração | usabilidade`
+- Status: `confirmado`
+- Ambiente/deploy: `STG-2026-11-08-01`
+- Data/hora da observação: `2026-11-08T12:41:00-03:00`
+- Página/fluxo: `/admin/products`, editar produto, adicionar imagem
+- Plano e sessão: Free autenticado
+- Viewport/navegador: 390 x 844 px, navegador interno
+
+Esperado: PNG válido é processado pelo Sharp, salvo no R2 e aparece na lista de imagens do
+produto.
+
+Atual: após selecionar o arquivo, o contador permanece `0 / 1` e o formulário mostra somente
+`Failed to fetch`. O arquivo é um PNG não animado de 1.254 × 1.254 px e 274.015 bytes, dentro dos
+formatos e limites documentados.
+
+Passos:
+
+1. Abrir `/admin/products` com uma loja Free e editar um produto sem imagens.
+2. Selecionar “Adicionar” em “Fotos do produto”.
+3. Enviar o PNG válido descrito na execução.
+
+Evidência:
+
+- Estado visual/AX após o upload: `Fotos do produto (0 / 1)` e mensagem `Failed to fetch`.
+- Nenhum erro correspondente apareceu no console do navegador.
+
+Critério de aceite:
+
+- [ ] Identificar e corrigir a falha entre Route Handler, Sharp e R2 em staging.
+- [ ] Exibir erro acionável em português quando a infraestrutura falhar.
+- [ ] Retestar produto, logotipo e banner com JPEG, PNG e WebP válidos.
+
+### QA-009 — WhatsApp salvo não hidrata no formulário
+
+- Severidade: `P2`
+- Tipo: `funcional | usabilidade`
+- Status: `confirmado`
+- Ambiente/deploy: `STG-2026-11-08-01`
+- Data/hora da observação: `2026-11-08T12:42:00-03:00`
+- Página/fluxo: `/admin/settings`
+- Plano e sessão: Free e trial Profissional autenticados
+- Viewport/navegador: 390 x 844 px, navegador interno
+
+Esperado: o campo “WhatsApp de atendimento” carrega o número salvo durante o onboarding.
+
+Atual: o campo aparece vazio em Free e continua vazio após ativar o trial. A mesma resposta RSC
+serializa `store.whatsapp` preenchido, e a vitrine pública gera o link `wa.me` com esse número. Com
+o campo vazio, salvar outra configuração fica sujeito à validação obrigatória do WhatsApp.
+
+Passos:
+
+1. Concluir o onboarding com um WhatsApp válido.
+2. Confirmar que a vitrine pública oferece “Conversar com a loja”.
+3. Abrir `/admin/settings` e observar o campo de WhatsApp.
+4. Recarregar a página e repetir após ativar o trial Profissional.
+
+Evidência:
+
+- DOM do input: `value` e `defaultValue` vazios.
+- Estado RSC da mesma página: `store.whatsapp` preenchido; o valor não chegou ao controle.
+
+Critério de aceite:
+
+- [ ] Hidratar o valor formatado sem divergência entre servidor e React Hook Form.
+- [ ] Salvar nome, personalização ou agrupamento sem exigir redigitação do telefone.
+- [ ] Adicionar regressão para carregamento e salvamento parcial das configurações.
+
+### QA-010 — Checkout diverge da marca e do nome do plano
+
+- Severidade: `P2`
+- Tipo: `billing | usabilidade | conversão`
+- Status: `confirmado`
+- Ambiente/deploy: `STG-2026-11-08-01`
+- Data/hora da observação: `2026-11-08T12:43:00-03:00`
+- Página/fluxo: `/admin/billing`, upgrade Free para Essencial
+- Plano e sessão: Free autenticado; Stripe test mode
+- Viewport/navegador: desktop, navegador interno
+
+Esperado: checkout identifica “Tua Vitrine” e o plano “Essencial”, mantendo a mesma oferta de
+R$ 19/mês apresentada no painel.
+
+Atual: o valor está correto e a sessão usa `cs_test`/`pk_test`, mas o checkout mostra o recebedor
+“Eduardo Castro da Silva” e o produto “Tua Vitrine Basic”. A divergência aparece antes da entrada
+de qualquer dado de pagamento.
+
+Passos:
+
+1. Abrir `/admin/billing` com uma loja Free.
+2. Selecionar “Fazer upgrade” no card Essencial.
+3. Verificar cabeçalho, nome do produto, valor e modo da sessão Stripe.
+4. Voltar sem preencher ou confirmar o pagamento.
+
+Evidência:
+
+- Checkout de teste: `Assinar Tua Vitrine Basic`, recebedor “Eduardo Castro da Silva” e
+  `R$ 19,00 por mês`.
+
+Critério de aceite:
+
+- [ ] Configurar branding público da Stripe como “Tua Vitrine”.
+- [ ] Renomear produto/preço do plano para “Essencial”.
+- [ ] Retestar checkout Essencial e Profissional em test mode.
+
+### QA-011 — Modal perde foco e busca não tem nome acessível
+
+- Severidade: `P2`
+- Tipo: `acessibilidade | usabilidade`
+- Status: `confirmado`
+- Ambiente/deploy: `STG-2026-11-08-01`
+- Data/hora da observação: `2026-11-08T12:45:00-03:00`
+- Página/fluxo: `/admin/products`, “Gerenciar vitrine”
+- Plano e sessão: trial Profissional autenticado
+- Viewport/navegador: 390 x 844 px, teclado e árvore de acessibilidade
+
+Esperado: a busca tem nome acessível e, ao fechar o dialog por `Esc`, o foco retorna ao botão
+“Gerenciar vitrine”.
+
+Atual: o campo é anunciado apenas como `text field`, sem `label`, `aria-label` ou
+`aria-labelledby`. Ao fechar por `Esc`, o foco vai para a raiz da página em vez de retornar ao
+gatilho. Checkbox e botão de publicação continuam alcançáveis por `Tab`.
+
+Passos:
+
+1. Em 390 x 844 px, abrir `/admin/products` e selecionar “Gerenciar vitrine”.
+2. Navegar pelo modal usando `Tab` e observar o nome anunciado para a busca.
+3. Pressionar `Esc` e verificar o elemento focado.
+
+Evidência:
+
+- DOM da busca: somente `placeholder="Buscar produto"`, sem associação a um nome acessível.
+- Estado AX após fechar: foco em `AXWebArea`, não no botão que abriu o modal.
+
+Critério de aceite:
+
+- [ ] Adicionar nome acessível persistente à busca.
+- [ ] Restaurar o foco ao gatilho tanto pelo botão de fechar quanto por `Esc`.
+- [ ] Retestar teclado e leitor de tela em 390 px e desktop.
 
 ## Modelo
 

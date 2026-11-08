@@ -1,5 +1,15 @@
 # QA — integrações e operação
 
+## Evidências STG-2026-11-08-01
+
+- Stripe confirmado em test mode pelo checkout `cs_test` e chave pública `pk_test`; nenhuma
+  informação de pagamento foi preenchida e nenhuma assinatura foi concluída.
+- Checkout Free→Essencial criou sessão de R$ 19/mês e permitiu retorno sem alterar o plano.
+- Upload HTTP de PNG válido falhou antes de criar imagem visível; causa R2/Route Handler ainda
+  precisa ser isolada (`QA-008`).
+- Recuperação de senha apresenta validação acessível para e-mail vazio; entrega Resend não foi
+  repetida nesta rodada.
+
 ## Preflight de staging
 
 - [ ] Domínio aponta para o projeto e deployment esperados na Vercel.

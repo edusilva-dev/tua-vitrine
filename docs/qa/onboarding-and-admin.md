@@ -2,6 +2,15 @@
 
 Aplicar todos os cenários em desktop e 390 px, com teclado nos fluxos críticos.
 
+## Evidências STG-2026-11-08-01
+
+- Trial Profissional foi ativado sem cartão, exibiu 14 dias restantes e término em 22/11/2026.
+- Tagline, cor e modelo foram liberados imediatamente após a ativação do trial.
+- Campanhas foram liberadas com preview, seleção de produtos e submit inicialmente desabilitado.
+- QR code foi gerado localmente com `alt` descritivo e link “Baixar PNG”.
+- WhatsApp persistido não carregou no formulário de settings; registrado em `QA-009`.
+- Checkout Essencial abriu em Stripe test mode, mas marca e nome do produto divergem; `QA-010`.
+
 ## `/admin/onboarding`
 
 - [ ] Etapa 1 cria nome/slug; slug duplicado e inválido têm erro útil.
