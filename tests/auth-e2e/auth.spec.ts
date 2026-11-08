@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { readdir, readFile, unlink } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../../generated/prisma/client";
 
@@ -127,6 +127,31 @@ async function removeFixtureMessages() {
   }
 }
 
+async function toggleVisibilityWithoutPositionShift(page: Page, button: Locator, field: Locator) {
+  const restingBox = await button.boundingBox();
+
+  expect(restingBox).not.toBeNull();
+  expect(restingBox?.width).toBeGreaterThanOrEqual(44);
+  expect(restingBox?.height).toBeGreaterThanOrEqual(44);
+  await button.hover();
+  await page.mouse.down();
+
+  try {
+    await page.waitForTimeout(200);
+    const pressedBox = await button.boundingBox();
+
+    expect(pressedBox).not.toBeNull();
+    expect(Math.abs((pressedBox?.y ?? 0) - (restingBox?.y ?? 0))).toBeLessThanOrEqual(1);
+    expect(pressedBox?.width).toBeGreaterThanOrEqual(44);
+    expect(pressedBox?.height).toBeGreaterThanOrEqual(44);
+  } finally {
+    await page.mouse.up();
+  }
+
+  await expect(field).toHaveAttribute("type", "text");
+  await expect(field).toBeFocused();
+}
+
 test.beforeAll(async () => {
   const url = process.env.E2E_DATABASE_URL;
 
@@ -183,23 +208,22 @@ test("conta verificada, isolamento por sessão e recuperação com revogação",
   await signupPassword.fill(password);
   await expect(signupPassword).toBeFocused();
   const passwordVisibility = page.getByRole("button", { name: "Mostrar senha" });
-  const restingBox = await passwordVisibility.boundingBox();
 
-  expect(restingBox).not.toBeNull();
-  await passwordVisibility.hover();
-  await page.mouse.down();
-  const pressedBox = await passwordVisibility.boundingBox();
-
-  expect(pressedBox).not.toBeNull();
-  expect(Math.abs((pressedBox?.y ?? 0) - (restingBox?.y ?? 0))).toBeLessThanOrEqual(1);
-  expect(pressedBox?.height).toBe(restingBox?.height);
-  await page.mouse.up();
-  await expect(signupPassword).toHaveAttribute("type", "text");
+  await toggleVisibilityWithoutPositionShift(page, passwordVisibility, signupPassword);
   await expect(signupPassword).toHaveValue(password);
-  await expect(signupPassword).toBeFocused();
   await page.getByRole("button", { name: "Ocultar senha" }).click();
   await expect(signupPassword).toHaveAttribute("type", "password");
-  await page.getByLabel("Confirme a senha").fill(password);
+  const signupConfirmation = page.getByLabel("Confirme a senha");
+
+  await signupConfirmation.fill(password);
+  await toggleVisibilityWithoutPositionShift(
+    page,
+    page.getByRole("button", { name: "Mostrar confirmação" }),
+    signupConfirmation
+  );
+  await expect(signupConfirmation).toHaveValue(password);
+  await page.getByRole("button", { name: "Ocultar confirmação" }).click();
+  await expect(signupConfirmation).toHaveAttribute("type", "password");
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Confira seu e-mail");
   expect((await page.request.get("/api/admin/products")).status()).toBe(401);
