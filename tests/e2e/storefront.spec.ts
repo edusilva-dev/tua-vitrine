@@ -34,6 +34,82 @@ test.describe("vitrine pública", () => {
     await expect(page.getByRole("button", { name: "Adicionar ao carrinho" })).toBeVisible();
   });
 
+  test("lista e placeholder do carrinho cabem no celular", async ({ page }) => {
+    const db = testDatabase();
+    const store = await db.store.findUniqueOrThrow({
+      where: { id: fixtures.firstStore },
+      select: { template: true, trialStartedAt: true },
+    });
+
+    try {
+      await db.store.update({
+        where: { id: fixtures.firstStore },
+        data: { template: "list", trialStartedAt: new Date() },
+      });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(`/${fixtures.firstSlug}`);
+
+      const productButton = page.getByRole("button", {
+        name: "Ver Cookie com chocolate",
+        exact: true,
+      });
+      const card = page.getByRole("article").filter({ has: productButton });
+
+      await expect(card).toBeVisible();
+      expect(await card.evaluate((element) => getComputedStyle(element).flexDirection)).toBe("row");
+      const cardBox = await card.boundingBox();
+
+      expect(cardBox).not.toBeNull();
+      expect(cardBox?.x).toBeGreaterThanOrEqual(0);
+      expect((cardBox?.x ?? 0) + (cardBox?.width ?? 0)).toBeLessThanOrEqual(390);
+      expect(await card.evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(
+        await card.evaluate((element) => element.clientWidth)
+      );
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        390
+      );
+
+      const detailsBox = await card.getByRole("button", { name: "Ver detalhes" }).boundingBox();
+
+      expect(detailsBox).not.toBeNull();
+      expect(detailsBox?.x).toBeGreaterThanOrEqual(cardBox?.x ?? 0);
+      expect((detailsBox?.x ?? 0) + (detailsBox?.width ?? 0)).toBeLessThanOrEqual(
+        (cardBox?.x ?? 0) + (cardBox?.width ?? 0)
+      );
+
+      await productButton.click();
+      await page.getByRole("combobox", { name: "Escolha uma opção" }).click();
+      await page.getByRole("option", { name: /Dupla/ }).click();
+      await page.getByRole("button", { name: "Adicionar ao carrinho" }).click();
+      await page.getByRole("button", { name: /Abrir carrinho, 1 itens/ }).click();
+
+      const cart = page.getByRole("dialog", { name: "Seu carrinho" });
+      const thumbnail = cart.getByTestId("product-image");
+      const placeholderIcon = cart.getByTestId("product-image-placeholder-icon");
+      const [thumbnailBox, placeholderIconBox] = await Promise.all([
+        thumbnail.boundingBox(),
+        placeholderIcon.boundingBox(),
+      ]);
+
+      expect(thumbnailBox).not.toBeNull();
+      expect(placeholderIconBox).not.toBeNull();
+      expect(placeholderIconBox?.x).toBeGreaterThanOrEqual(thumbnailBox?.x ?? 0);
+      expect(placeholderIconBox?.y).toBeGreaterThanOrEqual(thumbnailBox?.y ?? 0);
+      expect((placeholderIconBox?.x ?? 0) + (placeholderIconBox?.width ?? 0)).toBeLessThanOrEqual(
+        (thumbnailBox?.x ?? 0) + (thumbnailBox?.width ?? 0)
+      );
+      expect((placeholderIconBox?.y ?? 0) + (placeholderIconBox?.height ?? 0)).toBeLessThanOrEqual(
+        (thumbnailBox?.y ?? 0) + (thumbnailBox?.height ?? 0)
+      );
+    } finally {
+      await db.store.update({
+        where: { id: fixtures.firstStore },
+        data: { template: store.template, trialStartedAt: store.trialStartedAt },
+      });
+      await db.$disconnect();
+    }
+  });
+
   test("favoritos persistem e escolhas não vazam entre lojas", async ({ page }) => {
     await page.goto(`/${fixtures.firstSlug}`);
     await page.getByRole("button", { name: "Curtir Cookie com chocolate", exact: true }).click();

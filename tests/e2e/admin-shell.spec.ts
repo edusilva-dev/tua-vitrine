@@ -71,3 +71,53 @@ test("oferece navegação adequada ao tamanho da tela", async ({ context, page }
   );
   await expect(page.getByText("Painel do lojista")).toBeVisible();
 });
+
+test("encerra o indicador de navegação ao voltar da prévia", async ({
+  context,
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "O fluxo é coberto uma vez no layout desktop.");
+
+  await context.addCookies([
+    {
+      name: "tv-local-store",
+      value: fixtures.firstStore,
+      url: "http://localhost:3100",
+      httpOnly: true,
+      sameSite: "Strict",
+    },
+  ]);
+  await page.goto("/admin");
+
+  await Promise.all([
+    page.waitForURL(/\/admin\/preview$/, { timeout: 30_000 }),
+    page.getByRole("link", { name: "Ver minha vitrine" }).click(),
+  ]);
+
+  await Promise.all([
+    page.waitForURL(/\/admin$/, { timeout: 30_000 }),
+    page.getByRole("link", { name: "Voltar ao painel" }).click(),
+  ]);
+  await expect(page.getByRole("status", { name: "Carregando página" })).toHaveCount(0);
+});
+
+test("posiciona as notificações no topo central", async ({ context, page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "A posição global é coberta uma vez.");
+
+  await context.addCookies([
+    {
+      name: "tv-local-store",
+      value: fixtures.firstStore,
+      url: "http://localhost:3100",
+      httpOnly: true,
+      sameSite: "Strict",
+    },
+  ]);
+  await page.goto("/admin/settings");
+  await page.getByRole("button", { name: "Copiar link" }).click();
+
+  const toaster = page.locator("[data-sonner-toaster]");
+
+  await expect(toaster).toHaveAttribute("data-y-position", "top");
+  await expect(toaster).toHaveAttribute("data-x-position", "center");
+});

@@ -1,17 +1,6 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  ArrowDown,
-  ArrowUp,
-  Download,
-  Grid2X2,
-  Layers3,
-  Link as LinkIcon,
-  List,
-  Loader2,
-  Rows3,
-  Upload,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, Download, Link as LinkIcon, Loader2, Upload } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -31,6 +20,101 @@ import {
   storeSettingsSchema,
 } from "@/modules/stores/contracts";
 import { formatWhatsapp } from "@/modules/stores/phone";
+
+function TemplatePreview({ template }: { template: "grid" | "list" }) {
+  if (template === "grid") {
+    return (
+      <div
+        aria-hidden="true"
+        className="mb-3 grid h-24 w-full grid-cols-3 gap-2 rounded-lg bg-muted/70 p-3"
+      >
+        {["A", "B", "C"].map((label) => (
+          <div
+            key={label}
+            className="flex min-w-0 flex-col overflow-hidden rounded-md border bg-background"
+          >
+            <div className="flex flex-1 items-center justify-center bg-primary/10 text-xs font-semibold text-primary">
+              {label}
+            </div>
+            <div className="space-y-1 p-1.5">
+              <div className="h-1.5 w-full rounded-full bg-foreground/20" />
+              <div className="h-1.5 w-2/3 rounded-full bg-primary/35" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      aria-hidden="true"
+      className="mb-3 flex h-24 w-full flex-col gap-2 rounded-lg bg-muted/70 p-3"
+    >
+      {["A", "B"].map((label) => (
+        <div
+          key={label}
+          className="flex min-h-0 flex-1 overflow-hidden rounded-md border bg-background"
+        >
+          <div className="grid aspect-square place-items-center bg-primary/10 text-xs font-semibold text-primary">
+            {label}
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-2">
+            <div className="h-1.5 w-full rounded-full bg-foreground/20" />
+            <div className="h-1.5 w-1/2 rounded-full bg-primary/35" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function GroupingPreview({ grouping }: { grouping: "continuous" | "sections" }) {
+  if (grouping === "continuous") {
+    return (
+      <div aria-hidden="true" className="mb-3 h-24 w-full rounded-lg bg-muted/70 p-3">
+        <div className="grid h-full grid-cols-4 gap-2">
+          {["A", "B", "C", "D"].map((label) => (
+            <div
+              key={label}
+              className="grid min-w-0 place-items-center rounded-md border bg-background text-xs font-semibold text-primary"
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      aria-hidden="true"
+      className="mb-3 flex h-24 w-full flex-col gap-2 rounded-lg bg-muted/70 p-2.5"
+    >
+      {[
+        { category: "Categoria A", products: ["A", "B"] },
+        { category: "Categoria B", products: ["C", "D"] },
+      ].map(({ category, products }) => (
+        <div key={category} className="flex min-h-0 flex-1 items-center gap-2">
+          <div className="w-16 shrink-0 text-[9px] font-semibold leading-tight text-foreground/70">
+            {category}
+          </div>
+          <div className="grid min-w-0 flex-1 grid-cols-2 gap-1.5">
+            {products.map((label) => (
+              <div
+                key={label}
+                className="grid min-h-7 place-items-center rounded border bg-background text-[10px] font-semibold text-primary"
+              >
+                {label}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function StoreSettings({
   store,
@@ -297,16 +381,14 @@ export function StoreSettings({
                 {
                   value: "grid" as const,
                   title: "Galeria",
-                  description: "Fotos em destaque",
-                  icon: Grid2X2,
+                  description: "Mostra três produtos lado a lado em uma galeria de cards.",
                 },
                 {
                   value: "list" as const,
                   title: "Lista",
-                  description: "Detalhes lado a lado",
-                  icon: List,
+                  description: "Mostra cada produto em uma linha, com foto e detalhes lado a lado.",
                 },
-              ].map(({ value, title, description, icon: Icon }) => (
+              ].map(({ value, title, description }) => (
                 <button
                   key={value}
                   type="button"
@@ -314,17 +396,17 @@ export function StoreSettings({
                   aria-pressed={template === value}
                   onClick={() => form.setValue("template", value, { shouldDirty: true })}
                   className={cn(
-                    "min-w-0 rounded-xl border p-4 text-left transition-colors",
+                    "flex min-w-0 flex-col rounded-xl border p-4 text-left transition-colors",
                     template === value
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
                       : "hover:bg-muted"
                   )}
                 >
-                  <div className="mb-3 grid h-20 place-items-center rounded-lg bg-muted/70">
-                    <Icon size={32} strokeWidth={1.2} className="text-primary" />
-                  </div>
+                  <TemplatePreview template={value} />
                   <p className="text-sm font-semibold">{title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {description}
+                  </p>
                 </button>
               ))}
             </fieldset>
@@ -336,29 +418,29 @@ export function StoreSettings({
                 {
                   value: "continuous" as const,
                   title: "Grade contínua",
-                  description: "Categorias ordenam os produtos sem separar a grade",
-                  icon: Rows3,
+                  description:
+                    "Mostra todos os produtos em uma sequência. As categorias só definem a ordem, sem títulos.",
                 },
                 {
                   value: "sections" as const,
                   title: "Seções por categoria",
-                  description: "Cada categoria ganha um título e uma seção",
-                  icon: Layers3,
+                  description:
+                    "Separa os produtos em blocos e mostra o nome de cada categoria como título.",
                 },
-              ].map(({ value, title, description, icon: Icon }) => (
+              ].map(({ value, title, description }) => (
                 <button
                   key={value}
                   type="button"
                   aria-pressed={catalogGrouping === value}
                   onClick={() => form.setValue("catalogGrouping", value, { shouldDirty: true })}
                   className={cn(
-                    "min-w-0 rounded-xl border p-4 text-left transition-colors",
+                    "flex min-w-0 flex-col rounded-xl border p-4 text-left transition-colors",
                     catalogGrouping === value
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
                       : "hover:bg-muted"
                   )}
                 >
-                  <Icon size={24} className="mb-3 text-primary" />
+                  <GroupingPreview grouping={value} />
                   <p className="text-sm font-semibold">{title}</p>
                   <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                     {description}
