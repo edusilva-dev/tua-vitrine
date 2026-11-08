@@ -182,7 +182,18 @@ test("conta verificada, isolamento por sessão e recuperação com revogação",
   await expect(signupPassword).toHaveAttribute("type", "password");
   await signupPassword.fill(password);
   await expect(signupPassword).toBeFocused();
-  await page.getByRole("button", { name: "Mostrar senha" }).click();
+  const passwordVisibility = page.getByRole("button", { name: "Mostrar senha" });
+  const restingBox = await passwordVisibility.boundingBox();
+
+  expect(restingBox).not.toBeNull();
+  await passwordVisibility.hover();
+  await page.mouse.down();
+  const pressedBox = await passwordVisibility.boundingBox();
+
+  expect(pressedBox).not.toBeNull();
+  expect(Math.abs((pressedBox?.y ?? 0) - (restingBox?.y ?? 0))).toBeLessThanOrEqual(1);
+  expect(pressedBox?.height).toBe(restingBox?.height);
+  await page.mouse.up();
   await expect(signupPassword).toHaveAttribute("type", "text");
   await expect(signupPassword).toHaveValue(password);
   await expect(signupPassword).toBeFocused();
