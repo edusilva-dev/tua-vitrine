@@ -7,15 +7,27 @@ import {
   LifeBuoy,
   Loader2,
   Megaphone,
+  Menu,
   Package,
   Paintbrush,
   Store,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { AuthAccountMenu } from "@/components/auth-account-menu";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import type { StoreDTO } from "@/modules/stores/contracts";
 
@@ -40,8 +52,24 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isNavigating = pendingPath !== null && pendingPath !== pathname;
+  const currentLink = links.find(({ href }) =>
+    href === "/admin" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
+  );
+
+  function isActive(href: string) {
+    return href === "/admin"
+      ? pathname === href
+      : pathname === href || pathname.startsWith(`${href}/`);
+  }
+
+  function startNavigation(href: string) {
+    setMobileMenuOpen(false);
+
+    if (pathname !== href) setPendingPath(href);
+  }
 
   if (pathname === "/admin/preview") return <>{children}</>;
 
@@ -56,7 +84,7 @@ export function AppShell({
           <div className="h-full w-1/3 animate-pulse rounded-full bg-primary" />
         </div>
       ) : null}
-      <aside className="admin-sidebar lg:fixed lg:inset-y-0 lg:w-64">
+      <aside className="admin-sidebar hidden lg:fixed lg:inset-y-0 lg:block lg:w-64">
         <Link
           href="/admin"
           className="flex items-center gap-3 px-6 py-8 text-2xl font-bold tracking-tight"
@@ -74,29 +102,26 @@ export function AppShell({
             {store.name}
           </div>
         </div>
-        <nav
-          aria-label="Menu principal"
-          className="flex overflow-x-auto gap-1 px-3 pb-4 lg:flex-col"
-        >
+        <nav aria-label="Menu principal" className="flex flex-col gap-1 px-3 pb-4">
           {links.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
-              aria-current={pathname === href ? "page" : undefined}
+              aria-current={isActive(href) ? "page" : undefined}
               onClick={() => {
-                if (pathname !== href) setPendingPath(href);
+                startNavigation(href);
               }}
               className={cn(
                 "flex shrink-0 items-center gap-3 rounded-lg px-4 py-3 text-sm transition-colors",
-                pathname === href
+                isActive(href)
                   ? "bg-white/10 text-white font-semibold"
                   : "text-white/60 hover:bg-white/5 hover:text-white"
               )}
             >
               {isNavigating && pendingPath === href ? (
-                <Loader2 size={19} className="animate-spin" />
+                <Loader2 size={19} className="animate-spin" aria-hidden="true" />
               ) : (
-                <Icon size={19} />
+                <Icon size={19} aria-hidden="true" />
               )}
               {label}
             </Link>
@@ -114,8 +139,121 @@ export function AppShell({
           )}
         </div>
       </aside>
+      <header className="sticky top-0 z-40 flex h-16 min-w-0 items-center gap-3 border-b border-black/5 bg-white/95 px-4 backdrop-blur-sm lg:hidden">
+        <Link
+          href="/admin"
+          aria-label="Ir para a visão geral"
+          onClick={() => startNavigation("/admin")}
+          className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-forest text-brand-lime"
+        >
+          <Store size={21} aria-hidden="true" />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground">
+            {currentLink?.label ?? "Painel do lojista"}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">{store.name}</p>
+        </div>
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="size-11 bg-white"
+              aria-label="Abrir menu principal"
+            >
+              <Menu aria-hidden="true" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent
+            side="left"
+            showCloseButton={false}
+            className="admin-sidebar w-4/5 max-w-sm border-white/10 bg-brand-forest p-0 text-white"
+          >
+            <SheetHeader className="gap-4 border-b border-white/10 p-5 pr-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-lime text-brand-forest">
+                    <Store size={21} aria-hidden="true" />
+                  </span>
+                  <SheetTitle className="truncate text-lg font-bold tracking-tight text-white">
+                    tua vitrine<span className="text-brand-lime">.</span>
+                  </SheetTitle>
+                </div>
+                <SheetClose asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-11 shrink-0 text-white hover:bg-white/10 hover:text-white"
+                    aria-label="Fechar menu principal"
+                  >
+                    <X aria-hidden="true" />
+                  </Button>
+                </SheetClose>
+              </div>
+              <div className="min-w-0 rounded-lg border border-white/15 bg-white/5 px-3 py-2.5">
+                <p className="text-[10px] font-semibold tracking-[.16em] text-white/45">
+                  SEU NEGÓCIO
+                </p>
+                <p className="mt-1 truncate text-sm font-medium text-white">{store.name}</p>
+              </div>
+              <SheetDescription className="sr-only">
+                Escolha uma seção do painel para administrar sua vitrine.
+              </SheetDescription>
+            </SheetHeader>
+            <nav
+              aria-label="Menu principal"
+              className="flex flex-1 flex-col gap-1 overflow-y-auto p-3"
+            >
+              {links.map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={isActive(href) ? "page" : undefined}
+                  onClick={() => startNavigation(href)}
+                  className={cn(
+                    "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors",
+                    isActive(href)
+                      ? "bg-white/10 font-semibold text-white"
+                      : "text-white/70 hover:bg-white/5 hover:text-white"
+                  )}
+                >
+                  {isNavigating && pendingPath === href ? (
+                    <Loader2 size={19} className="animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Icon size={19} aria-hidden="true" />
+                  )}
+                  {label}
+                </Link>
+              ))}
+            </nav>
+            <SheetFooter className="gap-2 border-t border-white/10 p-3">
+              <Button
+                asChild
+                variant="ghost"
+                className="h-11 w-full justify-start px-3 text-white hover:bg-white/10 hover:text-white"
+              >
+                <Link href="/admin/preview" onClick={() => startNavigation("/admin/preview")}>
+                  <ArrowUpRight aria-hidden="true" />
+                  Ver minha vitrine
+                </Link>
+              </Button>
+              {authenticated && (
+                <div className="border-t border-white/10 pt-2 [&_button]:text-white [&_button]:hover:bg-white/10 [&_button]:hover:text-white">
+                  <AuthAccountMenu menuItem />
+                </div>
+              )}
+              {!authenticated && (
+                <p className="px-3 py-1 text-[10px] text-white/35">AMBIENTE LOCAL · PROTÓTIPO</p>
+              )}
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+      </header>
       <div className="min-w-0 lg:pl-64">
-        <header className="flex min-h-20 min-w-0 items-center justify-between gap-2 border-b border-black/5 bg-white/60 px-5 lg:px-10">
+        <header className="hidden min-h-20 min-w-0 items-center justify-between gap-2 border-b border-black/5 bg-white/60 px-10 lg:flex">
           <div className="flex min-w-0 flex-1 items-center">
             <span className="hidden text-sm text-muted-foreground sm:inline">
               Painel do lojista
@@ -129,16 +267,16 @@ export function AppShell({
               <Link
                 href="/admin/preview"
                 onClick={() => {
-                  if (pathname !== "/admin/preview") setPendingPath("/admin/preview");
+                  startNavigation("/admin/preview");
                 }}
               >
                 <span className="sr-only sm:not-sr-only">Ver minha vitrine</span>
-                <ArrowUpRight size={16} />
+                <ArrowUpRight size={16} aria-hidden="true" />
               </Link>
             </Button>
           </div>
         </header>
-        <main className="mx-auto min-w-0 max-w-7xl overflow-x-hidden px-5 py-8 lg:px-10 lg:py-10">
+        <main className="mx-auto min-w-0 max-w-7xl overflow-x-hidden px-4 py-6 sm:px-5 lg:px-10 lg:py-10">
           {store.onboardingStep < 4 && pathname !== "/admin/onboarding" && (
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
               <p>Sua vitrine está quase pronta. Termine a configuração para publicar.</p>
