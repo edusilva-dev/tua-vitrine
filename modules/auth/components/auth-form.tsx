@@ -253,7 +253,7 @@ export function AuthForm({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute top-1/2 right-0 size-11 -translate-y-1/2"
+                    className="absolute inset-y-0 right-0 my-auto size-11"
                     aria-label={passwordVisible ? "Ocultar senha" : "Mostrar senha"}
                     aria-pressed={passwordVisible}
                     onMouseDown={(event) => event.preventDefault()}
@@ -291,7 +291,7 @@ export function AuthForm({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute top-1/2 right-0 size-11 -translate-y-1/2"
+                    className="absolute inset-y-0 right-0 my-auto size-11"
                     aria-label={confirmationVisible ? "Ocultar confirmação" : "Mostrar confirmação"}
                     aria-pressed={confirmationVisible}
                     onMouseDown={(event) => event.preventDefault()}
