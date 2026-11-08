@@ -6,14 +6,19 @@ export function ProductImage({
   image,
   name,
   className = "",
+  layout = "square",
+  compactPlaceholder = false,
 }: {
   image?: AssetDTO | undefined;
   name: string;
   className?: string;
+  layout?: "square" | "fill";
+  compactPlaceholder?: boolean;
 }) {
   return (
     <div
-      className={`relative flex aspect-square items-center justify-center overflow-hidden bg-muted ${className}`}
+      data-testid="product-image"
+      className={`relative flex items-center justify-center overflow-hidden bg-muted ${layout === "square" ? "aspect-square" : "h-full min-h-36 w-full"} ${className}`}
     >
       {image ? (
         <Image
@@ -25,9 +30,15 @@ export function ProductImage({
           unoptimized
         />
       ) : (
-        <div className="flex flex-col items-center gap-3 text-muted-foreground/50">
-          <PackageOpen className="size-12 stroke-1" />
-          <span className="text-xs">Imagem em breve</span>
+        <div
+          data-testid="product-image-placeholder"
+          className={`flex items-center justify-center text-muted-foreground/50 ${compactPlaceholder ? "size-full" : "flex-col gap-3"}`}
+        >
+          <PackageOpen
+            data-testid="product-image-placeholder-icon"
+            className={compactPlaceholder ? "size-6 stroke-1" : "size-12 stroke-1"}
+          />
+          <span className={compactPlaceholder ? "sr-only" : "text-xs"}>Imagem em breve</span>
         </div>
       )}
     </div>

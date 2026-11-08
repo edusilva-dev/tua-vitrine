@@ -7,6 +7,53 @@ import { fixtures, testDatabase } from "../setup/e2e-fixtures";
 
 const origin = "http://localhost:3100";
 
+test("explica e permite comparar os modelos e a organização da vitrine", async ({
+  context,
+  page,
+}, testInfo) => {
+  if (testInfo.project.name === "mobile") {
+    await page.setViewportSize({ width: 375, height: 812 });
+  }
+
+  await context.addCookies([
+    {
+      name: "tv-local-store",
+      value: fixtures.firstStore,
+      url: origin,
+      httpOnly: true,
+      sameSite: "Strict",
+    },
+  ]);
+  await page.goto("/admin/settings");
+  await page.waitForLoadState("networkidle");
+
+  await expect(
+    page.getByText("Mostra três produtos lado a lado em uma galeria de cards.")
+  ).toBeVisible();
+  await expect(
+    page.getByText("Mostra cada produto em uma linha, com foto e detalhes lado a lado.")
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Mostra todos os produtos em uma sequência. As categorias só definem a ordem, sem títulos."
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText("Separa os produtos em blocos e mostra o nome de cada categoria como título.")
+  ).toBeVisible();
+
+  const gallery = page.getByRole("button", { name: /^Galeria/ });
+  const list = page.getByRole("button", { name: /^Lista/ });
+  const continuous = page.getByRole("button", { name: /^Grade contínua/ });
+  const sections = page.getByRole("button", { name: /^Seções por categoria/ });
+
+  await expect(gallery).toBeDisabled();
+  await expect(list).toBeDisabled();
+  await sections.click();
+  await expect(sections).toHaveAttribute("aria-pressed", "true");
+  await expect(continuous).toHaveAttribute("aria-pressed", "false");
+});
+
 test("hidrata e preserva o WhatsApp ao salvar outra configuração", async ({ context, page }) => {
   const db = testDatabase();
   const original = await db.store.findUniqueOrThrow({

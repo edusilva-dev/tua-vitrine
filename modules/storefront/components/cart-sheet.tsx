@@ -175,6 +175,7 @@ export function CartSheet({
                 <ProductImage
                   image={line.product?.images[0]}
                   name={line.name}
+                  compactPlaceholder
                   className="size-20 shrink-0 rounded-xl border"
                 />
                 <div className="min-w-0 flex-1">

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AuthAccountMenu } from "@/components/auth-account-menu";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +51,7 @@ export function AppShell({
   authenticated: boolean;
 }) {
   const pathname = usePathname();
+  const previousPathname = useRef(pathname);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -70,6 +71,13 @@ export function AppShell({
 
     if (pathname !== href) setPendingPath(href);
   }
+
+  useEffect(() => {
+    if (previousPathname.current === pathname) return;
+
+    previousPathname.current = pathname;
+    setPendingPath(null);
+  }, [pathname]);
 
   if (pathname === "/admin/preview") return <>{children}</>;
 

@@ -610,20 +610,21 @@ export function Storefront({
                   </div>
                 ) : null}
                 <article
-                  className={`group relative flex overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-md ${list ? "flex-row" : "flex-col"}`}
+                  className={`group relative flex min-w-0 overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-md ${list ? "flex-row items-stretch" : "flex-col"}`}
                 >
                   <button
                     type="button"
                     onClick={() => openProduct(product)}
-                    className={`block text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${list ? "w-32 shrink-0 sm:w-48" : "w-full"}`}
+                    className={`block min-w-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${list ? "w-28 shrink-0 sm:w-48" : "w-full"}`}
                     aria-label={`Ver ${product.name}`}
                   >
                     <ProductImage
                       image={product.images[0]}
                       name={product.name}
+                      layout={list ? "fill" : "square"}
                       className={
                         list
-                          ? "h-full"
+                          ? "h-full w-full"
                           : "transition-transform duration-500 group-hover:scale-[1.025]"
                       }
                     />
@@ -667,9 +668,9 @@ export function Storefront({
                       <MessageCircle />
                     </Button>
                   </div>
-                  <div className="flex flex-1 flex-col p-5">
+                  <div className={`flex min-w-0 flex-1 flex-col ${list ? "p-4 sm:p-5" : "p-5"}`}>
                     <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+                      <span className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
                         {product.category?.name ?? "Selecionado para você"}
                       </span>
                       <div className="flex shrink-0 items-center gap-1">
@@ -689,7 +690,7 @@ export function Storefront({
                       <button
                         type="button"
                         onClick={() => openProduct(product)}
-                        className="text-left font-heading text-base font-semibold underline-offset-4 hover:underline focus-visible:outline-primary"
+                        className="max-w-full text-left font-heading text-base font-semibold [overflow-wrap:anywhere] underline-offset-4 hover:underline focus-visible:outline-primary"
                       >
                         {product.name}
                       </button>
@@ -697,8 +698,10 @@ export function Storefront({
                     <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                       {product.description || "Conheça os detalhes deste produto."}
                     </p>
-                    <div className="mt-auto flex items-end justify-between gap-2 pt-5">
-                      <div>
+                    <div
+                      className={`mt-auto flex gap-2 ${list ? "flex-col items-stretch pt-4 sm:flex-row sm:items-end sm:justify-between sm:pt-5" : "items-end justify-between pt-5"}`}
+                    >
+                      <div className="min-w-0">
                         {product.variants.length ? (
                           <p className="text-[10px] text-muted-foreground">a partir de</p>
                         ) : null}
@@ -713,7 +716,12 @@ export function Storefront({
                           ) : null}
                         </div>
                       </div>
-                      <Button variant="outline" size="sm" onClick={() => openProduct(product)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={list ? "w-full sm:w-auto" : undefined}
+                        onClick={() => openProduct(product)}
+                      >
                         Ver detalhes
                         <ArrowRight />
                       </Button>
