@@ -177,7 +177,17 @@ test("conta verificada, isolamento por sessão e recuperação com revogação",
   await page.screenshot({ path: "work/auth-signup.png", fullPage: true });
   await page.getByLabel("Seu nome").fill("Lojista de teste");
   await page.getByLabel("E-mail", { exact: true }).fill(ownerEmail);
-  await page.getByLabel("Nova senha", { exact: true }).fill(password);
+  const signupPassword = page.getByLabel("Senha", { exact: true });
+
+  await expect(signupPassword).toHaveAttribute("type", "password");
+  await signupPassword.fill(password);
+  await expect(signupPassword).toBeFocused();
+  await page.getByRole("button", { name: "Mostrar senha" }).click();
+  await expect(signupPassword).toHaveAttribute("type", "text");
+  await expect(signupPassword).toHaveValue(password);
+  await expect(signupPassword).toBeFocused();
+  await page.getByRole("button", { name: "Ocultar senha" }).click();
+  await expect(signupPassword).toHaveAttribute("type", "password");
   await page.getByLabel("Confirme a senha").fill(password);
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Confira seu e-mail");
