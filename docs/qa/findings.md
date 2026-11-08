@@ -22,7 +22,9 @@ distinguir este build depois que `staging` apontar para um novo deployment.
 - Janela da rodada: `2026-11-08T12:38:00-03:00` a `2026-11-08T12:46:00-03:00`
 - Sessão: mesma conta da rodada anterior; Free no início e trial Profissional ativado durante o QA
 - Fingerprint do build: CSS `897c64b49cd07410` e `main-app-dad5a851ae48121e.js`
-- Arquivo de upload: PNG público do projeto, 1.254 × 1.254 px e 274.015 bytes
+- Arquivo de upload: `public/assets/icone-tua-vitrine.png` do workspace de origem, PNG de
+  1.254 × 1.254 px, 274.015 bytes e SHA-256
+  `29c10477fc0057af11fbcda111f00e5cdcfcc18f42419a9324efd82e9c2465e1`
 - Billing: checkout Stripe em test mode aberto sem preencher pagamento ou concluir assinatura
 - Evidência: observação visual, DOM e árvore de acessibilidade do navegador interno.
 
@@ -39,8 +41,8 @@ distinguir este build depois que `staging` apontar para um novo deployment.
 | QA-007 | P3 | Configurações | Todos | confirmado | QR code ainda usa texto de protótipo/local |
 | QA-008 | P2 | Storage | 390 px | confirmado | Upload de PNG válido falha com erro genérico |
 | QA-009 | P2 | Configurações | 390 px | confirmado | WhatsApp salvo não hidrata no formulário |
-| QA-010 | P2 | Billing | Todos | confirmado | Checkout diverge da marca e do nome do plano |
-| QA-011 | P2 | Catálogo | 390 px | confirmado | Modal perde foco e busca não tem nome acessível |
+| QA-010 | P3 | Billing | Desktop | confirmado | Checkout diverge da marca e do nome do plano |
+| QA-011 | P3 | Catálogo | 390 px | confirmado | Modal perde foco e busca não tem nome acessível |
 
 ## Achados confirmados
 
@@ -298,11 +300,12 @@ Passos:
 Evidência:
 
 - Estado visual/AX após o upload: `Fotos do produto (0 / 1)` e mensagem `Failed to fetch`.
-- Nenhum erro correspondente apareceu no console do navegador.
+- A chamada foi rejeitada no cliente sem resposta HTTP observável; nenhum erro correspondente
+  apareceu no console do navegador. A camada causadora ainda não foi isolada.
 
 Critério de aceite:
 
-- [ ] Identificar e corrigir a falha entre Route Handler, Sharp e R2 em staging.
+- [ ] Isolar em qual camada a requisição falha e corrigir a causa em staging.
 - [ ] Exibir erro acionável em português quando a infraestrutura falhar.
 - [ ] Retestar produto, logotipo e banner com JPEG, PNG e WebP válidos.
 
@@ -320,8 +323,9 @@ Critério de aceite:
 Esperado: o campo “WhatsApp de atendimento” carrega o número salvo durante o onboarding.
 
 Atual: o campo aparece vazio em Free e continua vazio após ativar o trial. A mesma resposta RSC
-serializa `store.whatsapp` preenchido, e a vitrine pública gera o link `wa.me` com esse número. Com
-o campo vazio, salvar outra configuração fica sujeito à validação obrigatória do WhatsApp.
+serializa `store.whatsapp` preenchido, e a vitrine pública gera o link `wa.me` com esse número.
+Como o schema exige WhatsApp válido, há risco de o campo vazio impedir outras alterações; esse
+efeito não foi submetido para evitar uma mutação acidental do número público.
 
 Passos:
 
@@ -343,7 +347,7 @@ Critério de aceite:
 
 ### QA-010 — Checkout diverge da marca e do nome do plano
 
-- Severidade: `P2`
+- Severidade: `P3`
 - Tipo: `billing | usabilidade | conversão`
 - Status: `confirmado`
 - Ambiente/deploy: `STG-2026-11-08-01`
@@ -355,9 +359,9 @@ Critério de aceite:
 Esperado: checkout identifica “Tua Vitrine” e o plano “Essencial”, mantendo a mesma oferta de
 R$ 19/mês apresentada no painel.
 
-Atual: o valor está correto e a sessão usa `cs_test`/`pk_test`, mas o checkout mostra o recebedor
-“Eduardo Castro da Silva” e o produto “Tua Vitrine Basic”. A divergência aparece antes da entrada
-de qualquer dado de pagamento.
+Atual: o valor está correto e a sessão usa `cs_test`/`pk_test`, mas o checkout mostra um nome
+pessoal como recebedor, em vez da marca, e o produto “Tua Vitrine Basic”. A divergência aparece
+antes da entrada de qualquer dado de pagamento.
 
 Passos:
 
@@ -368,8 +372,8 @@ Passos:
 
 Evidência:
 
-- Checkout de teste: `Assinar Tua Vitrine Basic`, recebedor “Eduardo Castro da Silva” e
-  `R$ 19,00 por mês`.
+- Checkout de teste: `Assinar Tua Vitrine Basic`, recebedor identificado por nome pessoal em vez da
+  marca e `R$ 19,00 por mês`.
 
 Critério de aceite:
 
@@ -379,7 +383,7 @@ Critério de aceite:
 
 ### QA-011 — Modal perde foco e busca não tem nome acessível
 
-- Severidade: `P2`
+- Severidade: `P3`
 - Tipo: `acessibilidade | usabilidade`
 - Status: `confirmado`
 - Ambiente/deploy: `STG-2026-11-08-01`
