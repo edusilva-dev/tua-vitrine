@@ -43,6 +43,9 @@ distinguir este build depois que `staging` apontar para um novo deployment.
 | QA-009 | P2 | Configurações | 390 px | confirmado | WhatsApp salvo não hidrata no formulário |
 | QA-010 | P3 | Billing | Desktop | confirmado | Checkout diverge da marca e do nome do plano |
 | QA-011 | P3 | Catálogo | 390 px | confirmado | Modal perde foco e busca não tem nome acessível |
+| QA-012 | P3 | Cadastro | 390 px | confirmado | Senha tem rótulo incorreto e não pode ser revelada |
+| QA-013 | P2 | Onboarding | Todos | em investigação | Slug deixa de acompanhar o nome após redirecionamento |
+| QA-014 | P3 | Admin | 390 px | confirmado | Controles recorrentes têm alvos táteis pequenos |
 
 ## Achados confirmados
 
@@ -135,6 +138,21 @@ Evidência:
 
 - Em 390 x 844 px, a árvore de acessibilidade expôs os sete destinos, mas visualmente o viewport
   mostrou somente os primeiros itens e uma scrollbar horizontal nativa no menu.
+- O `nav` mede 375 px de largura visível para aproximadamente 1.025 px de conteúdo rolável.
+- Em `/admin/support`, o menu inicia com `scrollLeft = 0` e o item ativo fica entre
+  aproximadamente `x = 896` e `x = 1.013`, totalmente fora da tela. A rota atual não é trazida
+  automaticamente para a área visível.
+- Sidebar móvel e cabeçalho consomem 348 px antes do início do `main`, cerca de 41% de uma tela
+  de 844 px. Nome da loja e ações aparecem em duas faixas empilhadas.
+
+Direção recomendada:
+
+- Manter a sidebar atual no desktop e, abaixo de `lg`, substituí-la por uma app bar compacta com
+  menu hambúrguer que abre um `Sheet` lateral.
+- Exibir os sete destinos verticalmente no drawer, com rota ativa visível, nome da loja no topo e
+  ações de conta/prévia no rodapé. Fechar após navegar e restaurar foco no gatilho.
+- Não usar bottom navigation: sete destinos excedem o conjunto pequeno de ações que esse padrão
+  comporta bem.
 
 Critério de aceite:
 
@@ -415,6 +433,92 @@ Critério de aceite:
 - [ ] Adicionar nome acessível persistente à busca.
 - [ ] Restaurar o foco ao gatilho tanto pelo botão de fechar quanto por `Esc`.
 - [ ] Retestar teclado e leitor de tela em 390 px e desktop.
+
+### QA-012 — Senha tem rótulo incorreto e não pode ser revelada
+
+- Severidade: `P3`
+- Tipo: `conteúdo | usabilidade | acessibilidade`
+- Status: `confirmado`
+- Ambiente/deploy: `STG-2026-11-08-01`
+- Data/hora da observação: `2026-11-08T13:00:00-03:00`
+- Página/fluxo: `/cadastro?plano=free`
+- Plano e sessão: visitante
+- Viewport/navegador: 390 x 844 px, navegador interno
+
+Esperado: no primeiro cadastro, o campo é chamado “Senha” e permite revelar/ocultar o valor sem
+perder o texto ou o foco.
+
+Atual: o rótulo é “Nova senha”, linguagem própria de redefinição, e os campos de senha e
+confirmação permanecem fixos em `type=password`, sem controle de visualização.
+
+Evidência:
+
+- Árvore de acessibilidade: `Nova senha` e `Confirme a senha`, sem botão para mostrar ou ocultar.
+- DOM: ambos os inputs usam `type=password`; o único botão do formulário é “Criar conta”.
+
+Critério de aceite:
+
+- [ ] Alterar o rótulo para “Senha” no cadastro, sem afetar recuperação/redefinição.
+- [ ] Adicionar controle acessível de mostrar/ocultar, com estado inicial oculto.
+- [ ] Preservar valor e foco ao alternar; usar nome acessível que reflita a próxima ação.
+- [ ] Retestar teclado e 390 px.
+
+### QA-013 — Slug deixa de acompanhar o nome após redirecionamento
+
+- Severidade: `P2`
+- Tipo: `funcional | usabilidade | consistência`
+- Status: `em investigação`
+- Ambiente/deploy: `STG-2026-11-08-01`
+- Data/hora do relato: `2026-11-08T13:00:00-03:00`
+- Página/fluxo: onboarding da loja → redirecionamento para o admin/configurações
+- Plano e sessão: nova conta autenticada
+- Viewport/navegador: relatado em teste exploratório externo
+
+Esperado: enquanto o slug ainda for derivado automaticamente e não tiver sido editado pelo
+usuário, alterar o nome da loja mantém o slug sincronizado mesmo após a transição de etapa/tela.
+
+Atual relatado: o slug acompanha o nome na primeira etapa, mas a sincronização para após avançar e
+ser redirecionado ao admin. A causa e a tela exata de destino ainda precisam de confirmação no código
+e em um novo cadastro.
+
+Critério de aceite:
+
+- [ ] Definir uma única regra de derivação para onboarding e configurações.
+- [ ] Continuar sincronizando enquanto o slug estiver intocado/derivado do nome anterior.
+- [ ] Nunca sobrescrever um slug alterado manualmente.
+- [ ] Adicionar regressão para a transição entre etapas e retestar com nova conta.
+
+### QA-014 — Controles recorrentes têm alvos táteis pequenos
+
+- Severidade: `P3`
+- Tipo: `usabilidade | acessibilidade | responsividade`
+- Status: `confirmado`
+- Ambiente/deploy: `STG-2026-11-08-01`
+- Data/hora da observação: `2026-11-08T13:00:00-03:00`
+- Página/fluxo: shell, cadastro, produtos, estatísticas, configurações e billing
+- Plano e sessão: visitante e trial Profissional autenticado
+- Viewport/navegador: 390 x 844 px, navegador interno
+
+Esperado: ações primárias e controles usados com frequência oferecem alvo tátil confortável,
+idealmente 44 px, sem exigir precisão fina.
+
+Atual: botões e inputs recorrentes medem 32 ou 36 px de altura. Isso inclui sair/prévia, criar
+conta, gerenciar/importar/adicionar produto, filtros, datas, aplicar período, salvar configurações e
+trocar plano.
+
+Evidência:
+
+- Atalhos de período em Estatísticas: 32 px.
+- Inputs e ações principais observados nas telas auditadas: 36 px.
+- Em Minha vitrine, o botão Salvar aparece somente depois de aproximadamente 1.770 px de conteúdo
+  abaixo do começo do formulário, agravando o custo da ação no mobile.
+
+Critério de aceite:
+
+- [ ] Padronizar controles interativos móveis relevantes com alvo de pelo menos 44 px.
+- [ ] Preservar densidade atual no desktop quando apropriado.
+- [ ] Avaliar barra de ação persistente para formulários longos, especialmente Minha vitrine.
+- [ ] Retestar toque, teclado e 390 px.
 
 ## Modelo
 
