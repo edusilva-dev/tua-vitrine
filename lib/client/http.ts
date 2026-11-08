@@ -10,19 +10,42 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
-      ...init?.headers,
-    },
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(path, {
+      ...init,
+      headers: {
+        ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+        ...init?.headers,
+      },
+    });
+  } catch {
+    throw new ApiError(
+      "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.",
+      0
+    );
+  }
+
   const text = await response.text();
-  const body = text ? JSON.parse(text) : {};
+  let body: { data?: T; error?: { message?: string; fieldErrors?: Record<string, string[]> } } = {};
+
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    if (response.ok)
+      throw new ApiError(
+        "O servidor retornou uma resposta inválida. Tente novamente.",
+        response.status
+      );
+  }
 
   if (!response.ok) {
     throw new ApiError(
-      body.error?.message ?? "Não foi possível concluir. Tente novamente.",
+      body.error?.message ??
+        (response.status === 413
+          ? "O arquivo enviado excede o limite permitido. Escolha um arquivo menor."
+          : "Não foi possível concluir. Tente novamente."),
       response.status,
       body.error?.fieldErrors
     );

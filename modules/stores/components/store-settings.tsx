@@ -243,6 +243,7 @@ export function StoreSettings({
                   type="tel"
                   className="mt-2"
                   {...whatsappField}
+                  value={form.watch("whatsapp")}
                   onChange={(event) =>
                     form.setValue("whatsapp", formatWhatsapp(event.target.value), {
                       shouldDirty: true,

@@ -33,7 +33,7 @@ export function OnboardingFlow({
   const [current, setCurrent] = useState<StoreDTO | null>(newStore ? null : store);
   const [step, setStep] = useState(newStore ? 1 : Math.min(store?.onboardingStep ?? 1, 3));
   const [error, setError] = useState("");
-  const slugEdited = useRef(Boolean(store?.slug));
+  const slugEdited = useRef(Boolean(store?.slug && store.slug !== normalizeSlug(store.name)));
   const identity = useForm<{ name: string; slug: string }>({
     resolver: zodResolver(storeIdentitySchema),
     defaultValues: {
@@ -136,13 +136,18 @@ export function OnboardingFlow({
                 placeholder="Ex.: Ateliê da Clara"
                 {...nameField}
                 onChange={(event) => {
+                  const previousName = identity.getValues("name");
+                  const currentSlug = identity.getValues("slug");
+                  const slugStillFollowsName = currentSlug === normalizeSlug(previousName);
+
                   void nameField.onChange(event);
 
-                  if (!slugEdited.current) {
+                  if (!slugEdited.current || slugStillFollowsName) {
                     identity.setValue("slug", normalizeSlug(event.target.value), {
                       shouldDirty: true,
                       shouldValidate: identity.formState.isSubmitted,
                     });
+                    slugEdited.current = false;
                   }
                 }}
               />
@@ -162,8 +167,10 @@ export function OnboardingFlow({
                   placeholder="atelie-da-clara"
                   {...slugField}
                   onChange={(event) => {
-                    slugEdited.current = true;
-                    identity.setValue("slug", normalizeSlug(event.target.value), {
+                    const slug = normalizeSlug(event.target.value);
+
+                    slugEdited.current = slug !== normalizeSlug(identity.getValues("name"));
+                    identity.setValue("slug", slug, {
                       shouldDirty: true,
                       shouldValidate: identity.formState.isSubmitted,
                     });

@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -65,6 +66,8 @@ export function AuthForm({
   const [failure, setFailure] = useState("");
   const [success, setSuccess] = useState("");
   const [hydrated, setHydrated] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmationVisible, setConfirmationVisible] = useState(false);
   const {
     register,
     handleSubmit,
@@ -227,23 +230,38 @@ export function AuthForm({
             )}
             {hasPassword && (
               <div className="space-y-2">
-                <Label htmlFor="auth-password">{newPassword ? "Nova senha" : "Senha"}</Label>
-                <Input
-                  id="auth-password"
-                  type="password"
-                  autoComplete={newPassword ? "new-password" : "current-password"}
-                  maxLength={128}
-                  aria-invalid={!!errors.password}
-                  aria-describedby="password-help password-error"
-                  {...register("password", {
-                    required: "Informe sua senha.",
-                    minLength: {
-                      value: newPassword ? 6 : 1,
-                      message: "Use pelo menos 6 caracteres.",
-                    },
-                    maxLength: { value: 128, message: "Use até 128 caracteres." },
-                  })}
-                />
+                <Label htmlFor="auth-password">{mode === "reset" ? "Nova senha" : "Senha"}</Label>
+                <div className="relative">
+                  <Input
+                    id="auth-password"
+                    type={passwordVisible ? "text" : "password"}
+                    autoComplete={newPassword ? "new-password" : "current-password"}
+                    maxLength={128}
+                    className="pr-12"
+                    aria-invalid={!!errors.password}
+                    aria-describedby="password-help password-error"
+                    {...register("password", {
+                      required: "Informe sua senha.",
+                      minLength: {
+                        value: newPassword ? 6 : 1,
+                        message: "Use pelo menos 6 caracteres.",
+                      },
+                      maxLength: { value: 128, message: "Use até 128 caracteres." },
+                    })}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-1/2 right-0 size-11 -translate-y-1/2"
+                    aria-label={passwordVisible ? "Ocultar senha" : "Mostrar senha"}
+                    aria-pressed={passwordVisible}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => setPasswordVisible((visible) => !visible)}
+                  >
+                    {passwordVisible ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                  </Button>
+                </div>
                 <p id="password-help" className="text-xs text-muted-foreground">
                   {newPassword ? "Use de 6 a 128 caracteres." : "Use a senha da sua conta."}
                 </p>
@@ -255,18 +273,37 @@ export function AuthForm({
             {newPassword && (
               <div className="space-y-2">
                 <Label htmlFor="auth-confirmation">Confirme a senha</Label>
-                <Input
-                  id="auth-confirmation"
-                  type="password"
-                  autoComplete="new-password"
-                  maxLength={128}
-                  aria-invalid={!!errors.confirmation}
-                  aria-describedby={errors.confirmation ? "confirmation-error" : undefined}
-                  {...register("confirmation", {
-                    validate: (value) =>
-                      value === getValues("password") || "As senhas precisam ser iguais.",
-                  })}
-                />
+                <div className="relative">
+                  <Input
+                    id="auth-confirmation"
+                    type={confirmationVisible ? "text" : "password"}
+                    autoComplete="new-password"
+                    maxLength={128}
+                    className="pr-12"
+                    aria-invalid={!!errors.confirmation}
+                    aria-describedby={errors.confirmation ? "confirmation-error" : undefined}
+                    {...register("confirmation", {
+                      validate: (value) =>
+                        value === getValues("password") || "As senhas precisam ser iguais.",
+                    })}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-1/2 right-0 size-11 -translate-y-1/2"
+                    aria-label={confirmationVisible ? "Ocultar confirmação" : "Mostrar confirmação"}
+                    aria-pressed={confirmationVisible}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => setConfirmationVisible((visible) => !visible)}
+                  >
+                    {confirmationVisible ? (
+                      <EyeOff aria-hidden="true" />
+                    ) : (
+                      <Eye aria-hidden="true" />
+                    )}
+                  </Button>
+                </div>
                 {errors.confirmation && (
                   <p id="confirmation-error" className="text-sm text-destructive">
                     {errors.confirmation.message}
