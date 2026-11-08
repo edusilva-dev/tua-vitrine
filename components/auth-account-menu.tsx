@@ -4,8 +4,9 @@ import { LogOut } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/client/auth";
+import { cn } from "@/lib/utils";
 
-export function AuthAccountMenu() {
+export function AuthAccountMenu({ menuItem = false }: { menuItem?: boolean }) {
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -31,16 +32,20 @@ export function AuthAccountMenu() {
   }
 
   return (
-    <div>
+    <div className={cn(menuItem && "w-full")}>
       <Button
         variant="ghost"
-        className="size-9 px-0 sm:w-auto sm:px-4"
+        className={cn(
+          menuItem ? "h-11 w-full justify-start px-3" : "size-9 px-0 sm:w-auto sm:px-4"
+        )}
         onClick={signOut}
         disabled={pending}
         aria-label={pending ? "Saindo da conta" : "Sair da conta"}
       >
         <LogOut aria-hidden="true" />
-        <span className="hidden sm:inline">{pending ? "Saindo…" : "Sair da conta"}</span>
+        <span className={cn(!menuItem && "hidden sm:inline")}>
+          {pending ? "Saindo…" : "Sair da conta"}
+        </span>
       </Button>
       {failed && (
         <p role="alert" className="text-sm text-destructive">
