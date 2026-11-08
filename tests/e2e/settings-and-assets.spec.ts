@@ -11,8 +11,19 @@ test("hidrata e preserva o WhatsApp ao salvar outra configuração", async ({ co
   const db = testDatabase();
   const original = await db.store.findUniqueOrThrow({
     where: { id: fixtures.firstStore },
-    select: { name: true, whatsapp: true },
+    select: {
+      name: true,
+      whatsapp: true,
+      primaryColor: true,
+      template: true,
+      catalogGrouping: true,
+      logoAssetId: true,
+      customization: true,
+    },
   });
+  const originalCustomization = original.customization;
+
+  if (originalCustomization === null) throw new Error("A personalização da fixture é obrigatória.");
 
   try {
     await context.addCookies([
@@ -41,8 +52,22 @@ test("hidrata e preserva o WhatsApp ao salvar outra configuração", async ({ co
       )
       .toEqual({ whatsapp: original.whatsapp });
   } finally {
-    await db.store.update({ where: { id: fixtures.firstStore }, data: { name: original.name } });
-    await db.$disconnect();
+    try {
+      await db.store.update({
+        where: { id: fixtures.firstStore },
+        data: {
+          name: original.name,
+          whatsapp: original.whatsapp,
+          primaryColor: original.primaryColor,
+          template: original.template,
+          catalogGrouping: original.catalogGrouping,
+          logoAssetId: original.logoAssetId,
+          customization: originalCustomization,
+        },
+      });
+    } finally {
+      await db.$disconnect();
+    }
   }
 });
 
