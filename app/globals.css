@@ -18,6 +18,18 @@
   --accent: #edf0e8;
   --accent-foreground: #233c37;
   --destructive: oklch(0.577 0.245 27.325);
+  --status-success-surface: #eef8f0;
+  --status-success-border: #2f7d4e;
+  --status-success-foreground: #1f633b;
+  --status-info-surface: #edf6f5;
+  --status-info-border: #3f7775;
+  --status-info-foreground: #245c60;
+  --status-warning-surface: #fff8e7;
+  --status-warning-border: #c17c0f;
+  --status-warning-foreground: #7a4b00;
+  --status-error-surface: #fff1f0;
+  --status-error-border: #d92d20;
+  --status-error-foreground: #a51d14;
   --border: #e5e8df;
   --input: #dce1d7;
   --ring: #598e88;

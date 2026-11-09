@@ -101,9 +101,8 @@ test("encerra o indicador de navegação ao voltar da prévia", async ({
   await expect(page.getByRole("status", { name: "Carregando página" })).toHaveCount(0);
 });
 
-test("posiciona as notificações no topo central", async ({ context, page }, testInfo) => {
-  test.skip(testInfo.project.name === "mobile", "A posição global é coberta uma vez.");
-
+test("destaca as notificações por status no topo central", async ({ context, page }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await context.addCookies([
     {
       name: "tv-local-store",
@@ -114,10 +113,32 @@ test("posiciona as notificações no topo central", async ({ context, page }, te
     },
   ]);
   await page.goto("/admin/settings");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Copiar link" }).click();
 
   const toaster = page.locator("[data-sonner-toaster]");
+  const toast = page.locator("[data-sonner-toast][data-type='success']");
 
+  await expect(toast).toBeVisible();
+  await expect(toast).toHaveAttribute("data-rich-colors", "true");
   await expect(toaster).toHaveAttribute("data-y-position", "top");
   await expect(toaster).toHaveAttribute("data-x-position", "center");
+
+  const toastStyle = await toast.evaluate((element) => {
+    const style = getComputedStyle(element);
+
+    return {
+      backgroundColor: style.backgroundColor,
+      borderColor: style.borderColor,
+      borderWidth: style.borderWidth,
+      color: style.color,
+    };
+  });
+
+  expect(toastStyle).toEqual({
+    backgroundColor: "rgb(238, 248, 240)",
+    borderColor: "rgb(47, 125, 78)",
+    borderWidth: "2px",
+    color: "rgb(31, 99, 59)",
+  });
 });
