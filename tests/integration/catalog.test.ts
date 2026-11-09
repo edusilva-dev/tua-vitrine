@@ -33,6 +33,7 @@ const input = (name = "Caneca artesanal"): ProductInput => ({
   available: true,
   categoryName: "Cerâmica",
   assetIds: [],
+  variations: [],
   variants: [
     {
       label: "Areia",

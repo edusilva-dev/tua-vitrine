@@ -45,6 +45,7 @@ export function toProductDTO(product: ProductRecord): ProductDTO {
       width: asset.width,
       height: asset.height,
     })),
+    variations: product.variations,
     variants: product.variants.map((variant) => ({
       id: variant.id,
       label: variant.label,
@@ -215,10 +216,10 @@ export async function saveProduct(
   id?: string,
   idempotencyKey?: string
 ): Promise<ProductDTO> {
+  if (id) z.string().uuid().parse(id);
+
   const values = productInputSchema.parse(input);
   const entitlements = await getEntitlements(context);
-
-  if (id) z.string().uuid().parse(id);
 
   if (idempotencyKey) z.string().uuid().parse(idempotencyKey);
 
@@ -311,6 +312,7 @@ export async function saveProduct(
         description: values.description,
         priceCents: values.priceCents,
         discountPriceCents: values.discountPriceCents ?? null,
+        variations: values.variations,
         available: values.available,
         categoryId: category?.id ?? null,
       };

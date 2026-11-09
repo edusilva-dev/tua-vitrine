@@ -4,7 +4,7 @@ import { Camera, ImagePlus, Loader2, Package, Pencil, Plus, Search, Trash2, X } 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -45,17 +45,8 @@ import {
   type ProductInput,
   type ProductListDTO,
   productInputSchema,
-  variantLabel,
 } from "@/modules/catalog/contracts";
-import {
-  buildCombinations,
-  combinationKey,
-  type OptionDefinition,
-  partitionCombinations,
-  reconstructExcluded,
-  reconstructOptions,
-  type VariantDraft,
-} from "@/modules/catalog/variant-builder";
+import { describeLegacyVariants } from "@/modules/catalog/variations";
 import { ProductImportDialog } from "./product-import-dialog";
 import { ProductPublicationDialog } from "./product-publication-dialog";
 
@@ -67,6 +58,7 @@ const emptyProduct: ProductInput = {
   available: true,
   categoryName: "",
   assetIds: [],
+  variations: [],
   variants: [],
 };
 
@@ -127,26 +119,13 @@ export function ProductForm({
   const cameraInput = useRef<HTMLInputElement>(null);
   const galleryInput = useRef<HTMLInputElement>(null);
   const uploadLock = useRef(false);
-  const [hasOptions, setHasOptions] = useState(!!product?.variants.length);
-  const [definitions, setDefinitions] = useState<(OptionDefinition & { key: string })[]>(() =>
-    reconstructOptions(product?.variants ?? []).map((definition) => ({
-      ...definition,
-      key: crypto.randomUUID(),
-    }))
-  );
-  const [optionsChanged, setOptionsChanged] = useState(false);
-  const [optionError, setOptionError] = useState("");
-  const [valueDrafts, setValueDrafts] = useState<Record<number, string>>({});
-  const [excluded, setExcluded] = useState<VariantDraft[]>(() =>
-    reconstructExcluded(product?.variants ?? [], {
-      priceCents: product?.priceCents ?? 0,
-      discountPriceCents: product?.discountPriceCents ?? null,
-    })
-  );
-  const excludedMemory = useRef(
-    new Map(excluded.map((variant) => [combinationKey(variant.options), variant]))
-  );
-  const variantMemory = useRef<VariantDraft[]>(product?.variants ?? []);
+  const [variations, setVariations] = useState<{ id: string; value: string }[]>(() => {
+    const saved = product?.variations.length
+      ? product.variations
+      : describeLegacyVariants(product?.variants ?? []);
+
+    return (saved.length ? saved : [""]).map((value) => ({ id: crypto.randomUUID(), value }));
+  });
   const requestId = useRef(crypto.randomUUID());
   const form = useForm<ProductInput>({
     resolver: zodResolver(productInputSchema),
@@ -156,73 +135,17 @@ export function ProductForm({
           description: product.description,
           priceCents: product.priceCents,
           discountPriceCents: product.discountPriceCents,
-          available: product.available,
+          available:
+            product.available &&
+            (!product.variants.length || product.variants.some((variant) => variant.available)),
           categoryName: product.category?.name ?? "",
           assetIds: product.images.map((image) => image.id),
-          variants: product.variants,
+          variations: [],
+          variants: [],
         }
       : emptyProduct,
   });
-  const { fields, append, remove, replace } = useFieldArray({
-    control: form.control,
-    name: "variants",
-  });
   const { errors, isSubmitting } = form.formState;
-
-  function changeDefinitions(next: (OptionDefinition & { key: string })[]) {
-    setDefinitions(next);
-    setOptionsChanged(true);
-    setOptionError("");
-    onDirtyChange?.(true);
-  }
-
-  function generateVariants() {
-    try {
-      const current = form.getValues("variants");
-      const memory = new Map(
-        [...variantMemory.current, ...excludedMemory.current.values(), ...current].map(
-          (variant) => [combinationKey(variant.options), variant]
-        )
-      );
-      const generated = buildCombinations(definitions, [...memory.values()], {
-        priceCents: form.getValues("priceCents"),
-        discountPriceCents: form.getValues("discountPriceCents"),
-      });
-      const partitioned = partitionCombinations(generated, [...excludedMemory.current.values()]);
-
-      variantMemory.current = [...memory.values()];
-      replace(partitioned.active);
-      setExcluded(partitioned.excluded);
-      setOptionsChanged(false);
-      setOptionError("");
-      onDirtyChange?.(true);
-    } catch (cause) {
-      setOptionError(cause instanceof Error ? cause.message : "Confira as opções.");
-    }
-  }
-
-  function addValue(index: number) {
-    const value = (valueDrafts[index] ?? "").trim();
-
-    if (!value || !definitions[index]) return;
-
-    if (
-      definitions[index].values.some(
-        (item) => item.toLocaleLowerCase("pt-BR") === value.toLocaleLowerCase("pt-BR")
-      )
-    ) {
-      setOptionError("Este valor já foi adicionado.");
-
-      return;
-    }
-
-    changeDefinitions(
-      definitions.map((definition, position) =>
-        position === index ? { ...definition, values: [...definition.values, value] } : definition
-      )
-    );
-    setValueDrafts({ ...valueDrafts, [index]: "" });
-  }
 
   async function upload(file?: File) {
     if (!file || uploadLock.current) return;
@@ -268,23 +191,15 @@ export function ProductForm({
       return;
     }
 
-    if (hasOptions && (optionsChanged || !value.variants.length)) {
-      setOptionError(
-        optionsChanged
-          ? "Atualize as combinações antes de salvar."
-          : "Inclua pelo menos uma combinação ou desative as opções."
-      );
-
-      return;
-    }
-
     setError("");
 
     try {
+      const normalizedVariations = variations.map((item) => item.value.trim()).filter(Boolean);
+
       await api<ProductDTO>(product ? `/api/admin/products/${product.id}` : "/api/admin/products", {
         method: product ? "PATCH" : "POST",
         headers: { "Idempotency-Key": requestId.current },
-        body: JSON.stringify(value),
+        body: JSON.stringify({ ...value, variations: normalizedVariations, variants: [] }),
       });
       toast.success(product ? "Produto atualizado." : "Produto adicionado à vitrine.");
       onDirtyChange?.(false);
@@ -479,176 +394,36 @@ export function ProductForm({
           {imagesPerProductLimit === 1 ? "imagem" : "imagens"} por produto.
         </p>
       </div>
-      <div className="min-w-0 rounded-xl border p-4">
-        <label
-          htmlFor="product-has-options"
-          className="flex min-h-11 items-center gap-3 text-sm font-medium"
-        >
-          <Checkbox
-            id="product-has-options"
-            checked={hasOptions}
-            onCheckedChange={(checked) => {
-              const enabled = checked === true;
-
-              setHasOptions(enabled);
-
-              if (!enabled) {
-                variantMemory.current = [...variantMemory.current, ...form.getValues("variants")];
-                replace([]);
-              } else {
-                setOptionsChanged(true);
-              }
-
-              onDirtyChange?.(true);
-            }}
-          />
-          Este produto tem opções, como cor ou tamanho?
-        </label>
-        {hasOptions && (
-          <div className="mt-3 space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Adicione as opções e seus valores. Depois, confira as combinações disponíveis para
-              compra.
-            </p>
-            {definitions.map((definition, index) => (
-              <fieldset key={definition.key} className="min-w-0 space-y-3 rounded-lg border p-3">
-                <legend className="px-1 text-sm font-medium">Opção {index + 1}</legend>
-                <div className="flex items-end gap-2">
-                  <div className="min-w-0 flex-1">
-                    <Label htmlFor={`option-name-${index}`}>Nome da opção</Label>
-                    <Input
-                      id={`option-name-${index}`}
-                      value={definition.name}
-                      maxLength={40}
-                      className="mt-2"
-                      placeholder="Ex.: Material"
-                      onChange={(event) =>
-                        changeDefinitions(
-                          definitions.map((item, position) =>
-                            position === index ? { ...item, name: event.target.value } : item
-                          )
-                        )
-                      }
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="size-11 shrink-0"
-                    aria-label={`Remover opção ${definition.name || index + 1}`}
-                    onClick={() => {
-                      changeDefinitions(definitions.filter((_, position) => position !== index));
-                      setValueDrafts({});
-                    }}
-                  >
-                    <X size={16} />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {definition.values.map((value) => (
-                    <Button
-                      key={value}
-                      type="button"
-                      variant="secondary"
-                      className="h-auto min-h-11 max-w-full whitespace-normal break-all"
-                      aria-label={`Remover ${value} da opção ${definition.name}`}
-                      onClick={() =>
-                        changeDefinitions(
-                          definitions.map((item, position) =>
-                            position === index
-                              ? { ...item, values: item.values.filter((entry) => entry !== value) }
-                              : item
-                          )
-                        )
-                      }
-                    >
-                      {value}
-                      <X size={14} className="shrink-0" />
-                    </Button>
-                  ))}
-                </div>
-                <Label htmlFor={`option-value-${index}`}>
-                  Novo valor de {definition.name || "opção"}
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    id={`option-value-${index}`}
-                    className="min-w-0"
-                    maxLength={60}
-                    placeholder={
-                      definition.name === "Cor"
-                        ? "Ex.: Azul"
-                        : definition.name === "Tamanho"
-                          ? "Ex.: P, M ou G (um por vez)"
-                          : "Ex.: Algodão"
-                    }
-                    value={valueDrafts[index] ?? ""}
-                    onChange={(event) =>
-                      setValueDrafts({ ...valueDrafts, [index]: event.target.value })
-                    }
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        addValue(index);
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-11"
-                    aria-label={`Adicionar valor em ${definition.name || "opção"}`}
-                    onClick={() => addValue(index)}
-                  >
-                    Adicionar
-                  </Button>
-                </div>
-              </fieldset>
-            ))}
-            <div className="flex flex-wrap gap-2">
-              {["Cor", "Tamanho", "Outro"].map((name) => (
-                <Button
-                  key={name}
-                  type="button"
-                  variant="outline"
-                  className="min-h-11"
-                  onClick={() =>
-                    changeDefinitions([
-                      ...definitions,
-                      { key: crypto.randomUUID(), name: name === "Outro" ? "" : name, values: [] },
-                    ])
+      <section className="min-w-0 rounded-xl border p-4" aria-labelledby="product-variations">
+        <h3 id="product-variations" className="text-sm font-medium">
+          Variações do produto
+        </h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Escreva cada opção em uma linha, do jeito que seus clientes precisam ver.
+        </p>
+        <div className="mt-4 space-y-3">
+          {variations.map((variation, index) => (
+            <div key={variation.id} className="flex items-end gap-2">
+              <div className="min-w-0 flex-1">
+                <Label htmlFor={`product-variation-${index}`}>Variação {index + 1}</Label>
+                <Input
+                  id={`product-variation-${index}`}
+                  className="mt-2"
+                  maxLength={5000}
+                  value={variation.value}
+                  placeholder={
+                    index === 0 ? "Ex.: Tamanho: P, M, G e GG" : "Ex.: Cor: Azul, Preto e Branco"
                   }
-                >
-                  <Plus size={15} />
-                  {name}
-                </Button>
-              ))}
-            </div>
-            <Button type="button" className="min-h-11" onClick={generateVariants}>
-              Atualizar combinações
-            </Button>
-            {optionsChanged && (
-              <p role="status" className="text-sm text-muted-foreground">
-                Atualize as combinações para aplicar as opções antes de salvar.
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Até 100 combinações. Remova combinações que não existem. Para pausar a venda,
-              desmarque “Disponível para compra”.
-            </p>
-          </div>
-        )}
-        {optionError && (
-          <p role="alert" className="field-error mt-3">
-            {optionError}
-          </p>
-        )}
-        {fields.map((field, index) => (
-          <div key={field.id} className="mt-4 space-y-3 rounded-lg bg-muted/40 p-3">
-            <div className="flex items-center justify-between">
-              <p className="min-w-0 break-words text-sm font-semibold">
-                {variantLabel(field.options)}
-              </p>
+                  onChange={(event) => {
+                    setVariations(
+                      variations.map((item, position) =>
+                        position === index ? { ...item, value: event.target.value } : item
+                      )
+                    );
+                    onDirtyChange?.(true);
+                  }}
+                />
+              </div>
               <Button
                 type="button"
                 size="icon"
@@ -656,128 +431,31 @@ export function ProductForm({
                 className="size-11 shrink-0"
                 aria-label={`Remover variação ${index + 1}`}
                 onClick={() => {
-                  const removed = form.getValues(`variants.${index}`);
+                  const next = variations.filter((_, position) => position !== index);
 
-                  excludedMemory.current.set(combinationKey(removed.options), removed);
-                  setExcluded([...excluded, removed]);
-                  remove(index);
+                  setVariations(next.length ? next : [{ id: crypto.randomUUID(), value: "" }]);
                   onDirtyChange?.(true);
                 }}
               >
-                <Trash2 size={14} />
+                <Trash2 size={16} />
               </Button>
             </div>
-            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-              <div className="min-w-0">
-                <Label htmlFor={`variant-price-${index}`}>Preço normal (R$)</Label>
-                <Controller
-                  control={form.control}
-                  name={`variants.${index}.priceCents`}
-                  render={({ field: priceField }) => (
-                    <CurrencyInput
-                      id={`variant-price-${index}`}
-                      value={priceField.value}
-                      onChange={(value) => {
-                        priceField.onChange(value ?? 0);
-                        onDirtyChange?.(true);
-                      }}
-                    />
-                  )}
-                />
-              </div>
-              <div>
-                <Label htmlFor={`variant-discount-price-${index}`}>Preço com desconto</Label>
-                <Controller
-                  control={form.control}
-                  name={`variants.${index}.discountPriceCents`}
-                  render={({ field: priceField }) => (
-                    <CurrencyInput
-                      id={`variant-discount-price-${index}`}
-                      value={priceField.value}
-                      optional
-                      invalid={!!errors.variants?.[index]?.discountPriceCents}
-                      onChange={(value) => {
-                        priceField.onChange(value);
-                        onDirtyChange?.(true);
-                      }}
-                    />
-                  )}
-                />
-                {errors.variants?.[index]?.discountPriceCents && (
-                  <p className="field-error">
-                    {errors.variants[index]?.discountPriceCents?.message}
-                  </p>
-                )}
-              </div>
-            </div>
-            <label
-              htmlFor={`variant-available-${index}`}
-              className="flex items-center gap-2 text-sm"
-            >
-              <Controller
-                control={form.control}
-                name={`variants.${index}.available`}
-                render={({ field }) => (
-                  <Checkbox
-                    id={`variant-available-${index}`}
-                    checked={field.value}
-                    onCheckedChange={(value) => {
-                      field.onChange(value === true);
-                      onDirtyChange?.(true);
-                    }}
-                    aria-label={`Variação ${index + 1} disponível`}
-                  />
-                )}
-              />
-              Disponível para compra
-            </label>
-          </div>
-        ))}
-        {hasOptions && excluded.length > 0 && (
-          <details className="mt-4 rounded-lg border p-3">
-            <summary className="cursor-pointer text-sm font-medium">
-              Combinações removidas ({excluded.length})
-            </summary>
-            <div className="mt-3 space-y-2">
-              {excluded.map((variant) => (
-                <div
-                  key={combinationKey(variant.options)}
-                  className="flex items-center justify-between gap-2"
-                >
-                  <span className="min-w-0 break-words text-sm">
-                    {variantLabel(variant.options)}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-11 shrink-0"
-                    disabled={optionsChanged}
-                    onClick={() => {
-                      excludedMemory.current.delete(combinationKey(variant.options));
-                      append(variant);
-                      setExcluded(
-                        excluded.filter(
-                          (item) => combinationKey(item.options) !== combinationKey(variant.options)
-                        )
-                      );
-                      onDirtyChange?.(true);
-                    }}
-                  >
-                    Reincluir
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </details>
-        )}
-        {errors.variants && (
-          <p className="field-error">
-            {errors.variants.message ??
-              errors.variants.root?.message ??
-              "Confira nomes, preços e opções das variações. Use as mesmas opções, com combinações diferentes."}
-          </p>
-        )}
-      </div>
+          ))}
+        </div>
+        {variations.length < 100 ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-3 min-h-11"
+            onClick={() => {
+              setVariations([...variations, { id: crypto.randomUUID(), value: "" }]);
+              onDirtyChange?.(true);
+            }}
+          >
+            <Plus size={16} /> Adicionar variação
+          </Button>
+        ) : null}
+      </section>
       <label
         htmlFor="product-available"
         className="flex items-center gap-3 rounded-lg border p-3 text-sm"
@@ -804,7 +482,7 @@ export function ProductForm({
           {error}
         </p>
       )}
-      <div className="sticky -bottom-1 flex justify-end border-t bg-background py-4">
+      <div className="flex justify-end pt-1">
         <Button type="submit" disabled={isSubmitting || uploading}>
           {(isSubmitting || uploading) && <Loader2 className="animate-spin" size={16} />}{" "}
           {product ? "Salvar alterações" : "Adicionar produto"}
@@ -1037,7 +715,9 @@ export function ProductManager({
                     ) : null}
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {product.variants.length ? `${product.variants.length} variações` : ""}
+                    {product.variations.length || product.variants.length
+                      ? `${product.variations.length || product.variants.length} variações`
+                      : ""}
                   </span>
                 </div>
                 <div className="mt-5 flex gap-2 border-t pt-4">
@@ -1161,7 +841,7 @@ export function ProductManager({
           setEditing(undefined);
         }}
       >
-        <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="subtle-scrollbar max-h-[90svh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar produto" : "Um novo produto na vitrine"}</DialogTitle>
             <DialogDescription>

@@ -13,6 +13,7 @@ const input = {
   priceCents: 1990,
   available: true,
   assetIds: [],
+  variations: [],
   variants: [],
 };
 
@@ -52,6 +53,13 @@ describe("contratos", () => {
       productInputSchema.safeParse({
         ...input,
         variants: [variant, { ...variant, options: { Tamanho: "P" } }],
+      }).success
+    ).toBe(false);
+    expect(
+      productInputSchema.safeParse({
+        ...input,
+        variations: ["Cor: Azul"],
+        variants: [variant],
       }).success
     ).toBe(false);
   });
