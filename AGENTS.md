@@ -14,7 +14,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 SaaS simples para um pequeno lojista manter uma loja, uma vitrine pública em `/[slug]` e fechar vendas pelo WhatsApp. Implemente a menor solução completa; evite camadas, dependências e infraestrutura especulativas.
 
-Stack fixa: Bun 1.3.14, Next.js 16 App Router, React 19, TypeScript strict, Prisma 7/PostgreSQL, shadcn/ui, Better Auth, Stripe, Resend, Neon, Vercel e Cloudflare R2.
+Stack fixa: Bun 1.4.4, Next.js 16 App Router, React 19, TypeScript strict, Prisma 7/PostgreSQL, shadcn/ui, Better Auth, Stripe, Resend, Neon, Vercel e Cloudflare R2.
 
 - Use somente Bun; não use npm, pnpm ou Yarn.
 - Procure código e componentes existentes antes de criar novos.
