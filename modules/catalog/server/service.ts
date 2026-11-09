@@ -216,7 +216,11 @@ export async function saveProduct(
   id?: string,
   idempotencyKey?: string
 ): Promise<ProductDTO> {
-  const values = productInputSchema.parse(input);
+  const compatibleInput =
+    input && typeof input === "object" && !Array.isArray(input) && !("variations" in input)
+      ? { ...input, variations: [] }
+      : input;
+  const values = productInputSchema.parse(compatibleInput);
   const entitlements = await getEntitlements(context);
 
   if (id) z.string().uuid().parse(id);

@@ -10,6 +10,8 @@ test.describe("vitrine pública", () => {
     ).toBeVisible();
     await page.getByRole("button", { name: "Ver Cookie com chocolate" }).click();
     await expect(page.getByRole("heading", { name: /Cookie com chocolate/ })).toBeVisible();
+    await expect(page.getByRole("dialog")).toBeFocused();
+    await expect(page.getByLabel("Quantidade")).not.toBeFocused();
 
     await page.getByRole("combobox", { name: "Escolha uma opção" }).click();
     await page.getByRole("option", { name: /Dupla/ }).click();

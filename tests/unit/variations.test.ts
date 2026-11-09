@@ -5,10 +5,19 @@ describe("describeLegacyVariants", () => {
   it("converts structured combinations into simple readable descriptions", () => {
     expect(
       describeLegacyVariants([
-        { options: { Tamanho: "P", Cor: "Azul" } },
-        { options: { Tamanho: "M", Cor: "Azul" } },
-        { options: { Tamanho: "P", Cor: "Preto" } },
+        { available: true, options: { Tamanho: "P", Cor: "Azul" } },
+        { available: true, options: { Tamanho: "M", Cor: "Azul" } },
+        { available: true, options: { Tamanho: "P", Cor: "Preto" } },
       ])
     ).toEqual(["Tamanho: P, M", "Cor: Azul, Preto"]);
+  });
+
+  it("omits values that only exist in unavailable combinations", () => {
+    expect(
+      describeLegacyVariants([
+        { available: true, options: { Cor: "Azul" } },
+        { available: false, options: { Cor: "Esgotada" } },
+      ])
+    ).toEqual(["Cor: Azul"]);
   });
 });

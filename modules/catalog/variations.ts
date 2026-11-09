@@ -1,9 +1,13 @@
 import type { VariantDTO } from "./contracts";
 
-export function describeLegacyVariants(variants: Pick<VariantDTO, "options">[]): string[] {
+export function describeLegacyVariants(
+  variants: Pick<VariantDTO, "available" | "options">[]
+): string[] {
   const options = new Map<string, string[]>();
 
   for (const variant of variants) {
+    if (!variant.available) continue;
+
     for (const [name, value] of Object.entries(variant.options)) {
       const values = options.get(name) ?? [];
 

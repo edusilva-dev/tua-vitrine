@@ -115,6 +115,13 @@ describe("Catálogo e isolamento real PostgreSQL", () => {
     expect(await listProductsByIds({ storeId }, [created.id])).toEqual([]);
     await expect(getProduct({ storeId }, created.id)).rejects.toThrow("Produto não encontrado.");
   });
+  test("aceita requisições antigas sem o campo de variações simples", async () => {
+    const { variations: _variations, ...legacyInput } = input("Cliente antigo");
+    const product = await saveProduct({ storeId }, legacyInput);
+
+    expect(product.variations).toEqual([]);
+    expect(product.variants).toHaveLength(2);
+  });
   test("não lê, modifica ou arquiva produto de outra loja", async () => {
     const product = await saveProduct({ storeId }, input("Isolado"));
 

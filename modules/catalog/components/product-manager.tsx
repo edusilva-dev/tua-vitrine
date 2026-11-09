@@ -135,7 +135,9 @@ export function ProductForm({
           description: product.description,
           priceCents: product.priceCents,
           discountPriceCents: product.discountPriceCents,
-          available: product.available,
+          available:
+            product.available &&
+            (!product.variants.length || product.variants.some((variant) => variant.available)),
           categoryName: product.category?.name ?? "",
           assetIds: product.images.map((image) => image.id),
           variations: [],
@@ -407,7 +409,7 @@ export function ProductForm({
                 <Input
                   id={`product-variation-${index}`}
                   className="mt-2"
-                  maxLength={160}
+                  maxLength={5000}
                   value={variation.value}
                   placeholder={
                     index === 0 ? "Ex.: Tamanho: P, M, G e GG" : "Ex.: Cor: Azul, Preto e Branco"
@@ -440,7 +442,7 @@ export function ProductForm({
             </div>
           ))}
         </div>
-        {variations.length < 10 ? (
+        {variations.length < 100 ? (
           <Button
             type="button"
             variant="outline"

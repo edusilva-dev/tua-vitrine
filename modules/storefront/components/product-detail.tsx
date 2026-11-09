@@ -1,7 +1,7 @@
 "use client";
 
 import { Heart, MessageCircle, ShoppingBag } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +48,7 @@ export function ProductDetail({
   const [variantId, setVariantId] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [imageIndex, setImageIndex] = useState(0);
+  const dialogContent = useRef<HTMLDivElement>(null);
   const legacyVariants = product.variations.length ? [] : product.variants;
   const variant = legacyVariants.find((item) => item.id === variantId);
   const available = product.available && (!legacyVariants.length || !!variant?.available);
@@ -61,7 +62,15 @@ export function ProductDetail({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-hidden p-0 sm:max-w-4xl">
+      <DialogContent
+        ref={dialogContent}
+        tabIndex={-1}
+        className="max-h-[calc(100dvh-1rem)] overflow-hidden p-0 sm:max-w-4xl"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          dialogContent.current?.focus({ preventScroll: true });
+        }}
+      >
         <div className="max-h-[calc(100dvh-1rem)] overflow-y-auto sm:grid sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:overflow-hidden">
           <div className="bg-muted/25 p-5 sm:overflow-y-auto sm:p-6">
             <ProductImage
