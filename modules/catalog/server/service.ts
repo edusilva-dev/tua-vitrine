@@ -218,17 +218,8 @@ export async function saveProduct(
 ): Promise<ProductDTO> {
   if (id) z.string().uuid().parse(id);
 
-  const missingVariations =
-    input && typeof input === "object" && !Array.isArray(input) && !("variations" in input);
-  const compatibleInput =
-    missingVariations && input && typeof input === "object" && !Array.isArray(input)
-      ? { ...input, variations: [] }
-      : input;
-  const values = productInputSchema.parse(compatibleInput);
+  const values = productInputSchema.parse(input);
   const entitlements = await getEntitlements(context);
-
-  if (id && missingVariations && values.variants.length)
-    throw new AppError(422, "VARIATIONS", "Atualize a página antes de editar este produto.");
 
   if (idempotencyKey) z.string().uuid().parse(idempotencyKey);
 
@@ -321,7 +312,7 @@ export async function saveProduct(
         description: values.description,
         priceCents: values.priceCents,
         discountPriceCents: values.discountPriceCents ?? null,
-        ...(missingVariations && id ? {} : { variations: values.variations }),
+        variations: values.variations,
         available: values.available,
         categoryId: category?.id ?? null,
       };
