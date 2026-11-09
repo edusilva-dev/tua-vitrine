@@ -715,7 +715,9 @@ export function ProductManager({
                     ) : null}
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {product.variations.length ? `${product.variations.length} variações` : ""}
+                    {product.variations.length || product.variants.length
+                      ? `${product.variations.length || product.variants.length} variações`
+                      : ""}
                   </span>
                 </div>
                 <div className="mt-5 flex gap-2 border-t pt-4">

@@ -34,6 +34,14 @@ export const productInputSchema = z
     variants: z.array(variantInputSchema).max(100),
   })
   .superRefine((value, ctx) => {
+    if (value.variations.length && value.variants.length) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["variations"],
+        message: "Use apenas as variações simples.",
+      });
+    }
+
     if (value.discountPriceCents != null && value.discountPriceCents >= value.priceCents) {
       ctx.addIssue({
         code: "custom",

@@ -121,6 +121,21 @@ describe("Catálogo e isolamento real PostgreSQL", () => {
 
     expect(product.variations).toEqual([]);
     expect(product.variants).toHaveLength(2);
+    await archiveProduct({ storeId }, product.id);
+  });
+  test("preserva variações simples ao atualizar por um cliente antigo", async () => {
+    const created = await saveProduct(
+      { storeId },
+      { ...input("Variação preservada"), variations: ["Cor: Azul"], variants: [] }
+    );
+    const { variations: _variations, ...legacyUpdate } = {
+      ...input("Variação preservada editada"),
+      variants: [],
+    };
+    const updated = await saveProduct({ storeId }, legacyUpdate, created.id);
+
+    expect(updated.variations).toEqual(["Cor: Azul"]);
+    await archiveProduct({ storeId }, updated.id);
   });
   test("não lê, modifica ou arquiva produto de outra loja", async () => {
     const product = await saveProduct({ storeId }, input("Isolado"));

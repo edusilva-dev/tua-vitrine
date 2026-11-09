@@ -216,14 +216,25 @@ export async function saveProduct(
   id?: string,
   idempotencyKey?: string
 ): Promise<ProductDTO> {
+  if (id) z.string().uuid().parse(id);
+
+  const missingVariations =
+    input && typeof input === "object" && !Array.isArray(input) && !("variations" in input);
+  const storedVariations =
+    id && missingVariations
+      ? ((
+          await db.product.findFirst({
+            where: { id, storeId: context.storeId, archivedAt: null },
+            select: { variations: true },
+          })
+        )?.variations ?? [])
+      : [];
   const compatibleInput =
-    input && typeof input === "object" && !Array.isArray(input) && !("variations" in input)
-      ? { ...input, variations: [] }
+    missingVariations && input && typeof input === "object" && !Array.isArray(input)
+      ? { ...input, variations: storedVariations }
       : input;
   const values = productInputSchema.parse(compatibleInput);
   const entitlements = await getEntitlements(context);
-
-  if (id) z.string().uuid().parse(id);
 
   if (idempotencyKey) z.string().uuid().parse(idempotencyKey);
 

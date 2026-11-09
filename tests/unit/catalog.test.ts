@@ -55,6 +55,13 @@ describe("contratos", () => {
         variants: [variant, { ...variant, options: { Tamanho: "P" } }],
       }).success
     ).toBe(false);
+    expect(
+      productInputSchema.safeParse({
+        ...input,
+        variations: ["Cor: Azul"],
+        variants: [variant],
+      }).success
+    ).toBe(false);
   });
   test("nome exibido da variante é derivado da combinação", () => {
     expect(variantLabel({ Tamanho: "M", Cor: "Azul" })).toBe("Azul / M");
