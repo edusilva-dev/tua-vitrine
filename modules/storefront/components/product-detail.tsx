@@ -48,8 +48,9 @@ export function ProductDetail({
   const [variantId, setVariantId] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [imageIndex, setImageIndex] = useState(0);
-  const variant = product.variants.find((item) => item.id === variantId);
-  const available = product.available && (!product.variants.length || !!variant?.available);
+  const legacyVariants = product.variations.length ? [] : product.variants;
+  const variant = legacyVariants.find((item) => item.id === variantId);
+  const available = product.available && (!legacyVariants.length || !!variant?.available);
   const pricing = productPrice(product, variant);
   const message = `Olá, ${store.name}! Tenho interesse em ${quantity}x ${product.name}${variant ? ` · ${variant.label}` : ""} (${money(pricing.currentPriceCents)} cada). Pode me ajudar?\n${store.url}`;
 
@@ -96,7 +97,7 @@ export function ProductDetail({
                 </DialogDescription>
               </DialogHeader>
               <div className="my-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                {product.variants.length && !variant ? (
+                {legacyVariants.length && !variant ? (
                   <span className="text-sm font-normal text-muted-foreground">A partir de</span>
                 ) : null}
                 <span className="text-3xl font-semibold tracking-tight">
@@ -113,7 +114,21 @@ export function ProductDetail({
                   </Badge>
                 ) : null}
               </div>
-              {product.variants.length ? (
+              {product.variations.length ? (
+                <div className="mb-4 rounded-xl bg-muted/60 p-4">
+                  <p className="text-sm font-medium">Opções disponíveis</p>
+                  <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                    {product.variations.map((variation) => (
+                      <li key={variation} className="break-words">
+                        {variation}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Confirme a opção desejada com a loja pelo WhatsApp.
+                  </p>
+                </div>
+              ) : legacyVariants.length ? (
                 <div className="mb-4 space-y-2">
                   <Label htmlFor="product-variant">Escolha uma opção</Label>
                   <Select value={variantId} onValueChange={setVariantId}>
@@ -121,7 +136,7 @@ export function ProductDetail({
                       <SelectValue placeholder="Selecione cor, tamanho…" />
                     </SelectTrigger>
                     <SelectContent>
-                      {product.variants.map((item) => (
+                      {legacyVariants.map((item) => (
                         <SelectItem key={item.id} value={item.id} disabled={!item.available}>
                           {item.label} · {money(productPrice(product, item).currentPriceCents)}
                           {!item.available ? " · Indisponível" : ""}

@@ -13,6 +13,7 @@ const input = {
   priceCents: 1990,
   available: true,
   assetIds: [],
+  variations: [],
   variants: [],
 };
 

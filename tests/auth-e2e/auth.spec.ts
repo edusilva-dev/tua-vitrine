@@ -101,6 +101,7 @@ async function createCatalog(page: Page, slug: string) {
       available: true,
       categoryName: "Teste",
       assetIds: [],
+      variations: [],
       variants: [],
     },
     { "idempotency-key": randomUUID() }
@@ -265,6 +266,7 @@ test("conta verificada, isolamento por sessão e recuperação com revogação",
               available: true,
               categoryName: "",
               assetIds: [],
+              variations: [],
               variants: [],
             },
           }

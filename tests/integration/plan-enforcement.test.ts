@@ -102,6 +102,7 @@ test("Free limita cada produto a uma imagem também no servidor", async () => {
         available: true,
         categoryName: "",
         assetIds: [randomUUID(), randomUUID()],
+        variations: [],
         variants: [],
       },
       productIds[0]
@@ -319,6 +320,7 @@ test("cadastro por plano pago inicia o trial Profissional ao publicar a loja", a
       available: true,
       categoryName: "",
       assetIds: [],
+      variations: [],
       variants: [],
     });
 

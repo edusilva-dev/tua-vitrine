@@ -45,6 +45,7 @@ export function toProductDTO(product: ProductRecord): ProductDTO {
       width: asset.width,
       height: asset.height,
     })),
+    variations: product.variations,
     variants: product.variants.map((variant) => ({
       id: variant.id,
       label: variant.label,
@@ -311,6 +312,7 @@ export async function saveProduct(
         description: values.description,
         priceCents: values.priceCents,
         discountPriceCents: values.discountPriceCents ?? null,
+        variations: values.variations,
         available: values.available,
         categoryId: category?.id ?? null,
       };

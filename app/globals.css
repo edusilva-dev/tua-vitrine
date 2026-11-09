@@ -199,6 +199,27 @@
     font-size: 0.75rem;
     line-height: 1.5;
   }
+  .subtle-scrollbar {
+    scrollbar-color: color-mix(in srgb, var(--primary) 24%, transparent) transparent;
+    scrollbar-width: thin;
+  }
+  .subtle-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  .subtle-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .subtle-scrollbar::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--primary) 22%, transparent);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+  .subtle-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--primary) 38%, transparent);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
 }
 
 /* Numeric values use application formatting and should not expose browser steppers. */

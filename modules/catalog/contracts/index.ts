@@ -30,6 +30,7 @@ export const productInputSchema = z
     available: z.boolean(),
     categoryName: z.string().trim().max(60),
     assetIds: z.array(z.string().uuid()).max(5),
+    variations: z.array(z.string().trim().min(1).max(160)).max(10),
     variants: z.array(variantInputSchema).max(100),
   })
   .superRefine((value, ctx) => {
@@ -111,6 +112,7 @@ export type ProductDTO = {
   published: boolean;
   category: CategoryDTO | null;
   images: AssetDTO[];
+  variations: string[];
   variants: VariantDTO[];
   createdAt: string;
   updatedAt: string;
