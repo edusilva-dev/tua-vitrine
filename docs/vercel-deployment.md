@@ -73,8 +73,10 @@ Para produção:
 - um `BETTER_AUTH_SECRET` aleatório com pelo menos 32 caracteres;
 - crie um token R2 restrito ao bucket `tua-vitrine` e configure as quatro variáveis `R2_*`.
 
-Para previews comuns, use um branch Neon separado quando houver dados reais. Omita `APP_URL` para
-que o endereço do deployment seja usado e nunca conecte previews ao banco de produção.
+Para previews comuns, use uma única branch Neon chamada `test`. Configure `DATABASE_URL` e
+`DATABASE_URL_UNPOOLED` no ambiente Preview sem filtro de branch. Omita `APP_URL`: a aplicação usa
+o endereço do deployment e também aceita o alias da branch fornecido pela Vercel. Não conecte
+previews ao banco de produção e não habilite a criação automática de branches Neon por deployment.
 
 A branch `staging` é a exceção: ela possui o domínio estável
 `https://staging.usetuavitrine.com.br` e deve receber uma variável `APP_URL` limitada a essa branch:
@@ -86,6 +88,8 @@ vercel env add APP_URL preview --git-branch staging \
 
 Essa separação é necessária porque `APP_URL` define a origem confiável do Better Auth, os cookies e
 os links enviados por e-mail. Produção e staging não devem confiar automaticamente uma na outra.
+Na Vercel, limite `DATABASE_URL` e `DATABASE_URL_UNPOOLED` do banco `staging` à branch Git `staging`;
+essas variáveis sobrescrevem o banco `test` compartilhado pelos demais previews.
 
 ## 3. E-mail e imagens
 

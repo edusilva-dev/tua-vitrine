@@ -19,7 +19,7 @@ function createAuth() {
     appName: "tua vitrine",
     baseURL: env.APP_URL,
     secret: env.BETTER_AUTH_SECRET,
-    trustedOrigins: getTrustedOrigins(env.APP_URL),
+    trustedOrigins: getTrustedOrigins(env.APP_URL, env.TRUSTED_ORIGINS),
     database: prismaAdapter(db, { provider: "postgresql", transaction: true }),
     emailAndPassword: {
       enabled: true,
