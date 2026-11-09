@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
   buildCombinations,
   combinationKey,
+  partitionCombinations,
+  reconstructExcluded,
   reconstructOptions,
   type VariantDraft,
 } from "@/modules/catalog/variant-builder";
@@ -105,5 +107,48 @@ describe("structured variant builder", () => {
     const generated = buildCombinations([{ name: "Cor", values: ["Verde"] }], [existing], defaults);
 
     expect(generated[0]).toEqual({ options: { Cor: "Verde" }, ...defaults, available: true });
+  });
+
+  test("keeps exclusions remembered while option values temporarily disappear", () => {
+    const excluded = buildCombinations(
+      [
+        { name: "Cor", values: ["Azul", "Verde"] },
+        { name: "Tamanho", values: ["P", "M"] },
+      ],
+      [],
+      defaults
+    ).filter((variant) =>
+      ["Azul / M", "Verde / P"].includes(Object.values(variant.options).join(" / "))
+    );
+    const withoutBlue = buildCombinations(
+      [
+        { name: "Cor", values: ["Verde"] },
+        { name: "Tamanho", values: ["P", "M"] },
+      ],
+      [],
+      defaults
+    );
+
+    expect(partitionCombinations(withoutBlue, excluded).excluded).toHaveLength(1);
+    const restored = buildCombinations(
+      [
+        { name: "Cor", values: ["Azul", "Verde"] },
+        { name: "Tamanho", values: ["P", "M"] },
+      ],
+      [],
+      defaults
+    );
+
+    expect(partitionCombinations(restored, excluded).excluded).toHaveLength(2);
+  });
+
+  test("does not crash while reconstructing legacy values rejected by the structured builder", () => {
+    const legacy: VariantDraft = {
+      options: { Cor: " " },
+      priceCents: 1000,
+      available: true,
+    };
+
+    expect(reconstructExcluded([legacy], defaults)).toEqual([]);
   });
 });

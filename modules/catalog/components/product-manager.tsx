@@ -51,6 +51,8 @@ import {
   buildCombinations,
   combinationKey,
   type OptionDefinition,
+  partitionCombinations,
+  reconstructExcluded,
   reconstructOptions,
   type VariantDraft,
 } from "@/modules/catalog/variant-builder";
@@ -135,28 +137,15 @@ export function ProductForm({
   const [optionsChanged, setOptionsChanged] = useState(false);
   const [optionError, setOptionError] = useState("");
   const [valueDrafts, setValueDrafts] = useState<Record<number, string>>({});
-  const [excluded, setExcluded] = useState<VariantDraft[]>(() => {
-    const existing = product?.variants ?? [];
-    const options = reconstructOptions(existing);
-
-    if (!options.length || options.reduce((count, option) => count * option.values.length, 1) > 100)
-      return [];
-
-    const keys = new Set(existing.map((variant) => combinationKey(variant.options)));
-
-    // Older records can contain option names that differ only by case.
-    // Keep them editable even when the builder now requires distinct names.
-    if (
-      new Set(options.map((option) => option.name.trim().toLocaleLowerCase("pt-BR"))).size !==
-      options.length
-    )
-      return [];
-
-    return buildCombinations(options, existing, {
+  const [excluded, setExcluded] = useState<VariantDraft[]>(() =>
+    reconstructExcluded(product?.variants ?? [], {
       priceCents: product?.priceCents ?? 0,
       discountPriceCents: product?.discountPriceCents ?? null,
-    }).filter((variant) => !keys.has(combinationKey(variant.options)));
-  });
+    })
+  );
+  const excludedMemory = useRef(
+    new Map(excluded.map((variant) => [combinationKey(variant.options), variant]))
+  );
   const variantMemory = useRef<VariantDraft[]>(product?.variants ?? []);
   const requestId = useRef(crypto.randomUUID());
   const form = useForm<ProductInput>({
@@ -191,20 +180,19 @@ export function ProductForm({
     try {
       const current = form.getValues("variants");
       const memory = new Map(
-        [...variantMemory.current, ...excluded, ...current].map((variant) => [
-          combinationKey(variant.options),
-          variant,
-        ])
+        [...variantMemory.current, ...excludedMemory.current.values(), ...current].map(
+          (variant) => [combinationKey(variant.options), variant]
+        )
       );
       const generated = buildCombinations(definitions, [...memory.values()], {
         priceCents: form.getValues("priceCents"),
         discountPriceCents: form.getValues("discountPriceCents"),
       });
-      const excludedKeys = new Set(excluded.map((variant) => combinationKey(variant.options)));
+      const partitioned = partitionCombinations(generated, [...excludedMemory.current.values()]);
 
       variantMemory.current = [...memory.values()];
-      replace(generated.filter((variant) => !excludedKeys.has(combinationKey(variant.options))));
-      setExcluded(generated.filter((variant) => excludedKeys.has(combinationKey(variant.options))));
+      replace(partitioned.active);
+      setExcluded(partitioned.excluded);
       setOptionsChanged(false);
       setOptionError("");
       onDirtyChange?.(true);
@@ -668,7 +656,10 @@ export function ProductForm({
                 className="size-11 shrink-0"
                 aria-label={`Remover variação ${index + 1}`}
                 onClick={() => {
-                  setExcluded([...excluded, form.getValues(`variants.${index}`)]);
+                  const removed = form.getValues(`variants.${index}`);
+
+                  excludedMemory.current.set(combinationKey(removed.options), removed);
+                  setExcluded([...excluded, removed]);
                   remove(index);
                   onDirtyChange?.(true);
                 }}
@@ -762,6 +753,7 @@ export function ProductForm({
                     className="min-h-11 shrink-0"
                     disabled={optionsChanged}
                     onClick={() => {
+                      excludedMemory.current.delete(combinationKey(variant.options));
                       append(variant);
                       setExcluded(
                         excluded.filter(

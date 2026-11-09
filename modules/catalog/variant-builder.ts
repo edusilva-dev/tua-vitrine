@@ -22,6 +22,46 @@ export function reconstructOptions(variants: VariantDraft[]): OptionDefinition[]
   return [...definitions].map(([name, values]) => ({ name, values: [...values] }));
 }
 
+export function reconstructExcluded(
+  variants: VariantDraft[],
+  defaults: Pick<VariantDraft, "priceCents" | "discountPriceCents">
+): VariantDraft[] {
+  const definitions = reconstructOptions(variants);
+
+  if (!definitions.length) return [];
+
+  const existingKeys = new Set(variants.map((variant) => combinationKey(variant.options)));
+
+  try {
+    return buildCombinations(definitions, variants, defaults).filter(
+      (variant) => !existingKeys.has(combinationKey(variant.options))
+    );
+  } catch {
+    // Keep legacy data editable even when it predates the structured builder's stricter rules.
+    return [];
+  }
+}
+
+export function partitionCombinations(
+  generated: VariantDraft[],
+  excludedMemory: VariantDraft[]
+): { active: VariantDraft[]; excluded: VariantDraft[] } {
+  const excludedByKey = new Map(
+    excludedMemory.map((variant) => [combinationKey(variant.options), variant])
+  );
+  const active: VariantDraft[] = [];
+  const excluded: VariantDraft[] = [];
+
+  for (const variant of generated) {
+    const remembered = excludedByKey.get(combinationKey(variant.options));
+
+    if (remembered) excluded.push(remembered);
+    else active.push(variant);
+  }
+
+  return { active, excluded };
+}
+
 export function buildCombinations(
   definitions: OptionDefinition[],
   previous: VariantDraft[],
