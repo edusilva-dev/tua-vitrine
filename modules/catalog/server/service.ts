@@ -220,18 +220,9 @@ export async function saveProduct(
 
   const missingVariations =
     input && typeof input === "object" && !Array.isArray(input) && !("variations" in input);
-  const storedVariations =
-    id && missingVariations
-      ? ((
-          await db.product.findFirst({
-            where: { id, storeId: context.storeId, archivedAt: null },
-            select: { variations: true },
-          })
-        )?.variations ?? [])
-      : [];
   const compatibleInput =
     missingVariations && input && typeof input === "object" && !Array.isArray(input)
-      ? { ...input, variations: storedVariations }
+      ? { ...input, variations: [] }
       : input;
   const values = productInputSchema.parse(compatibleInput);
   const entitlements = await getEntitlements(context);
@@ -288,11 +279,23 @@ export async function saveProduct(
       if (!store.whatsapp)
         throw new AppError(422, "ONBOARDING", "Cadastre o WhatsApp antes do primeiro produto.");
 
-      if (
-        id &&
-        !(await tx.product.findFirst({ where: { id, storeId: context.storeId, archivedAt: null } }))
-      )
-        throw new AppError(404, "NOT_FOUND", "Produto não encontrado.");
+      const currentProduct = id
+        ? (
+            await tx.$queryRaw<Array<{ variations: string[] }>>(Prisma.sql`
+              SELECT "variations"
+              FROM "Product"
+              WHERE "id" = ${id}
+                AND "storeId" = ${context.storeId}
+                AND "archivedAt" IS NULL
+              FOR UPDATE
+            `)
+          )[0]
+        : null;
+
+      if (id && !currentProduct) throw new AppError(404, "NOT_FOUND", "Produto não encontrado.");
+
+      if (missingVariations && currentProduct?.variations.length && values.variants.length)
+        throw new AppError(422, "VARIATIONS", "Atualize a página antes de editar este produto.");
 
       if (
         (await tx.asset.count({
@@ -327,7 +330,7 @@ export async function saveProduct(
         description: values.description,
         priceCents: values.priceCents,
         discountPriceCents: values.discountPriceCents ?? null,
-        variations: values.variations,
+        ...(missingVariations && id ? {} : { variations: values.variations }),
         available: values.available,
         categoryId: category?.id ?? null,
       };
