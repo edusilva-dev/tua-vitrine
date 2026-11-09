@@ -280,16 +280,10 @@ export async function saveProduct(
         throw new AppError(422, "ONBOARDING", "Cadastre o WhatsApp antes do primeiro produto.");
 
       const currentProduct = id
-        ? (
-            await tx.$queryRaw<Array<{ variations: string[] }>>(Prisma.sql`
-              SELECT "variations"
-              FROM "Product"
-              WHERE "id" = ${id}
-                AND "storeId" = ${context.storeId}
-                AND "archivedAt" IS NULL
-              FOR UPDATE
-            `)
-          )[0]
+        ? await tx.product.findFirst({
+            where: { id, storeId: context.storeId, archivedAt: null },
+            select: { variations: true },
+          })
         : null;
 
       if (id && !currentProduct) throw new AppError(404, "NOT_FOUND", "Produto não encontrado.");
