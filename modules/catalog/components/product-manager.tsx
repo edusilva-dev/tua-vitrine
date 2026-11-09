@@ -1,6 +1,6 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ImagePlus, Loader2, Package, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { Camera, ImagePlus, Loader2, Package, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -47,6 +47,13 @@ import {
   productInputSchema,
   variantLabel,
 } from "@/modules/catalog/contracts";
+import {
+  buildCombinations,
+  combinationKey,
+  type OptionDefinition,
+  reconstructOptions,
+  type VariantDraft,
+} from "@/modules/catalog/variant-builder";
 import { ProductImportDialog } from "./product-import-dialog";
 import { ProductPublicationDialog } from "./product-publication-dialog";
 
@@ -115,6 +122,42 @@ export function ProductForm({
   const [images, setImages] = useState<AssetDTO[]>(product?.images ?? []);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const cameraInput = useRef<HTMLInputElement>(null);
+  const galleryInput = useRef<HTMLInputElement>(null);
+  const uploadLock = useRef(false);
+  const [hasOptions, setHasOptions] = useState(!!product?.variants.length);
+  const [definitions, setDefinitions] = useState<(OptionDefinition & { key: string })[]>(() =>
+    reconstructOptions(product?.variants ?? []).map((definition) => ({
+      ...definition,
+      key: crypto.randomUUID(),
+    }))
+  );
+  const [optionsChanged, setOptionsChanged] = useState(false);
+  const [optionError, setOptionError] = useState("");
+  const [valueDrafts, setValueDrafts] = useState<Record<number, string>>({});
+  const [excluded, setExcluded] = useState<VariantDraft[]>(() => {
+    const existing = product?.variants ?? [];
+    const options = reconstructOptions(existing);
+
+    if (!options.length || options.reduce((count, option) => count * option.values.length, 1) > 100)
+      return [];
+
+    const keys = new Set(existing.map((variant) => combinationKey(variant.options)));
+
+    // Older records can contain option names that differ only by case.
+    // Keep them editable even when the builder now requires distinct names.
+    if (
+      new Set(options.map((option) => option.name.trim().toLocaleLowerCase("pt-BR"))).size !==
+      options.length
+    )
+      return [];
+
+    return buildCombinations(options, existing, {
+      priceCents: product?.priceCents ?? 0,
+      discountPriceCents: product?.discountPriceCents ?? null,
+    }).filter((variant) => !keys.has(combinationKey(variant.options)));
+  });
+  const variantMemory = useRef<VariantDraft[]>(product?.variants ?? []);
   const requestId = useRef(crypto.randomUUID());
   const form = useForm<ProductInput>({
     resolver: zodResolver(productInputSchema),
@@ -131,11 +174,70 @@ export function ProductForm({
         }
       : emptyProduct,
   });
-  const { fields, append, remove } = useFieldArray({ control: form.control, name: "variants" });
+  const { fields, append, remove, replace } = useFieldArray({
+    control: form.control,
+    name: "variants",
+  });
   const { errors, isSubmitting } = form.formState;
 
+  function changeDefinitions(next: (OptionDefinition & { key: string })[]) {
+    setDefinitions(next);
+    setOptionsChanged(true);
+    setOptionError("");
+    onDirtyChange?.(true);
+  }
+
+  function generateVariants() {
+    try {
+      const current = form.getValues("variants");
+      const memory = new Map(
+        [...variantMemory.current, ...excluded, ...current].map((variant) => [
+          combinationKey(variant.options),
+          variant,
+        ])
+      );
+      const generated = buildCombinations(definitions, [...memory.values()], {
+        priceCents: form.getValues("priceCents"),
+        discountPriceCents: form.getValues("discountPriceCents"),
+      });
+      const excludedKeys = new Set(excluded.map((variant) => combinationKey(variant.options)));
+
+      variantMemory.current = [...memory.values()];
+      replace(generated.filter((variant) => !excludedKeys.has(combinationKey(variant.options))));
+      setExcluded(generated.filter((variant) => excludedKeys.has(combinationKey(variant.options))));
+      setOptionsChanged(false);
+      setOptionError("");
+      onDirtyChange?.(true);
+    } catch (cause) {
+      setOptionError(cause instanceof Error ? cause.message : "Confira as opções.");
+    }
+  }
+
+  function addValue(index: number) {
+    const value = (valueDrafts[index] ?? "").trim();
+
+    if (!value || !definitions[index]) return;
+
+    if (
+      definitions[index].values.some(
+        (item) => item.toLocaleLowerCase("pt-BR") === value.toLocaleLowerCase("pt-BR")
+      )
+    ) {
+      setOptionError("Este valor já foi adicionado.");
+
+      return;
+    }
+
+    changeDefinitions(
+      definitions.map((definition, position) =>
+        position === index ? { ...definition, values: [...definition.values, value] } : definition
+      )
+    );
+    setValueDrafts({ ...valueDrafts, [index]: "" });
+  }
+
   async function upload(file?: File) {
-    if (!file) return;
+    if (!file || uploadLock.current) return;
 
     if (images.length >= imagesPerProductLimit) {
       setError(
@@ -145,6 +247,7 @@ export function ProductForm({
       return;
     }
 
+    uploadLock.current = true;
     setUploading(true);
     setError("");
 
@@ -165,11 +268,28 @@ export function ProductForm({
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível enviar a imagem.");
     } finally {
+      uploadLock.current = false;
       setUploading(false);
     }
   }
 
   async function save(value: ProductInput) {
+    if (uploadLock.current) {
+      setError("Aguarde o envio da foto antes de salvar.");
+
+      return;
+    }
+
+    if (hasOptions && (optionsChanged || !value.variants.length)) {
+      setOptionError(
+        optionsChanged
+          ? "Atualize as combinações antes de salvar."
+          : "Inclua pelo menos uma combinação ou desative as opções."
+      );
+
+      return;
+    }
+
     setError("");
 
     try {
@@ -296,7 +416,8 @@ export function ProductForm({
                 type="button"
                 variant="secondary"
                 size="icon"
-                className="absolute right-1 top-1 size-6 rounded-full"
+                className="absolute right-1 top-1 size-11 rounded-full"
+                disabled={uploading || isSubmitting}
                 aria-label={`Remover foto ${index + 1}`}
                 onClick={() => {
                   const next = images.filter((item) => item.id !== image.id);
@@ -314,65 +435,240 @@ export function ProductForm({
               </Button>
             </div>
           ))}
-          {images.length < imagesPerProductLimit && (
-            <label className="flex size-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed bg-muted/30 text-xs text-muted-foreground focus-within:ring-2 focus-within:ring-ring">
-              {uploading ? <Loader2 className="animate-spin" size={20} /> : <ImagePlus size={20} />}
-              Adicionar
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="sr-only"
-                disabled={uploading}
-                onChange={(event) => {
-                  void upload(event.target.files?.[0]);
-                  event.target.value = "";
-                }}
-              />
-            </label>
-          )}
         </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            disabled={uploading || isSubmitting || images.length >= imagesPerProductLimit}
+            onClick={() => cameraInput.current?.click()}
+          >
+            <Camera size={18} /> Tirar foto
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            disabled={uploading || isSubmitting || images.length >= imagesPerProductLimit}
+            onClick={() => galleryInput.current?.click()}
+          >
+            <ImagePlus size={18} /> Escolher da galeria
+          </Button>
+          <input
+            ref={cameraInput}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            aria-label="Tirar foto do produto"
+            disabled={uploading || isSubmitting || images.length >= imagesPerProductLimit}
+            onChange={(event) => {
+              void upload(event.target.files?.[0]);
+              event.target.value = "";
+            }}
+          />
+          <input
+            ref={galleryInput}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            aria-label="Escolher foto da galeria"
+            disabled={uploading || isSubmitting || images.length >= imagesPerProductLimit}
+            onChange={(event) => {
+              void upload(event.target.files?.[0]);
+              event.target.value = "";
+            }}
+          />
+        </div>
+        {uploading && (
+          <p role="status" className="mt-2 flex items-center gap-2 text-sm">
+            <Loader2 className="animate-spin" size={16} /> Enviando foto…
+          </p>
+        )}
         <p className="mt-2 text-xs text-muted-foreground">
           JPG, PNG ou WebP. Até {imagesPerProductLimit}{" "}
           {imagesPerProductLimit === 1 ? "imagem" : "imagens"} por produto.
         </p>
       </div>
-      <div className="rounded-xl border p-4">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <Label>Variações</Label>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Tamanho, cor ou outras opções. Sem controle de estoque.
+      <div className="min-w-0 rounded-xl border p-4">
+        <label
+          htmlFor="product-has-options"
+          className="flex min-h-11 items-center gap-3 text-sm font-medium"
+        >
+          <Checkbox
+            id="product-has-options"
+            checked={hasOptions}
+            onCheckedChange={(checked) => {
+              const enabled = checked === true;
+
+              setHasOptions(enabled);
+
+              if (!enabled) {
+                variantMemory.current = [...variantMemory.current, ...form.getValues("variants")];
+                replace([]);
+              } else {
+                setOptionsChanged(true);
+              }
+
+              onDirtyChange?.(true);
+            }}
+          />
+          Este produto tem opções, como cor ou tamanho?
+        </label>
+        {hasOptions && (
+          <div className="mt-3 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Adicione as opções e seus valores. Depois, confira as combinações disponíveis para
+              compra.
+            </p>
+            {definitions.map((definition, index) => (
+              <fieldset key={definition.key} className="min-w-0 space-y-3 rounded-lg border p-3">
+                <legend className="px-1 text-sm font-medium">Opção {index + 1}</legend>
+                <div className="flex items-end gap-2">
+                  <div className="min-w-0 flex-1">
+                    <Label htmlFor={`option-name-${index}`}>Nome da opção</Label>
+                    <Input
+                      id={`option-name-${index}`}
+                      value={definition.name}
+                      maxLength={40}
+                      className="mt-2"
+                      placeholder="Ex.: Material"
+                      onChange={(event) =>
+                        changeDefinitions(
+                          definitions.map((item, position) =>
+                            position === index ? { ...item, name: event.target.value } : item
+                          )
+                        )
+                      }
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="size-11 shrink-0"
+                    aria-label={`Remover opção ${definition.name || index + 1}`}
+                    onClick={() => {
+                      changeDefinitions(definitions.filter((_, position) => position !== index));
+                      setValueDrafts({});
+                    }}
+                  >
+                    <X size={16} />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {definition.values.map((value) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      variant="secondary"
+                      className="h-auto min-h-11 max-w-full whitespace-normal break-all"
+                      aria-label={`Remover ${value} da opção ${definition.name}`}
+                      onClick={() =>
+                        changeDefinitions(
+                          definitions.map((item, position) =>
+                            position === index
+                              ? { ...item, values: item.values.filter((entry) => entry !== value) }
+                              : item
+                          )
+                        )
+                      }
+                    >
+                      {value}
+                      <X size={14} className="shrink-0" />
+                    </Button>
+                  ))}
+                </div>
+                <Label htmlFor={`option-value-${index}`}>
+                  Novo valor de {definition.name || "opção"}
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id={`option-value-${index}`}
+                    className="min-w-0"
+                    maxLength={60}
+                    placeholder={
+                      definition.name === "Cor"
+                        ? "Ex.: Azul"
+                        : definition.name === "Tamanho"
+                          ? "Ex.: P, M ou G (um por vez)"
+                          : "Ex.: Algodão"
+                    }
+                    value={valueDrafts[index] ?? ""}
+                    onChange={(event) =>
+                      setValueDrafts({ ...valueDrafts, [index]: event.target.value })
+                    }
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        addValue(index);
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11"
+                    aria-label={`Adicionar valor em ${definition.name || "opção"}`}
+                    onClick={() => addValue(index)}
+                  >
+                    Adicionar
+                  </Button>
+                </div>
+              </fieldset>
+            ))}
+            <div className="flex flex-wrap gap-2">
+              {["Cor", "Tamanho", "Outro"].map((name) => (
+                <Button
+                  key={name}
+                  type="button"
+                  variant="outline"
+                  className="min-h-11"
+                  onClick={() =>
+                    changeDefinitions([
+                      ...definitions,
+                      { key: crypto.randomUUID(), name: name === "Outro" ? "" : name, values: [] },
+                    ])
+                  }
+                >
+                  <Plus size={15} />
+                  {name}
+                </Button>
+              ))}
+            </div>
+            <Button type="button" className="min-h-11" onClick={generateVariants}>
+              Atualizar combinações
+            </Button>
+            {optionsChanged && (
+              <p role="status" className="text-sm text-muted-foreground">
+                Atualize as combinações para aplicar as opções antes de salvar.
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Até 100 combinações. Remova combinações que não existem. Para pausar a venda,
+              desmarque “Disponível para compra”.
             </p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              onDirtyChange?.(true);
-              append({
-                options: { Opção: "" },
-                priceCents: form.getValues("priceCents"),
-                discountPriceCents: form.getValues("discountPriceCents"),
-                available: true,
-              });
-            }}
-          >
-            <Plus size={14} />
-            Adicionar
-          </Button>
-        </div>
+        )}
+        {optionError && (
+          <p role="alert" className="field-error mt-3">
+            {optionError}
+          </p>
+        )}
         {fields.map((field, index) => (
           <div key={field.id} className="mt-4 space-y-3 rounded-lg bg-muted/40 p-3">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold">Variação {index + 1}</p>
+              <p className="min-w-0 break-words text-sm font-semibold">
+                {variantLabel(field.options)}
+              </p>
               <Button
                 type="button"
                 size="icon"
                 variant="ghost"
-                className="size-7"
+                className="size-11 shrink-0"
                 aria-label={`Remover variação ${index + 1}`}
                 onClick={() => {
+                  setExcluded([...excluded, form.getValues(`variants.${index}`)]);
                   remove(index);
                   onDirtyChange?.(true);
                 }}
@@ -380,38 +676,8 @@ export function ProductForm({
                 <Trash2 size={14} />
               </Button>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div>
-                <Label htmlFor={`variant-options-${index}`}>Combinação</Label>
-                <Input
-                  id={`variant-options-${index}`}
-                  className="mt-2"
-                  placeholder="Cor: Azul, Tamanho: M"
-                  defaultValue={Object.entries(field.options)
-                    .filter(([, value]) => value)
-                    .map(([key, value]) => `${key}: ${value}`)
-                    .join(", ")}
-                  onChange={(event) => {
-                    const options: Record<string, string> = {};
-
-                    for (const entry of event.target.value.split(",")) {
-                      const [key, ...parts] = entry.split(":");
-
-                      if (key?.trim() && parts.join(":").trim())
-                        options[key.trim()] = parts.join(":").trim();
-                    }
-
-                    form.setValue(`variants.${index}.options`, options, { shouldDirty: true });
-                  }}
-                />
-                <p className="mt-1.5 text-xs text-muted-foreground">
-                  Use nome e valor. Ex.: Cor: Azul, Tamanho: M.
-                  {variantLabel(form.watch(`variants.${index}.options`))
-                    ? ` Será exibida como “${variantLabel(form.watch(`variants.${index}.options`))}”.`
-                    : ""}
-                </p>
-              </div>
-              <div>
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+              <div className="min-w-0">
                 <Label htmlFor={`variant-price-${index}`}>Preço normal (R$)</Label>
                 <Controller
                   control={form.control}
@@ -472,10 +738,46 @@ export function ProductForm({
                   />
                 )}
               />
-              Variação disponível
+              Disponível para compra
             </label>
           </div>
         ))}
+        {hasOptions && excluded.length > 0 && (
+          <details className="mt-4 rounded-lg border p-3">
+            <summary className="cursor-pointer text-sm font-medium">
+              Combinações removidas ({excluded.length})
+            </summary>
+            <div className="mt-3 space-y-2">
+              {excluded.map((variant) => (
+                <div
+                  key={combinationKey(variant.options)}
+                  className="flex items-center justify-between gap-2"
+                >
+                  <span className="min-w-0 break-words text-sm">
+                    {variantLabel(variant.options)}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11 shrink-0"
+                    disabled={optionsChanged}
+                    onClick={() => {
+                      append(variant);
+                      setExcluded(
+                        excluded.filter(
+                          (item) => combinationKey(item.options) !== combinationKey(variant.options)
+                        )
+                      );
+                      onDirtyChange?.(true);
+                    }}
+                  >
+                    Reincluir
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
         {errors.variants && (
           <p className="field-error">
             {errors.variants.message ??
