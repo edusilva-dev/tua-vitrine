@@ -77,9 +77,15 @@ describe("configuração dos ambientes", () => {
       VERCEL: "1",
       VERCEL_ENV: "preview",
       VERCEL_URL: "preview-tua-vitrine.vercel.app",
+      VERCEL_BRANCH_URL: "tua-vitrine-feature-example.vercel.app",
     });
 
     expect(preview.APP_URL).toBe("https://preview-tua-vitrine.vercel.app");
+    expect(preview.TRUSTED_ORIGINS).toEqual([
+      "https://preview-tua-vitrine.vercel.app",
+      "https://tua-vitrine-feature-example.vercel.app",
+    ]);
+    expect(parseEnv(production).TRUSTED_ORIGINS).toEqual([]);
   });
 
   test("configuração parcial do Stripe é recusada em qualquer ambiente", () => {

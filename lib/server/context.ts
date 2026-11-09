@@ -49,13 +49,15 @@ export async function assertAdminAccess(mutation = false): Promise<void> {
   if (!mutation) return;
 
   const values = await headers();
+  const env = getEnv();
 
   if (
     !isAllowedAdminRequest({
       mutation,
       secFetchSite: values.get("sec-fetch-site"),
       origin: values.get("origin"),
-      appUrl: getEnv().APP_URL,
+      appUrl: env.APP_URL,
+      additionalOrigins: env.TRUSTED_ORIGINS,
     })
   ) {
     throw new AppError(403, "ORIGIN", "Origem não permitida.");

@@ -64,4 +64,23 @@ describe("proteção de origem do painel", () => {
       })
     ).toBe(false);
   });
+
+  test("aceita aliases informados explicitamente para um preview", () => {
+    const previewAlias = "https://tua-vitrine-feature-example.vercel.app";
+
+    expect(getTrustedOrigins("https://tua-vitrine-a1b2c3.vercel.app", [previewAlias])).toEqual([
+      "https://tua-vitrine-a1b2c3.vercel.app",
+      previewAlias,
+    ]);
+
+    expect(
+      isAllowedAdminRequest({
+        mutation: true,
+        secFetchSite: "same-origin",
+        origin: previewAlias,
+        appUrl: "https://tua-vitrine-a1b2c3.vercel.app",
+        additionalOrigins: [previewAlias],
+      })
+    ).toBe(true);
+  });
 });
