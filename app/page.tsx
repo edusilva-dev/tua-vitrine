@@ -3,6 +3,7 @@ import {
   BarChart3,
   Check,
   Heart,
+  LogIn,
   MessageCircle,
   Package,
   Palette,
@@ -102,7 +103,9 @@ export default function Home() {
             <span className="grid size-9 place-items-center rounded-xl bg-brand-forest text-brand-lime">
               <Store size={20} aria-hidden="true" />
             </span>
-            tua vitrine<span className="-ml-2.5 text-brand-sage">.</span>
+            <span className="hidden min-[430px]:inline">
+              tua vitrine<span className="-ml-2.5 text-brand-sage">.</span>
+            </span>
           </Link>
           <nav aria-label="Navegação principal" className="hidden items-center gap-8 md:flex">
             <Link href="#recursos" className="text-sm text-brand-copy hover:text-brand-forest">
@@ -116,11 +119,18 @@ export default function Home() {
             </Link>
           </nav>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" className="hidden sm:inline-flex">
-              <Link href="/entrar">Entrar</Link>
+            <Button asChild variant="ghost" className="px-2.5 sm:px-4">
+              <Link href="/entrar">
+                <LogIn aria-hidden="true" />
+                <span className="sm:hidden">Painel</span>
+                <span className="hidden sm:inline">Acessar painel</span>
+              </Link>
             </Button>
-            <Button asChild className="bg-brand-forest px-5 hover:bg-primary">
-              <Link href="/cadastro">Começar grátis</Link>
+            <Button asChild className="bg-brand-forest px-3 sm:px-5 hover:bg-primary">
+              <Link href="/cadastro">
+                <span className="sm:hidden">Criar</span>
+                <span className="hidden sm:inline">Começar grátis</span>
+              </Link>
             </Button>
           </div>
         </div>
@@ -406,7 +416,7 @@ export default function Home() {
           <p className="text-xs">Sua loja online, simples e do seu jeito.</p>
           <div className="flex gap-5 text-xs">
             <Link href="/entrar" className="hover:text-white">
-              Entrar
+              Acessar painel
             </Link>
             <Link href="/cadastro" className="hover:text-white">
               Criar conta
