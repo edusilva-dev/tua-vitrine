@@ -26,7 +26,7 @@ Fotos ficam fora do build. A decisão original de armazenamento local limitava e
 
 ## ADR 004 — Reprodutibilidade e qualidade
 
-Bun 1.3.14 em desenvolvimento e CI; versões de dependências fixadas e bun.lock rastreado. CI usa instalação congelada. Biome é autoridade de formatação e lint geral; ESLint cobre somente lacunas de espaçamento/early returns. TypeScript strict reforça nulabilidade e acessos por índice. Regras não substituem revisão: ausência de código morto e limites entre módulos devem ser revisados.
+Bun 1.4.4 em desenvolvimento e CI; versões de dependências fixadas e bun.lock rastreado. CI usa instalação congelada. Biome é autoridade de formatação e lint geral; ESLint cobre somente lacunas de espaçamento/early returns. TypeScript strict reforça nulabilidade e acessos por índice. Regras não substituem revisão: ausência de código morto e limites entre módulos devem ser revisados.
 
 O arquivo prisma7.config.ts é reconhecido pela versão instalada; scripts passam --config explicitamente, evitando dependência de descoberta implícita.
 

@@ -23,7 +23,7 @@ A API fica no Route Handler curinga `app/api/auth/[...all]/route.ts`. Better Aut
 
 ## Experimentar localmente
 
-1. Use Bun 1.3.14, instale com lock congelado e execute `bun run db:generate` e `bun run db:deploy`.
+1. Use Bun 1.4.4, instale com lock congelado e execute `bun run db:generate` e `bun run db:deploy`.
 2. Copie `.env.example` para `.env.local`, mantenha a URL do PostgreSQL local e gere `BETTER_AUTH_SECRET` com `bun -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))'`.
 3. Execute `bun run dev` e abra `/cadastro`. Em desenvolvimento, os e-mails são gravados automaticamente em `./work/mail-outbox`.
 5. Em desenvolvimento, os e-mails são JSON nesse diretório (permissão 0600); abra localmente o link do e-mail da conta criada. Não há endpoint que exponha essa caixa. Não versionar, publicar ou compartilhar esses arquivos: contêm links de acesso temporário.
