@@ -116,6 +116,16 @@ export function parseEnv(input: Record<string, string | undefined>) {
 
   return {
     ...env,
+    TRUSTED_ORIGINS:
+      isVercel && input.VERCEL_ENV === "preview"
+        ? Array.from(
+            new Set(
+              [input.VERCEL_URL, input.VERCEL_BRANCH_URL]
+                .filter((value): value is string => Boolean(value))
+                .map((value) => new URL(`https://${value}`).origin)
+            )
+          )
+        : [],
     DATABASE_POOL_MAX: env.DATABASE_POOL_MAX ?? (isVercel ? 1 : 10),
     AUTH_ENABLED: !authBypass,
     MAIL_TRANSPORT: env.RESEND_API_KEY ? ("resend" as const) : ("file" as const),
