@@ -227,6 +227,9 @@ export async function saveProduct(
   const values = productInputSchema.parse(compatibleInput);
   const entitlements = await getEntitlements(context);
 
+  if (id && missingVariations && values.variants.length)
+    throw new AppError(422, "VARIATIONS", "Atualize a página antes de editar este produto.");
+
   if (idempotencyKey) z.string().uuid().parse(idempotencyKey);
 
   if (new Set(values.assetIds).size !== values.assetIds.length)
@@ -279,17 +282,11 @@ export async function saveProduct(
       if (!store.whatsapp)
         throw new AppError(422, "ONBOARDING", "Cadastre o WhatsApp antes do primeiro produto.");
 
-      const currentProduct = id
-        ? await tx.product.findFirst({
-            where: { id, storeId: context.storeId, archivedAt: null },
-            select: { variations: true },
-          })
-        : null;
-
-      if (id && !currentProduct) throw new AppError(404, "NOT_FOUND", "Produto não encontrado.");
-
-      if (missingVariations && currentProduct?.variations.length && values.variants.length)
-        throw new AppError(422, "VARIATIONS", "Atualize a página antes de editar este produto.");
+      if (
+        id &&
+        !(await tx.product.findFirst({ where: { id, storeId: context.storeId, archivedAt: null } }))
+      )
+        throw new AppError(404, "NOT_FOUND", "Produto não encontrado.");
 
       if (
         (await tx.asset.count({

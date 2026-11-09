@@ -137,6 +137,16 @@ describe("Catálogo e isolamento real PostgreSQL", () => {
     expect(updated.variations).toEqual(["Cor: Azul"]);
     await archiveProduct({ storeId }, updated.id);
   });
+  test("recusa edição antiga com variantes estruturadas", async () => {
+    const created = await saveProduct({ storeId }, input("Formato antigo"));
+    const { variations: _variations, ...legacyUpdate } = input("Formato antigo editado");
+
+    await expect(saveProduct({ storeId }, legacyUpdate, created.id)).rejects.toThrow(
+      "Atualize a página antes de editar este produto."
+    );
+    expect((await getProduct({ storeId }, created.id)).name).toBe("Formato antigo");
+    await archiveProduct({ storeId }, created.id);
+  });
   test("não lê, modifica ou arquiva produto de outra loja", async () => {
     const product = await saveProduct({ storeId }, input("Isolado"));
 
