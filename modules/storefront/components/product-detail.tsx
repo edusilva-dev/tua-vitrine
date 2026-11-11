@@ -1,11 +1,12 @@
 "use client";
 
-import { Heart, MessageCircle, ShoppingBag } from "lucide-react";
+import { Heart, MessageCircle, ShoppingBag, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -65,6 +66,7 @@ export function ProductDetail({
         ref={dialogContent}
         tabIndex={-1}
         className="max-h-[calc(100dvh-1rem)] overflow-hidden p-0 sm:max-w-4xl"
+        showCloseButton={false}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           dialogContent.current?.focus({ preventScroll: true });
@@ -203,6 +205,16 @@ export function ProductDetail({
             </div>
           </div>
         </div>
+        <DialogClose asChild>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="absolute right-3 top-3 z-30 border border-white/70 bg-black/70 text-white shadow-lg hover:bg-black/85 hover:text-white"
+            aria-label="Fechar detalhes do produto"
+          >
+            <X />
+          </Button>
+        </DialogClose>
       </DialogContent>
     </Dialog>
   );

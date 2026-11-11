@@ -179,7 +179,9 @@ export function CartSheet({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <h3 className="text-sm font-semibold">{line.label}</h3>
+                      <h3 className="max-w-full break-words text-sm font-semibold [overflow-wrap:anywhere]">
+                        {line.label}
+                      </h3>
                       {!loading && !failed && !line.available ? (
                         <p className="mt-1 text-xs text-destructive">
                           Indisponível. Remova este item ou escolha outra opção.

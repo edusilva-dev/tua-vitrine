@@ -612,13 +612,19 @@ export function Storefront({
                 <article
                   className={`group relative flex min-w-0 overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-md ${list ? "flex-row items-stretch" : "flex-col"}`}
                 >
-                  <ProductGallery
-                    images={product.images}
-                    name={product.name}
-                    layout={list ? "fill" : "square"}
-                    className={list ? "w-28 shrink-0 sm:w-48" : "w-full"}
-                    onOpen={() => openProduct(product)}
-                  />
+                  <div className={list ? "w-28 shrink-0 sm:w-48" : "w-full"}>
+                    <ProductGallery
+                      images={product.images}
+                      name={product.name}
+                      layout={list ? "fill" : "square"}
+                      className={
+                        list
+                          ? "h-full w-full"
+                          : "transition-transform duration-500 group-hover:scale-[1.025]"
+                      }
+                      onImageClick={() => openProduct(product)}
+                    />
+                  </div>
                   <div className={`absolute top-3 flex gap-1.5 ${list ? "left-3" : "right-3"}`}>
                     <Button
                       size="icon-sm"

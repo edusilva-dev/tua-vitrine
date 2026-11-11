@@ -5,6 +5,10 @@ import { fixtures, testDatabase } from "../setup/e2e-fixtures";
 test("cadastra fotos e variações como descrições simples", async ({ context, page }, testInfo) => {
   const db = testDatabase();
   const productName = `Hidratação/nutrição/restauração ${testInfo.project.name}`;
+  const store = await db.store.findUniqueOrThrow({
+    where: { id: fixtures.firstStore },
+    select: { trialStartedAt: true },
+  });
 
   try {
     await db.store.update({
@@ -75,30 +79,29 @@ test("cadastra fotos e variações como descrições simples", async ({ context,
 
     await page.goto(`/${fixtures.firstSlug}`);
     const card = page.locator("article").filter({ hasText: productName });
-    const listingGallery = card.getByTestId("product-gallery");
 
     await expect(card).toBeVisible();
-    expect(
-      await listingGallery.evaluate((element) => element.scrollWidth > element.clientWidth)
-    ).toBe(true);
-    await listingGallery.evaluate((element) => element.scrollTo({ left: element.scrollWidth }));
-    await expect
-      .poll(() => listingGallery.evaluate((element) => element.scrollLeft))
-      .toBeGreaterThan(0);
+    await card.getByRole("button", { name: "Ver próxima foto" }).click();
+    await expect(card.getByRole("status", { name: "Foto 2 de 2" })).toBeVisible();
 
     await card.getByRole("button", { name: productName, exact: true }).click();
     const details = page.getByRole("dialog", { name: productName });
-    const detailGallery = details.getByTestId("product-gallery");
 
     await expect(details).toBeVisible();
-    expect(
-      await detailGallery.evaluate((element) => element.scrollWidth > element.clientWidth)
-    ).toBe(true);
+    await details.getByRole("button", { name: "Ver próxima foto" }).click();
+    await expect(details.getByRole("status", { name: "Foto 2 de 2" })).toBeVisible();
     expect(await details.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
       true
     );
   } finally {
-    await db.product.deleteMany({ where: { storeId: fixtures.firstStore, name: productName } });
-    await db.$disconnect();
+    try {
+      await db.product.deleteMany({ where: { storeId: fixtures.firstStore, name: productName } });
+      await db.store.update({
+        where: { id: fixtures.firstStore },
+        data: { trialStartedAt: store.trialStartedAt },
+      });
+    } finally {
+      await db.$disconnect();
+    }
   }
 });
