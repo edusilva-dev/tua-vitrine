@@ -69,7 +69,7 @@ export function ProductGallery({
           type="button"
           onClick={onImageClick}
           className="block h-full w-full text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
-          aria-label={`Ver detalhes de ${name}`}
+          aria-label={`Ver ${name}`}
         >
           {image}
         </button>
