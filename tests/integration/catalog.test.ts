@@ -30,6 +30,7 @@ const input = (name = "Caneca artesanal"): ProductInput => ({
   description: "Cerâmica produzida à mão.",
   priceCents: 4500,
   discountPriceCents: 3900,
+  priceStartsAt: true,
   available: true,
   categoryName: "Cerâmica",
   assetIds: [],
@@ -78,6 +79,7 @@ describe("Catálogo e isolamento real PostgreSQL", () => {
 
     expect(created.variants).toHaveLength(2);
     expect(created.discountPriceCents).toBe(3900);
+    expect(created.priceStartsAt).toBe(true);
     expect(created.variants.find((variant) => variant.label === "Areia")?.discountPriceCents).toBe(
       3900
     );

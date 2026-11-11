@@ -27,6 +27,7 @@ export const productInputSchema = z
     description: z.string().trim().max(5000),
     priceCents: cents,
     discountPriceCents: cents.min(1).nullable().optional(),
+    priceStartsAt: z.boolean().optional(),
     available: z.boolean(),
     categoryName: z.string().trim().max(60),
     assetIds: z.array(z.string().uuid()).max(5),
@@ -116,6 +117,7 @@ export type ProductDTO = {
   description: string;
   priceCents: number;
   discountPriceCents: number | null;
+  priceStartsAt: boolean;
   available: boolean;
   published: boolean;
   category: CategoryDTO | null;

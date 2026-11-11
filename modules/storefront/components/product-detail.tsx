@@ -26,7 +26,7 @@ import { productPrice } from "@/modules/catalog/pricing";
 import type { StoreDTO } from "@/modules/stores/contracts";
 import type { CartLine } from "../selection";
 import { whatsappLink } from "../whatsapp";
-import { ProductImage } from "./product-image";
+import { ProductGallery } from "./product-gallery";
 
 export function ProductDetail({
   product,
@@ -47,13 +47,12 @@ export function ProductDetail({
 }) {
   const [variantId, setVariantId] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [imageIndex, setImageIndex] = useState(0);
   const dialogContent = useRef<HTMLDivElement>(null);
   const legacyVariants = product.variations.length ? [] : product.variants;
   const variant = legacyVariants.find((item) => item.id === variantId);
   const available = product.available && (!legacyVariants.length || !!variant?.available);
   const pricing = productPrice(product, variant);
-  const message = `Olá, ${store.name}! Tenho interesse em ${quantity}x ${product.name}${variant ? ` · ${variant.label}` : ""} (${money(pricing.currentPriceCents)} cada). Pode me ajudar?\n${store.url}`;
+  const message = `Olá, ${store.name}! Tenho interesse em ${quantity}x ${product.name}${variant ? ` · ${variant.label}` : ""} (${money(pricing.currentPriceCents)} cada). Pode me ajudar?`;
 
   return (
     <Dialog
@@ -73,26 +72,7 @@ export function ProductDetail({
       >
         <div className="max-h-[calc(100dvh-1rem)] overflow-y-auto sm:grid sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:overflow-hidden">
           <div className="bg-muted/25 p-5 sm:overflow-y-auto sm:p-6">
-            <ProductImage
-              image={product.images[imageIndex]}
-              name={product.name}
-              className="rounded-2xl"
-            />
-            {product.images.length > 1 ? (
-              <div className="mt-3 flex gap-2">
-                {product.images.map((image, index) => (
-                  <Button
-                    key={image.id}
-                    variant={index === imageIndex ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setImageIndex(index)}
-                    aria-label={`Ver foto ${index + 1}`}
-                  >
-                    {index + 1}
-                  </Button>
-                ))}
-              </div>
-            ) : null}
+            <ProductGallery images={product.images} name={product.name} className="rounded-2xl" />
           </div>
           <div className="flex min-h-0 flex-col p-5 sm:max-h-[calc(100dvh-1rem)] sm:p-6">
             <div className="min-h-0 flex-1 sm:overflow-y-auto sm:pr-2">
@@ -100,13 +80,15 @@ export function ProductDetail({
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   {product.category?.name ?? "Catálogo"}
                 </p>
-                <DialogTitle className="font-heading text-2xl">{product.name}</DialogTitle>
+                <DialogTitle className="font-heading text-2xl [overflow-wrap:anywhere]">
+                  {product.name}
+                </DialogTitle>
                 <DialogDescription className="whitespace-pre-wrap leading-relaxed">
                   {product.description || "Fale com a loja para saber mais sobre este produto."}
                 </DialogDescription>
               </DialogHeader>
               <div className="my-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                {legacyVariants.length && !variant ? (
+                {product.priceStartsAt || (legacyVariants.length && !variant) ? (
                   <span className="text-sm font-normal text-muted-foreground">A partir de</span>
                 ) : null}
                 <span className="text-3xl font-semibold tracking-tight">

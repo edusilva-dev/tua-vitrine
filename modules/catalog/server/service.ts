@@ -30,6 +30,7 @@ export function toProductDTO(product: ProductRecord): ProductDTO {
     description: product.description,
     priceCents: product.priceCents,
     discountPriceCents: product.discountPriceCents,
+    priceStartsAt: product.priceStartsAt,
     available: product.available,
     published: product.published,
     category: product.category
@@ -312,6 +313,7 @@ export async function saveProduct(
         description: values.description,
         priceCents: values.priceCents,
         discountPriceCents: values.discountPriceCents ?? null,
+        priceStartsAt: values.priceStartsAt ?? false,
         variations: values.variations,
         available: values.available,
         categoryId: category?.id ?? null,

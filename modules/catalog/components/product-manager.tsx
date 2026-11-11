@@ -55,6 +55,7 @@ const emptyProduct: ProductInput = {
   description: "",
   priceCents: 0,
   discountPriceCents: null,
+  priceStartsAt: false,
   available: true,
   categoryName: "",
   assetIds: [],
@@ -135,6 +136,7 @@ export function ProductForm({
           description: product.description,
           priceCents: product.priceCents,
           discountPriceCents: product.discountPriceCents,
+          priceStartsAt: product.priceStartsAt,
           available:
             product.available &&
             (!product.variants.length || product.variants.some((variant) => variant.available)),
@@ -147,10 +149,12 @@ export function ProductForm({
   });
   const { errors, isSubmitting } = form.formState;
 
-  async function upload(file?: File) {
-    if (!file || uploadLock.current) return;
+  async function upload(files: File[]) {
+    if (!files.length || uploadLock.current) return;
 
-    if (images.length >= imagesPerProductLimit) {
+    const remaining = imagesPerProductLimit - images.length;
+
+    if (remaining <= 0) {
       setError(
         `Seu plano permite até ${imagesPerProductLimit} ${imagesPerProductLimit === 1 ? "imagem" : "imagens"} por produto.`
       );
@@ -163,11 +167,20 @@ export function ProductForm({
     setError("");
 
     try {
-      const body = new FormData();
+      const selected = files.slice(0, remaining);
+      const uploads = await Promise.allSettled(
+        selected.map((file) => {
+          const body = new FormData();
 
-      body.append("file", file);
-      const asset = await api<AssetDTO>("/api/admin/assets", { method: "POST", body });
-      const next = [...images, asset];
+          body.append("file", file);
+
+          return api<AssetDTO>("/api/admin/assets", { method: "POST", body });
+        })
+      );
+      const uploaded = uploads.flatMap((result) =>
+        result.status === "fulfilled" ? [result.value] : []
+      );
+      const next = [...images, ...uploaded];
 
       setImages(next);
       form.setValue(
@@ -176,8 +189,19 @@ export function ProductForm({
         { shouldDirty: true }
       );
       onDirtyChange?.(true);
+
+      const failed = uploads.length - uploaded.length;
+
+      if (failed || files.length > remaining) {
+        const details = [
+          failed ? `${failed} ${failed === 1 ? "imagem falhou" : "imagens falharam"}` : "",
+          files.length > remaining ? `${files.length - remaining} excederam o limite do plano` : "",
+        ].filter(Boolean);
+
+        setError(`Algumas imagens não foram enviadas: ${details.join(" e ")}.`);
+      }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Não foi possível enviar a imagem.");
+      setError(cause instanceof Error ? cause.message : "Não foi possível enviar as imagens.");
     } finally {
       uploadLock.current = false;
       setUploading(false);
@@ -298,6 +322,32 @@ export function ProductForm({
           {errors.categoryName && <p className="field-error">{errors.categoryName.message}</p>}
         </div>
       </div>
+      <label
+        htmlFor="product-price-starts-at"
+        className="flex items-start gap-3 rounded-lg border p-3 text-sm"
+      >
+        <Controller
+          control={form.control}
+          name="priceStartsAt"
+          render={({ field }) => (
+            <Checkbox
+              checked={field.value ?? false}
+              onCheckedChange={(value) => {
+                field.onChange(value === true);
+                onDirtyChange?.(true);
+              }}
+              id="product-price-starts-at"
+              aria-label="O preço começa no valor informado"
+            />
+          )}
+        />
+        <span>
+          <span className="block font-medium">Preço começa neste valor</span>
+          <span className="mt-0.5 block text-muted-foreground">
+            Use quando o valor final depender do tamanho, serviço ou escolha do cliente.
+          </span>
+        </span>
+      </label>
       <div>
         <Label>
           Fotos do produto{" "}
@@ -367,7 +417,7 @@ export function ProductForm({
             aria-label="Tirar foto do produto"
             disabled={uploading || isSubmitting || images.length >= imagesPerProductLimit}
             onChange={(event) => {
-              void upload(event.target.files?.[0]);
+              void upload(event.target.files ? Array.from(event.target.files) : []);
               event.target.value = "";
             }}
           />
@@ -375,18 +425,19 @@ export function ProductForm({
             ref={galleryInput}
             type="file"
             accept="image/jpeg,image/png,image/webp"
+            multiple
             className="hidden"
-            aria-label="Escolher foto da galeria"
+            aria-label="Escolher fotos da galeria"
             disabled={uploading || isSubmitting || images.length >= imagesPerProductLimit}
             onChange={(event) => {
-              void upload(event.target.files?.[0]);
+              void upload(event.target.files ? Array.from(event.target.files) : []);
               event.target.value = "";
             }}
           />
         </div>
         {uploading && (
           <p role="status" className="mt-2 flex items-center gap-2 text-sm">
-            <Loader2 className="animate-spin" size={16} /> Enviando foto…
+            <Loader2 className="animate-spin" size={16} /> Enviando fotos…
           </p>
         )}
         <p className="mt-2 text-xs text-muted-foreground">

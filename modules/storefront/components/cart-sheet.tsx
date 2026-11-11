@@ -124,9 +124,7 @@ export function CartSheet({
         return;
       }
 
-      window.location.assign(
-        whatsappLink(store.whatsapp, cartMessage(store.name, store.url, fresh))
-      );
+      window.location.assign(whatsappLink(store.whatsapp, cartMessage(store.name, fresh)));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível abrir o WhatsApp.");
     } finally {
