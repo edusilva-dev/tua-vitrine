@@ -36,6 +36,62 @@ test.describe("vitrine pública", () => {
     await expect(page.getByRole("button", { name: "Adicionar ao carrinho" })).toBeVisible();
   });
 
+  test("adiciona produto simples ao carrinho direto pela listagem", async ({ page }) => {
+    await page.goto(`/${fixtures.secondSlug}`);
+
+    await page
+      .getByRole("button", { name: "Adicionar Caneca artesanal ao carrinho", exact: true })
+      .click();
+    await expect(page.getByRole("button", { name: /Abrir carrinho, 1 itens/ })).toBeVisible();
+  });
+
+  test("destaca a campanha e oferece uma saída clara para o catálogo", async ({ page }) => {
+    const db = testDatabase();
+    const store = await db.store.findUniqueOrThrow({
+      where: { id: fixtures.firstStore },
+      select: { trialStartedAt: true },
+    });
+
+    try {
+      await db.store.update({
+        where: { id: fixtures.firstStore },
+        data: { trialStartedAt: new Date() },
+      });
+      await db.promotionCampaign.create({
+        data: {
+          storeId: fixtures.firstStore,
+          title: "Semana do café",
+          description: "Uma seleção especial.",
+          ctaLabel: "Ver campanha",
+          active: true,
+          products: {
+            create: {
+              productId: fixtures.product,
+            },
+          },
+        },
+      });
+
+      await page.goto(`/${fixtures.firstSlug}?campaign=1`);
+
+      await expect(page.getByRole("heading", { name: "Semana do café" })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Encontre seu próximo favorito." })
+      ).toHaveCount(0);
+      await expect(page.getByText("Campanha ativa")).toHaveCount(0);
+      await expect(
+        page.getByRole("link", { name: "Voltar para todos os produtos", exact: true })
+      ).toHaveAttribute("href", `/${fixtures.firstSlug}`);
+    } finally {
+      await db.promotionCampaign.deleteMany({ where: { storeId: fixtures.firstStore } });
+      await db.store.update({
+        where: { id: fixtures.firstStore },
+        data: { trialStartedAt: store.trialStartedAt },
+      });
+      await db.$disconnect();
+    }
+  });
+
   test("lista e placeholder do carrinho cabem no celular", async ({ page }) => {
     const db = testDatabase();
     const store = await db.store.findUniqueOrThrow({

@@ -79,26 +79,30 @@ export function ProductGallery({
 
       {hasMultipleImages ? (
         <>
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon-sm"
-            className="absolute left-2 top-1/2 z-10 -translate-y-1/2 border border-white/60 bg-black/55 text-white shadow-md hover:bg-black/70 hover:text-white"
-            onClick={() => select(index - 1)}
-            aria-label="Ver foto anterior"
-          >
-            <ChevronLeft />
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon-sm"
-            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 border border-white/60 bg-black/55 text-white shadow-md hover:bg-black/70 hover:text-white"
-            onClick={() => select(index + 1)}
-            aria-label="Ver próxima foto"
-          >
-            <ChevronRight />
-          </Button>
+          <div className="absolute left-2 top-1/2 z-10 -translate-y-1/2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon-sm"
+              className="border border-white/60 bg-black/55 text-white shadow-md hover:bg-black/70 hover:text-white"
+              onClick={() => select(index - 1)}
+              aria-label="Ver foto anterior"
+            >
+              <ChevronLeft />
+            </Button>
+          </div>
+          <div className="absolute right-2 top-1/2 z-10 -translate-y-1/2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon-sm"
+              className="border border-white/60 bg-black/55 text-white shadow-md hover:bg-black/70 hover:text-white"
+              onClick={() => select(index + 1)}
+              aria-label="Ver próxima foto"
+            >
+              <ChevronRight />
+            </Button>
+          </div>
           <div
             className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1 rounded-full bg-black/55 px-2 py-1"
             role="status"
