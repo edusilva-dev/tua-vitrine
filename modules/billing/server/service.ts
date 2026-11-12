@@ -48,6 +48,7 @@ function planFromPrice(priceId: string | undefined): PaidBillingPlan | null {
 
 function subscriptionData(subscription: Stripe.Subscription) {
   const periodEnds = subscription.items.data.map((item) => item.current_period_end);
+  const periodEnd = periodEnds.length ? Math.max(...periodEnds) : null;
   const status = subscription.status.toUpperCase().replaceAll("-", "_") as
     | "INCOMPLETE"
     | "INCOMPLETE_EXPIRED"
@@ -62,7 +63,11 @@ function subscriptionData(subscription: Stripe.Subscription) {
     stripeSubscriptionId: subscription.id,
     plan: planFromPrice(subscription.items.data[0]?.price.id),
     status,
-    currentPeriodEnd: toDate(periodEnds.length ? Math.max(...periodEnds) : null),
+    currentPeriodEnd: toDate(
+      subscription.status === "canceled"
+        ? (subscription.ended_at ?? subscription.canceled_at ?? periodEnd)
+        : periodEnd
+    ),
     trialEnd: toDate(subscription.trial_end),
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
   };

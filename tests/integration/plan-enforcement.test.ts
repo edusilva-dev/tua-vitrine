@@ -297,6 +297,55 @@ test("retorno do checkout reconcilia a assinatura e encerra a oferta de trial", 
   }
 });
 
+test("cancelamento imediato registra a data real de encerramento", async () => {
+  const canceledStoreId = randomUUID();
+  const stripeCustomerId = `cus_${canceledStoreId}`;
+  const endedAt = Math.floor(Date.now() / 1000) - 60;
+
+  await db.store.create({
+    data: {
+      id: canceledStoreId,
+      name: "Assinatura encerrada",
+      slug: `assinatura-encerrada-${canceledStoreId}`,
+      whatsapp: "+5511999999999",
+      status: "ACTIVE",
+      onboardingCompletedAt: new Date(),
+    },
+  });
+  await db.storeSubscription.create({
+    data: { storeId: canceledStoreId, stripeCustomerId },
+  });
+
+  try {
+    await synchronizeStripeSubscription({
+      id: `sub_${canceledStoreId}`,
+      customer: stripeCustomerId,
+      status: "canceled",
+      cancel_at_period_end: false,
+      canceled_at: endedAt - 120,
+      ended_at: endedAt,
+      trial_end: null,
+      items: {
+        data: [
+          {
+            current_period_end: endedAt + 30 * 86400,
+            price: { id: process.env.STRIPE_PRICE_BASIC_MONTHLY },
+          },
+        ],
+      },
+    } as unknown as Stripe.Subscription);
+
+    expect(
+      await db.storeSubscription.findUniqueOrThrow({ where: { storeId: canceledStoreId } })
+    ).toMatchObject({
+      status: "CANCELED",
+      currentPeriodEnd: new Date(endedAt * 1000),
+    });
+  } finally {
+    await db.store.delete({ where: { id: canceledStoreId } });
+  }
+});
+
 test("cadastro por plano pago inicia o trial Profissional ao publicar a loja", async () => {
   const paidStoreId = randomUUID();
   const paidContext = { storeId: paidStoreId };
