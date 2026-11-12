@@ -122,7 +122,7 @@ export default function Home() {
             <Button asChild variant="ghost" className="px-2.5 sm:px-4">
               <Link href="/entrar">
                 <LogIn aria-hidden="true" />
-                <span className="sm:hidden">Painel</span>
+                <span className="sm:hidden">Entrar</span>
                 <span className="hidden sm:inline">Acessar painel</span>
               </Link>
             </Button>
