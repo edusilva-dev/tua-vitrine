@@ -106,11 +106,12 @@ describe("seleções e WhatsApp", () => {
         available: true,
       },
     ];
-    const message = cartMessage("Ateliê", "http://localhost:3000/atelie", lines);
+    const message = cartMessage("Ateliê", lines);
     const url = new URL(whatsappLink("+55 11 99999-9999", message));
 
     expect(url.pathname).toBe("/5511999999999");
     expect(url.searchParams.get("text")).toContain("2x Caneca · Azul");
     expect(message).toContain("39,80");
+    expect(message).not.toContain("http");
   });
 });

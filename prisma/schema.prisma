@@ -104,6 +104,7 @@ model Product {
  description String
  priceCents Int
  discountPriceCents Int?
+ priceStartsAt Boolean @default(false)
  variations String[] @default([])
  available Boolean @default(true)
  published Boolean @default(true)

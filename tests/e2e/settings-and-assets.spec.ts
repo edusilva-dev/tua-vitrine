@@ -25,7 +25,6 @@ test("explica e permite comparar os modelos e a organização da vitrine", async
     },
   ]);
   await page.goto("/admin/settings");
-  await page.waitForLoadState("networkidle");
 
   await expect(
     page.getByText("Mostra três produtos lado a lado em uma galeria de cards.")

@@ -48,7 +48,7 @@ import { useSelections } from "../use-selections";
 import { whatsappLink } from "../whatsapp";
 import { CartSheet } from "./cart-sheet";
 import { ProductDetail } from "./product-detail";
-import { ProductImage } from "./product-image";
+import { ProductGallery } from "./product-gallery";
 
 function selectedVariantFilter(filters: ProductFilters, name: string): string {
   const value = filters.variants?.[name];
@@ -356,7 +356,7 @@ export function Storefront({
               <a
                 href={whatsappLink(
                   store.whatsapp,
-                  `Olá, ${store.name}! Vim pela vitrine e gostaria de conversar.\n${store.url}`
+                  `Olá, ${store.name}! Vim pela vitrine e gostaria de conversar.`
                 )}
                 target="_blank"
                 rel="noreferrer"
@@ -612,14 +612,9 @@ export function Storefront({
                 <article
                   className={`group relative flex min-w-0 overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-md ${list ? "flex-row items-stretch" : "flex-col"}`}
                 >
-                  <button
-                    type="button"
-                    onClick={() => openProduct(product)}
-                    className={`block min-w-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${list ? "w-28 shrink-0 sm:w-48" : "w-full"}`}
-                    aria-label={`Ver ${product.name}`}
-                  >
-                    <ProductImage
-                      image={product.images[0]}
+                  <div className={list ? "w-28 shrink-0 sm:w-48" : "w-full"}>
+                    <ProductGallery
+                      images={product.images}
                       name={product.name}
                       layout={list ? "fill" : "square"}
                       className={
@@ -627,8 +622,9 @@ export function Storefront({
                           ? "h-full w-full"
                           : "transition-transform duration-500 group-hover:scale-[1.025]"
                       }
+                      onImageClick={() => openProduct(product)}
                     />
-                  </button>
+                  </div>
                   <div className={`absolute top-3 flex gap-1.5 ${list ? "left-3" : "right-3"}`}>
                     <Button
                       size="icon-sm"
@@ -658,7 +654,7 @@ export function Storefront({
                           window.open(
                             whatsappLink(
                               store.whatsapp,
-                              `Olá! Tenho interesse em ${product.name} (${money(pricing.currentPriceCents)}).\n${store.url}`
+                              `Olá! Tenho interesse em ${product.name} (${money(pricing.currentPriceCents)}).`
                             ),
                             "_blank",
                             "noopener,noreferrer"
@@ -702,7 +698,7 @@ export function Storefront({
                       className={`mt-auto flex gap-2 ${list ? "flex-col items-stretch pt-4 sm:flex-row sm:items-end sm:justify-between sm:pt-5" : "items-end justify-between pt-5"}`}
                     >
                       <div className="min-w-0">
-                        {product.variants.length ? (
+                        {product.priceStartsAt || product.variants.length ? (
                           <p className="text-[10px] text-muted-foreground">a partir de</p>
                         ) : null}
                         <div className="flex flex-wrap items-baseline gap-x-2">

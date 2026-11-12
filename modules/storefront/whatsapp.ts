@@ -5,7 +5,7 @@ export function whatsappLink(phone: string, message: string) {
   return `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
 }
 
-export function cartMessage(storeName: string, storeUrl: string, lines: ResolvedLine[]) {
+export function cartMessage(storeName: string, lines: ResolvedLine[]) {
   const subtotal = lines.reduce((sum, line) => sum + line.priceCents * line.quantity, 0);
 
   return [
@@ -17,6 +17,5 @@ export function cartMessage(storeName: string, storeUrl: string, lines: Resolved
     "",
     `Subtotal estimado: ${money(subtotal)}`,
     "Pode confirmar os valores e a disponibilidade?",
-    storeUrl,
   ].join("\n");
 }

@@ -1,11 +1,20 @@
 import { expect, test } from "@playwright/test";
+import sharp from "sharp";
 import { fixtures, testDatabase } from "../setup/e2e-fixtures";
 
 test("cadastra fotos e variações como descrições simples", async ({ context, page }, testInfo) => {
   const db = testDatabase();
-  const productName = `Camiseta com opções ${testInfo.project.name}`;
+  const productName = `Hidratação/nutrição/restauração ${testInfo.project.name}`;
+  const store = await db.store.findUniqueOrThrow({
+    where: { id: fixtures.firstStore },
+    select: { trialStartedAt: true },
+  });
 
   try {
+    await db.store.update({
+      where: { id: fixtures.firstStore },
+      data: { trialStartedAt: new Date() },
+    });
     await context.addCookies([
       {
         name: "tv-local-store",
@@ -28,6 +37,25 @@ test("cadastra fotos e variações como descrições simples", async ({ context,
       "capture",
       "environment"
     );
+    await expect(dialog.getByLabel("Escolher fotos da galeria")).toHaveAttribute("multiple", "");
+    const firstImage = await sharp({
+      create: { width: 24, height: 24, channels: 3, background: "#355e3b" },
+    })
+      .jpeg()
+      .toBuffer();
+    const secondImage = await sharp({
+      create: { width: 24, height: 24, channels: 3, background: "#d5e9bc" },
+    })
+      .png()
+      .toBuffer();
+
+    await dialog.getByLabel("Escolher fotos da galeria").setInputFiles([
+      { name: "produto-1.jpg", mimeType: "image/jpeg", buffer: firstImage },
+      { name: "produto-2.png", mimeType: "image/png", buffer: secondImage },
+    ]);
+    await expect(dialog.getByAltText("Foto 1")).toBeVisible();
+    await expect(dialog.getByAltText("Foto 2")).toBeVisible();
+    await dialog.getByLabel("O preço começa no valor informado").check();
 
     await dialog
       .getByRole("textbox", { name: "Variação 1", exact: true })
@@ -41,13 +69,39 @@ test("cadastra fotos e variações como descrições simples", async ({ context,
     await expect(page.getByText("Produto adicionado à vitrine.")).toBeVisible();
     const saved = await db.product.findFirstOrThrow({
       where: { storeId: fixtures.firstStore, name: productName },
-      include: { variants: true },
+      include: { variants: true, images: true },
     });
 
     expect(saved.variations).toEqual(["Tamanho: P, M, G e GG", "Cor: Azul, Preto e Branco"]);
     expect(saved.variants).toHaveLength(0);
+    expect(saved.images).toHaveLength(2);
+    expect(saved.priceStartsAt).toBe(true);
+
+    await page.goto(`/${fixtures.firstSlug}`);
+    const card = page.locator("article").filter({ hasText: productName });
+
+    await expect(card).toBeVisible();
+    await card.getByRole("button", { name: "Ver próxima foto" }).click();
+    await expect(card.getByRole("status", { name: "Foto 2 de 2" })).toBeVisible();
+
+    await card.getByRole("button", { name: productName, exact: true }).click();
+    const details = page.getByRole("dialog", { name: productName });
+
+    await expect(details).toBeVisible();
+    await details.getByRole("button", { name: "Ver próxima foto" }).click();
+    await expect(details.getByRole("status", { name: "Foto 2 de 2" })).toBeVisible();
+    expect(await details.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+      true
+    );
   } finally {
-    await db.product.deleteMany({ where: { storeId: fixtures.firstStore, name: productName } });
-    await db.$disconnect();
+    try {
+      await db.product.deleteMany({ where: { storeId: fixtures.firstStore, name: productName } });
+      await db.store.update({
+        where: { id: fixtures.firstStore },
+        data: { trialStartedAt: store.trialStartedAt },
+      });
+    } finally {
+      await db.$disconnect();
+    }
   }
 });
