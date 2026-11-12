@@ -81,7 +81,19 @@ test("cadastra fotos e variações como descrições simples", async ({ context,
     const card = page.locator("article").filter({ hasText: productName });
 
     await expect(card).toBeVisible();
-    await card.getByRole("button", { name: "Ver próxima foto" }).click();
+    const nextImage = card.getByRole("button", { name: "Ver próxima foto" });
+
+    await nextImage.hover();
+    const initialPosition = await nextImage.boundingBox();
+
+    expect(initialPosition).not.toBeNull();
+    await page.mouse.down();
+    await page.waitForTimeout(500);
+    const pressedPosition = await nextImage.boundingBox();
+
+    expect(pressedPosition).not.toBeNull();
+    expect(Math.abs((pressedPosition?.y ?? 0) - (initialPosition?.y ?? 0))).toBeLessThanOrEqual(2);
+    await page.mouse.up();
     await expect(card.getByRole("status", { name: "Foto 2 de 2" })).toBeVisible();
 
     await card.getByRole("button", { name: productName, exact: true }).click();
@@ -95,6 +107,9 @@ test("cadastra fotos e variações como descrições simples", async ({ context,
     );
   } finally {
     try {
+      await db.metricEvent.deleteMany({
+        where: { storeId: fixtures.firstStore, product: { name: productName } },
+      });
       await db.product.deleteMany({ where: { storeId: fixtures.firstStore, name: productName } });
       await db.store.update({
         where: { id: fixtures.firstStore },

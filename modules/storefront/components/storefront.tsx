@@ -383,16 +383,17 @@ export function Storefront({
                 {promotion.description ? (
                   <p className="mt-2 max-w-2xl text-sm opacity-85">{promotion.description}</p>
                 ) : null}
-                <Button
-                  className="mt-5 bg-background text-foreground hover:bg-background/90"
-                  asChild
-                >
-                  <Link href={promotionActive ? basePath : `${basePath}?campaign=1`}>
-                    {promotionActive ? <ArrowLeft /> : null}
-                    {promotionActive ? "Voltar para todos os produtos" : promotion.ctaLabel}
-                    {!promotionActive ? <ArrowRight /> : null}
-                  </Link>
-                </Button>
+                {!promotionActive ? (
+                  <Button
+                    className="mt-5 bg-background text-foreground hover:bg-background/90"
+                    asChild
+                  >
+                    <Link href={`${basePath}?campaign=1`}>
+                      {promotion.ctaLabel}
+                      <ArrowRight />
+                    </Link>
+                  </Button>
+                ) : null}
               </div>
               {promotion.bannerUrl ? (
                 <Image
@@ -407,22 +408,6 @@ export function Storefront({
             </div>
           </section>
         ) : null}
-        {promotionActive && promotion ? (
-          <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-                Campanha ativa
-              </p>
-              <p className="mt-1 truncate font-medium">Você está vendo: {promotion.title}</p>
-            </div>
-            <Button variant="outline" className="shrink-0 bg-background" asChild>
-              <Link href={basePath}>
-                <X />
-                Ver todos os produtos
-              </Link>
-            </Button>
-          </div>
-        ) : null}
         {selection.storageFailed ? (
           <p
             className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
@@ -434,6 +419,14 @@ export function Storefront({
         ) : null}
         <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
+            {promotionActive ? (
+              <Button variant="link" className="mb-2 h-auto p-0" asChild>
+                <Link href={basePath}>
+                  <ArrowLeft />
+                  Voltar para todos os produtos
+                </Link>
+              </Button>
+            ) : null}
             <p className="mb-1 text-xs uppercase tracking-widest text-muted-foreground">
               Nossa seleção
             </p>

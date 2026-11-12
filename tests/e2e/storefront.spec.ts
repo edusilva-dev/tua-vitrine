@@ -78,9 +78,9 @@ test.describe("vitrine pública", () => {
       await expect(
         page.getByRole("heading", { name: "Encontre seu próximo favorito." })
       ).toHaveCount(0);
-      await expect(page.getByText("Você está vendo: Semana do café")).toBeVisible();
+      await expect(page.getByText("Campanha ativa")).toHaveCount(0);
       await expect(
-        page.getByRole("link", { name: "Ver todos os produtos", exact: true })
+        page.getByRole("link", { name: "Voltar para todos os produtos", exact: true })
       ).toHaveAttribute("href", `/${fixtures.firstSlug}`);
     } finally {
       await db.promotionCampaign.deleteMany({ where: { storeId: fixtures.firstStore } });
