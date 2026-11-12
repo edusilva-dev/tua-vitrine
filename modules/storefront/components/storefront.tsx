@@ -339,37 +339,41 @@ export function Storefront({
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-5 pb-20 sm:px-8">
-        <section className="relative my-7 overflow-hidden rounded-3xl border bg-card px-7 py-9 sm:my-9 sm:px-10 sm:py-12">
-          <div className="pointer-events-none absolute -right-16 -top-32 size-96 rounded-full border-[55px] border-primary/5" />
-          <p className="relative mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            Compre de quem está perto
-          </p>
-          <h1 className="relative max-w-xl font-heading text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
-            {store.customization.tagline || "Encontre seu próximo favorito."}
-          </h1>
-          <p className="relative mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Explore nossa seleção e fale direto com a gente. Suas escolhas, com um atendimento de
-            verdade.
-          </p>
-          {store.whatsapp ? (
-            <Button variant="outline" className="relative mt-6 bg-background" asChild>
-              <a
-                href={whatsappLink(
-                  store.whatsapp,
-                  `Olá, ${store.name}! Vim pela vitrine e gostaria de conversar.`
-                )}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <MessageCircle />
-                Conversar com a loja
-                <ArrowRight className="ml-3 size-4" />
-              </a>
-            </Button>
-          ) : null}
-        </section>
+        {!promotionActive ? (
+          <section className="relative my-7 overflow-hidden rounded-3xl border bg-card px-7 py-9 sm:my-9 sm:px-10 sm:py-12">
+            <div className="pointer-events-none absolute -right-16 -top-32 size-96 rounded-full border-[55px] border-primary/5" />
+            <p className="relative mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+              Compre de quem está perto
+            </p>
+            <h1 className="relative max-w-xl font-heading text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+              {store.customization.tagline || "Encontre seu próximo favorito."}
+            </h1>
+            <p className="relative mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
+              Explore nossa seleção e fale direto com a gente. Suas escolhas, com um atendimento de
+              verdade.
+            </p>
+            {store.whatsapp ? (
+              <Button variant="outline" className="relative mt-6 bg-background" asChild>
+                <a
+                  href={whatsappLink(
+                    store.whatsapp,
+                    `Olá, ${store.name}! Vim pela vitrine e gostaria de conversar.`
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <MessageCircle />
+                  Conversar com a loja
+                  <ArrowRight className="ml-3 size-4" />
+                </a>
+              </Button>
+            ) : null}
+          </section>
+        ) : null}
         {promotion ? (
-          <section className="mb-7 overflow-hidden rounded-3xl border bg-primary text-primary-foreground sm:mb-9">
+          <section
+            className={`${promotionActive ? "my-7 sm:my-9" : "mb-7 sm:mb-9"} overflow-hidden rounded-3xl border bg-primary text-primary-foreground`}
+          >
             <div className="grid items-center gap-6 p-7 sm:p-9 md:grid-cols-[1fr_auto]">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] opacity-75">
@@ -384,8 +388,9 @@ export function Storefront({
                   asChild
                 >
                   <Link href={promotionActive ? basePath : `${basePath}?campaign=1`}>
-                    {promotionActive ? "Ver todos os produtos" : promotion.ctaLabel}
-                    <ArrowRight />
+                    {promotionActive ? <ArrowLeft /> : null}
+                    {promotionActive ? "Voltar para todos os produtos" : promotion.ctaLabel}
+                    {!promotionActive ? <ArrowRight /> : null}
                   </Link>
                 </Button>
               </div>
@@ -401,6 +406,22 @@ export function Storefront({
               ) : null}
             </div>
           </section>
+        ) : null}
+        {promotionActive && promotion ? (
+          <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+                Campanha ativa
+              </p>
+              <p className="mt-1 truncate font-medium">Você está vendo: {promotion.title}</p>
+            </div>
+            <Button variant="outline" className="shrink-0 bg-background" asChild>
+              <Link href={basePath}>
+                <X />
+                Ver todos os produtos
+              </Link>
+            </Button>
+          </div>
         ) : null}
         {selection.storageFailed ? (
           <p
@@ -612,7 +633,7 @@ export function Storefront({
                 <article
                   className={`group relative flex min-w-0 overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-md ${list ? "flex-row items-stretch" : "flex-col"}`}
                 >
-                  <div className={list ? "w-28 shrink-0 sm:w-48" : "w-full"}>
+                  <div className={`relative z-10 ${list ? "w-28 shrink-0 sm:w-48" : "w-full"}`}>
                     <ProductGallery
                       images={product.images}
                       name={product.name}
@@ -624,8 +645,29 @@ export function Storefront({
                       }
                       onImageClick={() => openProduct(product)}
                     />
+                    {!product.variants.length ? (
+                      <Button
+                        type="button"
+                        size="icon"
+                        className={`absolute z-20 rounded-full border-4 border-card shadow-lg transition-transform hover:scale-105 ${list ? "-right-5 top-1/2 -translate-y-1/2" : "-bottom-5 right-4"}`}
+                        disabled={!available || !selection.ready}
+                        aria-label={`Adicionar ${product.name} ao carrinho`}
+                        onClick={() =>
+                          addToCart({
+                            productId: product.id,
+                            variantId: null,
+                            quantity: 1,
+                            name: product.name,
+                          })
+                        }
+                      >
+                        <ShoppingBag />
+                      </Button>
+                    ) : null}
                   </div>
-                  <div className={`absolute top-3 flex gap-1.5 ${list ? "left-3" : "right-3"}`}>
+                  <div
+                    className={`absolute top-3 z-30 flex gap-1.5 ${list ? "left-3" : "right-3"}`}
+                  >
                     <Button
                       size="icon-sm"
                       variant="secondary"
@@ -664,7 +706,9 @@ export function Storefront({
                       <MessageCircle />
                     </Button>
                   </div>
-                  <div className={`flex min-w-0 flex-1 flex-col ${list ? "p-4 sm:p-5" : "p-5"}`}>
+                  <div
+                    className={`flex min-w-0 flex-1 flex-col ${list ? "py-4 pl-8 pr-4 sm:py-5 sm:pl-9 sm:pr-5" : "px-5 pb-5 pt-8"}`}
+                  >
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <span className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
                         {product.category?.name ?? "Selecionado para você"}
