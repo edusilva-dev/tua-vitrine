@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   title: "tua vitrine · Seu negócio mais perto",
   description:
     "Sua loja online, simples e do seu jeito. Catálogo de produtos e atendimento pelo WhatsApp.",
+  icons: {
+    icon: "/assets/icone-tua-vitrine.png",
+    apple: "/assets/icone-tua-vitrine.png",
+  },
 };
 
 export default function RootLayout({

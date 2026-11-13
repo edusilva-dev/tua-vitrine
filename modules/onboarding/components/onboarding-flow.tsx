@@ -1,11 +1,12 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, ArrowRight, Check, Loader2, Store } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,8 +91,8 @@ export function OnboardingFlow({
   return (
     <div className="mx-auto max-w-2xl py-3">
       <div className="mb-8 text-center">
-        <span className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-brand-onboarding text-primary">
-          <Store size={27} />
+        <span className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-brand-onboarding">
+          <BrandLogo variant="mark" className="size-10" />
         </span>
         <p className="eyebrow">SEU NEGÓCIO MERECE UMA VITRINE</p>
         <h1 className="page-title">Vamos colocar sua loja no mundo.</h1>

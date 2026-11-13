@@ -12,6 +12,7 @@ import {
   Store,
 } from "lucide-react";
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -95,14 +96,8 @@ export default function Home() {
     <div className="min-h-svh overflow-hidden bg-background text-foreground">
       <header className="sticky top-0 z-50 border-b border-foreground/8 bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 font-heading text-xl font-bold tracking-tight"
-          >
-            <span className="grid size-9 place-items-center rounded-xl bg-brand-forest text-brand-lime">
-              <Store size={20} aria-hidden="true" />
-            </span>
-            tua vitrine<span className="-ml-2.5 text-brand-sage">.</span>
+          <Link href="/" aria-label="Tua Vitrine — início" className="flex items-center">
+            <BrandLogo priority className="w-36 sm:w-40" />
           </Link>
           <nav aria-label="Navegação principal" className="hidden items-center gap-8 md:flex">
             <Link href="#recursos" className="text-sm text-brand-copy hover:text-brand-forest">
@@ -400,8 +395,12 @@ export default function Home() {
       </main>
       <footer className="bg-brand-forest-deep text-white/60">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <Link href="/" className="font-heading text-lg font-bold text-white">
-            tua vitrine<span className="text-brand-lime-muted">.</span>
+          <Link
+            href="/"
+            aria-label="Tua Vitrine — início"
+            className="rounded-lg bg-white px-3 py-2"
+          >
+            <BrandLogo className="w-32" />
           </Link>
           <p className="text-xs">Sua loja online, simples e do seu jeito.</p>
           <div className="flex gap-5 text-xs">

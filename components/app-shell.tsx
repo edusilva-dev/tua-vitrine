@@ -10,13 +10,13 @@ import {
   Menu,
   Package,
   Paintbrush,
-  Store,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AuthAccountMenu } from "@/components/auth-account-menu";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -95,12 +95,10 @@ export function AppShell({
       <aside className="admin-sidebar hidden lg:fixed lg:inset-y-0 lg:block lg:w-64">
         <Link
           href="/admin"
-          className="flex items-center gap-3 px-6 py-8 text-2xl font-bold tracking-tight"
+          aria-label="Tua Vitrine — visão geral"
+          className="mx-5 my-6 flex w-fit rounded-xl bg-white px-3 py-2"
         >
-          <span className="grid size-10 place-items-center rounded-xl bg-brand-lime text-brand-forest">
-            <Store size={23} />
-          </span>
-          tua vitrine<span className="text-brand-lime">.</span>
+          <BrandLogo priority className="w-40" />
         </Link>
         <div className="px-5 pb-6">
           <p className="mb-2 text-[10px] font-semibold tracking-[.18em] text-white/45">
@@ -152,9 +150,9 @@ export function AppShell({
           href="/admin"
           aria-label="Ir para a visão geral"
           onClick={() => startNavigation("/admin")}
-          className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-forest text-brand-lime"
+          className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-onboarding"
         >
-          <Store size={21} aria-hidden="true" />
+          <BrandLogo variant="mark" priority className="size-8" />
         </Link>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-foreground">
@@ -182,11 +180,8 @@ export function AppShell({
             <SheetHeader className="gap-4 border-b border-white/10 p-5 pr-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-lime text-brand-forest">
-                    <Store size={21} aria-hidden="true" />
-                  </span>
-                  <SheetTitle className="truncate text-lg font-bold tracking-tight text-white">
-                    tua vitrine<span className="text-brand-lime">.</span>
+                  <SheetTitle className="rounded-xl bg-white px-3 py-2">
+                    <BrandLogo className="w-36" />
                   </SheetTitle>
                 </div>
                 <SheetClose asChild>
