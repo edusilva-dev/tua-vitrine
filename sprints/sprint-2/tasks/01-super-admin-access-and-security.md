@@ -1,5 +1,7 @@
 # 01 — Criar o acesso e a segurança do Super Admin
 
+> **Status:** concluída em 13 de novembro de 2026.
+
 ## Objetivo
 
 Criar uma autorização de plataforma explícita e a estrutura protegida da área interna, sem implementar
@@ -30,14 +32,14 @@ ou associação a uma loja como autorização global.
 
 ## Critérios de aceite
 
-- [ ] usuário sem permissão recebe 404 ou 403 em páginas e APIs internas;
-- [ ] administrador autorizado acessa o shell interno sem selecionar uma loja;
-- [ ] não existe fluxo público para conceder a permissão;
-- [ ] cliente não consegue forjar a identidade ou o papel administrativo;
-- [ ] revogação impede novo acesso sem alterar as associações do usuário às lojas;
-- [ ] testes cobrem acesso autorizado, negado, sessão ausente e permissão revogada;
-- [ ] nenhum dado de outra loja é carregado antes da autorização global;
-- [ ] concessão e revogação estão documentadas para a operação.
+- [x] usuário sem permissão recebe 404 ou 403 em páginas e APIs internas;
+- [x] administrador autorizado acessa o shell interno sem selecionar uma loja;
+- [x] não existe fluxo público para conceder a permissão;
+- [x] cliente não consegue forjar a identidade ou o papel administrativo;
+- [x] revogação impede novo acesso sem alterar as associações do usuário às lojas;
+- [x] testes cobrem acesso autorizado, negado, sessão ausente e permissão revogada;
+- [x] nenhum dado de outra loja é carregado antes da autorização global;
+- [x] concessão e revogação estão documentadas para a operação.
 
 ## Validação
 

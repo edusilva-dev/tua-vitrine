@@ -6,7 +6,7 @@
 
 ## Estado do sprint
 
-- **Status:** documentação pronta para revisão; implementação não iniciada.
+- **Status:** implementação iniciada; tarefa 01 concluída.
 - **Tema:** operação segura de lojas, assinaturas e solicitações de suporte.
 - **Produto:** Tua Vitrine.
 - **Público:** equipe interna da Tua Vitrine com permissão explícita de administrador da plataforma.
@@ -211,7 +211,7 @@ quem alterou o quê, quando e por qual motivo; não é uma solução de observab
 
 | Ordem | Tarefa | Dependências | Status |
 | --- | --- | --- | --- |
-| 01 | [Acesso e segurança do Super Admin](./tasks/01-super-admin-access-and-security.md) | — | Pendente |
+| 01 | [Acesso e segurança do Super Admin](./tasks/01-super-admin-access-and-security.md) | — | Concluída |
 | 02 | [Busca e listagem de lojas](./tasks/02-store-search-and-list.md) | 01 | Pendente |
 | 03 | [Detalhe operacional da loja](./tasks/03-store-operational-detail.md) | 01, 02 | Pendente |
 | 04 | [Cobrança e reconciliação](./tasks/04-billing-diagnostics-and-reconciliation.md) | 01, 03 | Pendente |
