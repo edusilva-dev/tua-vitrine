@@ -58,7 +58,14 @@ DATABASE_URL='URL_POOLED' DATABASE_URL_UNPOOLED='URL_DIRETA' bun run db:deploy
 ```
 
 Migrações não fazem parte do `buildCommand`: builds de preview e produção podem ocorrer em paralelo,
-e executar DDL durante cada build cria concorrência e torna rollback de aplicação inseguro.
+e executar DDL durante cada build cria concorrência e torna rollback de aplicação inseguro. Depois
+que todos os testes passam em um push para `main`, o job `migrate-production` aplica as migrações com
+o secret `PRODUCTION_DATABASE_URL` do environment `production` no GitHub. Essa URL deve ser a conexão
+direta do branch de produção no Neon.
+
+Como a Vercel pode concluir o deploy antes desse job, toda alteração de schema deve ser compatível
+com a versão anterior durante a implantação. Código que começa a ler uma tabela nova deve tratar sua
+ausência até a migração terminar; a remoção de estruturas antigas deve ocorrer em uma entrega posterior.
 
 ## 2. Criar e configurar o projeto
 

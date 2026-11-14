@@ -17,7 +17,8 @@ Arquivos .env reais nunca são versionados. .env.example documenta o ambiente lo
 
 - /api/health/live confirma que o processo responde.
 - /api/health/ready confirma acesso ao banco.
-- Migrações usam bun run db:deploy com a conexão direta do Neon.
+- Após os testes de um push para main, o CI executa bun run db:deploy com a conexão direta do Neon
+  armazenada no secret PRODUCTION_DATABASE_URL do environment production.
 - migrate dev, db push e o seed demonstrativo não devem rodar em produção.
 - Prefira migrações compatíveis com a versão anterior; reverter um deployment não reverte o schema.
 
