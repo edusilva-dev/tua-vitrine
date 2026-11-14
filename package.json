@@ -20,6 +20,7 @@
     "assets:check-r2": "bun --conditions=react-server scripts/check-r2.ts",
     "auth:cleanup": "bun --conditions=react-server scripts/cleanup-auth.ts",
     "store:assign-owner": "bun --conditions=react-server scripts/assign-store-owner.ts",
+    "platform-admin": "bun --conditions=react-server scripts/platform-admin.ts",
     "check": "bun run lint && bun run typecheck && bun run test",
     "db:generate": "bun --bun prisma generate --config prisma7.config.ts",
     "db:migrate": "bun --bun prisma migrate dev --config prisma7.config.ts",

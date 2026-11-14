@@ -10,6 +10,7 @@ import {
   Menu,
   Package,
   Paintbrush,
+  ShieldCheck,
   Store,
   X,
 } from "lucide-react";
@@ -45,10 +46,12 @@ export function AppShell({
   store,
   children,
   authenticated,
+  platformAdmin,
 }: {
   store: StoreDTO;
   children: React.ReactNode;
   authenticated: boolean;
+  platformAdmin: boolean;
 }) {
   const pathname = usePathname();
   const previousPathname = useRef(pathname);
@@ -238,6 +241,18 @@ export function AppShell({
               ))}
             </nav>
             <SheetFooter className="gap-2 border-t border-white/10 p-3">
+              {platformAdmin && (
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="h-11 w-full justify-start px-3 text-white hover:bg-white/10 hover:text-white"
+                >
+                  <Link href="/super-admin">
+                    <ShieldCheck aria-hidden="true" />
+                    Operação da plataforma
+                  </Link>
+                </Button>
+              )}
               <Button
                 asChild
                 variant="ghost"
@@ -270,6 +285,14 @@ export function AppShell({
             <span className="truncate text-sm font-medium">{store.name}</span>
           </div>
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            {platformAdmin && (
+              <Button asChild variant="ghost" className="hidden xl:inline-flex">
+                <Link href="/super-admin">
+                  <ShieldCheck aria-hidden="true" />
+                  Operação
+                </Link>
+              </Button>
+            )}
             {authenticated && <AuthAccountMenu />}
             <Button asChild variant="outline" className="size-9 bg-white px-0 sm:w-auto sm:px-4">
               <Link
