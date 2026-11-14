@@ -57,15 +57,16 @@ Antes do primeiro deploy, aplique as migrações a partir de um ambiente confiá
 DATABASE_URL='URL_POOLED' DATABASE_URL_UNPOOLED='URL_DIRETA' bun run db:deploy
 ```
 
-Migrações não fazem parte do `buildCommand`: builds de preview e produção podem ocorrer em paralelo,
-e executar DDL durante cada build cria concorrência e torna rollback de aplicação inseguro. Depois
-que todos os testes passam em um push para `main`, o job `migrate-production` aplica as migrações com
-o secret `PRODUCTION_DATABASE_URL` do environment `production` no GitHub. Essa URL deve ser a conexão
-direta do branch de produção no Neon.
+O `buildCommand` da Vercel executa `bun run vercel-build`, que aplica `prisma migrate deploy` antes de
+compilar a aplicação. Assim, produção, staging e todos os previews atualizam o banco correspondente
+antes de publicar código que depende do novo schema. `DATABASE_URL_UNPOOLED` deve apontar para a
+conexão direta de cada ambiente; se ela não estiver presente, o Prisma usa `DATABASE_URL`.
 
-Como a Vercel pode concluir o deploy antes desse job, toda alteração de schema deve ser compatível
-com a versão anterior durante a implantação. Código que começa a ler uma tabela nova deve tratar sua
-ausência até a migração terminar; a remoção de estruturas antigas deve ocorrer em uma entrega posterior.
+Os previews compartilham o branch `test`, portanto mais de um build pode encontrar a mesma migração.
+O Prisma serializa a aplicação de migrações e os builds seguintes encontram o schema já atualizado.
+As migrações ainda devem ser compatíveis com a versão anterior durante a implantação: código que
+começa a ler uma tabela nova deve tratar sua ausência, e a remoção de estruturas antigas deve ocorrer
+em uma entrega posterior. Um rollback da aplicação não reverte o banco.
 
 ## 2. Criar e configurar o projeto
 
