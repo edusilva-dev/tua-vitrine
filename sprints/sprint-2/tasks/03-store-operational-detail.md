@@ -24,14 +24,14 @@ o estado atual com dados locais e links úteis, sem alterar registros durante a 
 
 ## Critérios de aceite
 
-- [ ] a equipe identifica a loja, o responsável e o estado do catálogo em uma tela;
-- [ ] o plano exibido usa a mesma regra aplicada às permissões do produto;
-- [ ] datas são apresentadas no fuso esperado e preservadas em UTC na API;
-- [ ] IDs técnicos podem ser copiados sem expor segredos;
-- [ ] loja inexistente retorna 404;
-- [ ] usuário não autorizado não distingue loja inexistente de inacessível;
-- [ ] carregamento não dispara mutações nem chamadas externas;
-- [ ] testes cobrem os diferentes estados de plano, trial e assinatura.
+- [x] a equipe identifica a loja, o responsável e o estado do catálogo em uma tela;
+- [x] o plano exibido usa a mesma regra aplicada às permissões do produto;
+- [x] datas são apresentadas no fuso esperado e preservadas em UTC na API;
+- [x] IDs técnicos podem ser copiados sem expor segredos;
+- [x] loja inexistente retorna 404;
+- [x] usuário não autorizado não distingue loja inexistente de inacessível;
+- [x] carregamento não dispara mutações nem chamadas externas;
+- [x] testes cobrem os diferentes estados de plano, trial e assinatura.
 
 ## Validação
 

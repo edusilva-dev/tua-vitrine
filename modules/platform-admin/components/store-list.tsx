@@ -167,7 +167,12 @@ export function StoreList({
               {result.items.map((store) => (
                 <article key={store.id} className="space-y-3 p-4">
                   <div>
-                    <p className="font-medium">{store.name}</p>
+                    <Link
+                      href={`/super-admin/stores/${store.id}`}
+                      className="font-medium underline-offset-4 hover:underline"
+                    >
+                      {store.name}
+                    </Link>
                     <p className="mt-0.5 text-sm text-muted-foreground">/{store.slug}</p>
                   </div>
                   <StoreBadges store={store} />
@@ -197,7 +202,12 @@ export function StoreList({
                   {result.items.map((store) => (
                     <tr key={store.id}>
                       <td className="px-5 py-4">
-                        <p className="max-w-64 truncate font-medium">{store.name}</p>
+                        <Link
+                          href={`/super-admin/stores/${store.id}`}
+                          className="block max-w-64 truncate font-medium underline-offset-4 hover:underline"
+                        >
+                          {store.name}
+                        </Link>
                         <p className="mt-0.5 max-w-64 truncate text-muted-foreground">
                           /{store.slug}
                         </p>
