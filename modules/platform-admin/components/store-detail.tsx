@@ -9,6 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,11 +43,11 @@ function formatDate(value: string | null): string {
   return value ? dateFormatter.format(new Date(value)) : "Não registrado";
 }
 
-function DataRow({ label, value }: { label: string; value: string }) {
+function DataRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex flex-col gap-1 border-b py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
       <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium sm:text-right">{value}</dd>
+      <dd className="min-w-0 text-sm font-medium sm:max-w-[65%] sm:text-right">{value}</dd>
     </div>
   );
 }
@@ -109,7 +110,10 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
           </CardHeader>
           <CardContent>
             <dl>
-              <DataRow label="ID da loja" value={store.id} />
+              <DataRow
+                label="ID da loja"
+                value={<CopyValue label="Copiar ID da loja" value={store.id} />}
+              />
               <DataRow label="Criada em" value={formatDate(store.createdAt)} />
               <DataRow label="Última atualização" value={formatDate(store.updatedAt)} />
               <DataRow
@@ -117,9 +121,6 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
                 value={formatDate(store.onboardingCompletedAt)}
               />
             </dl>
-            <div className="mt-3">
-              <CopyValue label="Copiar ID da loja" value={store.id} />
-            </div>
           </CardContent>
         </Card>
 
@@ -222,18 +223,28 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
                       value={formatDate(store.subscription.updatedAt)}
                     />
                   </dl>
-                  <div className="space-y-2">
-                    <CopyValue
-                      label="Copiar ID do cliente Stripe"
-                      value={store.subscription.stripeCustomerId}
+                  <dl>
+                    <DataRow
+                      label="ID do cliente Stripe"
+                      value={
+                        <CopyValue
+                          label="Copiar ID do cliente Stripe"
+                          value={store.subscription.stripeCustomerId}
+                        />
+                      }
                     />
                     {store.subscription.stripeSubscriptionId ? (
-                      <CopyValue
-                        label="Copiar ID da assinatura Stripe"
-                        value={store.subscription.stripeSubscriptionId}
+                      <DataRow
+                        label="ID da assinatura Stripe"
+                        value={
+                          <CopyValue
+                            label="Copiar ID da assinatura Stripe"
+                            value={store.subscription.stripeSubscriptionId}
+                          />
+                        }
                       />
                     ) : null}
-                  </div>
+                  </dl>
                   <div className="flex flex-wrap gap-2">
                     <Button asChild variant="ghost" size="sm">
                       <Link href={store.subscription.customerDashboardUrl} target="_blank">
