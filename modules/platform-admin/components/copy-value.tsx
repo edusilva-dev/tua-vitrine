@@ -14,11 +14,8 @@ export function CopyValue({ label, value }: { label: string; value: string }) {
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-2">
-      <code
-        className="min-w-0 flex-1 truncate rounded-md bg-muted px-2 py-1.5 text-xs"
-        title={value}
-      >
+    <div className="flex min-w-0 items-center justify-end gap-1">
+      <code className="min-w-0 truncate text-xs" title={value}>
         {value}
       </code>
       <Button type="button" variant="ghost" size="icon-sm" onClick={copy} aria-label={label}>

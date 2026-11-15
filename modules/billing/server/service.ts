@@ -1,6 +1,6 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import type Stripe from "stripe";
+import Stripe from "stripe";
 import { Prisma } from "@/generated/prisma/client";
 import type { StoreContext } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
@@ -76,7 +76,7 @@ function subscriptionData(subscription: Stripe.Subscription) {
 async function applyStripeSubscription(
   tx: Prisma.TransactionClient,
   subscription: Stripe.Subscription
-) {
+): Promise<string | null> {
   const stripeCustomerId = customerId(subscription.customer);
   const nextSubscription = subscriptionData(subscription);
 
@@ -112,10 +112,114 @@ async function applyStripeSubscription(
       data: { trialUsedAt: new Date() },
     });
   }
+
+  return billing?.storeId ?? null;
 }
 
 export async function synchronizeStripeSubscription(subscription: Stripe.Subscription) {
   await db.$transaction((tx) => applyStripeSubscription(tx, subscription));
+}
+
+type BillingSnapshot = {
+  plan: BillingPlan | null;
+  status: string | null;
+  stripeSubscriptionId: string | null;
+  currentPeriodEnd: string | null;
+  trialEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+};
+
+function billingSnapshot(billing: {
+  plan: BillingPlan | null;
+  status: string | null;
+  stripeSubscriptionId: string | null;
+  currentPeriodEnd: Date | null;
+  trialEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
+}): BillingSnapshot {
+  return {
+    ...billing,
+    currentPeriodEnd: billing.currentPeriodEnd?.toISOString() ?? null,
+    trialEnd: billing.trialEnd?.toISOString() ?? null,
+  };
+}
+
+export async function reconcileStripeBillingForStore(
+  storeId: string,
+  stripe: Stripe = getStripe()
+): Promise<{ before: BillingSnapshot; after: BillingSnapshot; remoteFound: boolean }> {
+  const billing = await db.storeSubscription.findUnique({ where: { storeId } });
+
+  if (!billing)
+    throw new AppError(409, "BILLING_NOT_CONFIGURED", "A loja não possui cliente Stripe local.");
+
+  const before = billingSnapshot(billing);
+  let remote: Stripe.Subscription | null = null;
+
+  try {
+    if (billing.stripeSubscriptionId) {
+      try {
+        remote = await stripe.subscriptions.retrieve(billing.stripeSubscriptionId);
+      } catch (error) {
+        if (!(error instanceof Stripe.errors.StripeInvalidRequestError) || error.statusCode !== 404)
+          throw error;
+      }
+    }
+
+    if (!remote) {
+      const subscriptions = await stripe.subscriptions.list({
+        customer: billing.stripeCustomerId,
+        status: "all",
+        limit: 10,
+      });
+
+      remote =
+        subscriptions.data.find((subscription) =>
+          RECOVERABLE_STRIPE_STATUSES.has(subscription.status)
+        ) ??
+        subscriptions.data[0] ??
+        null;
+    }
+  } catch (error) {
+    if (
+      error instanceof Stripe.errors.StripeInvalidRequestError &&
+      error.code === "resource_missing"
+    )
+      throw new AppError(
+        409,
+        "STRIPE_RESOURCE_NOT_FOUND",
+        "O cliente ou a assinatura não existe na Stripe deste ambiente. Os dados locais foram preservados."
+      );
+
+    if (error instanceof Stripe.errors.StripeError)
+      throw new AppError(
+        502,
+        "STRIPE_RECONCILIATION_FAILED",
+        "A Stripe não respondeu à reconciliação. Os dados locais foram preservados."
+      );
+
+    throw error;
+  }
+
+  if (remote) {
+    await synchronizeStripeSubscription(remote);
+  } else {
+    await db.storeSubscription.update({
+      where: { storeId },
+      data: {
+        plan: null,
+        status: null,
+        stripeSubscriptionId: null,
+        currentPeriodEnd: null,
+        trialEnd: null,
+        cancelAtPeriodEnd: false,
+      },
+    });
+  }
+
+  const updated = await db.storeSubscription.findUniqueOrThrow({ where: { storeId } });
+
+  return { before, after: billingSnapshot(updated), remoteFound: Boolean(remote) };
 }
 
 async function retrieveSubscription(
@@ -557,7 +661,11 @@ export async function processStripeEvent(event: Stripe.Event) {
 
       if (!subscription) return;
 
-      await applyStripeSubscription(tx, subscription);
+      const storeId = await applyStripeSubscription(tx, subscription);
+
+      if (storeId) {
+        await tx.stripeWebhookEvent.update({ where: { id: event.id }, data: { storeId } });
+      }
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return;

@@ -9,11 +9,13 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PlatformStoreDetailDTO } from "../contracts/store-detail";
 import { CopyValue } from "./copy-value";
+import { ReconcileBillingDialog } from "./reconcile-billing-dialog";
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "medium",
@@ -27,25 +29,25 @@ const sourceLabels = {
   SUBSCRIPTION: "Assinatura Stripe",
 };
 const subscriptionLabels = {
-  INCOMPLETE: "Incompleta",
-  INCOMPLETE_EXPIRED: "Incompleta expirada",
-  TRIALING: "Em trial",
-  ACTIVE: "Ativa",
+  INCOMPLETE: "Assinatura incompleta",
+  INCOMPLETE_EXPIRED: "Assinatura expirada",
+  TRIALING: "Assinatura em trial",
+  ACTIVE: "Assinatura ativa",
   PAST_DUE: "Pagamento atrasado",
-  CANCELED: "Cancelada",
-  UNPAID: "Não paga",
-  PAUSED: "Pausada",
+  CANCELED: "Assinatura cancelada",
+  UNPAID: "Assinatura não paga",
+  PAUSED: "Assinatura pausada",
 } as const;
 
 function formatDate(value: string | null): string {
   return value ? dateFormatter.format(new Date(value)) : "Não registrado";
 }
 
-function DataRow({ label, value }: { label: string; value: string }) {
+function DataRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex flex-col gap-1 border-b py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
       <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium sm:text-right">{value}</dd>
+      <dd className="min-w-0 text-sm font-medium sm:max-w-[65%] sm:text-right">{value}</dd>
     </div>
   );
 }
@@ -66,9 +68,9 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={store.status === "ACTIVE" ? "default" : "secondary"}>
-              {store.status === "ACTIVE" ? "Loja ativa" : "Rascunho"}
+              {store.status === "ACTIVE" ? "Loja publicada" : "Loja em rascunho"}
             </Badge>
-            <Badge variant="outline">{planLabels[store.plan.plan]}</Badge>
+            <Badge variant="outline">Plano {planLabels[store.plan.plan]}</Badge>
           </div>
           <h1 className="mt-4 break-words font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
             {store.name}
@@ -108,7 +110,10 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
           </CardHeader>
           <CardContent>
             <dl>
-              <DataRow label="ID da loja" value={store.id} />
+              <DataRow
+                label="ID da loja"
+                value={<CopyValue label="Copiar ID da loja" value={store.id} />}
+              />
               <DataRow label="Criada em" value={formatDate(store.createdAt)} />
               <DataRow label="Última atualização" value={formatDate(store.updatedAt)} />
               <DataRow
@@ -116,9 +121,6 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
                 value={formatDate(store.onboardingCompletedAt)}
               />
             </dl>
-            <div className="mt-3">
-              <CopyValue label="Copiar ID da loja" value={store.id} />
-            </div>
           </CardContent>
         </Card>
 
@@ -160,80 +162,130 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <CalendarClock className="size-4 text-primary" aria-hidden="true" />
-              Plano efetivo
+              Plano e cobrança
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-heading text-2xl font-semibold">
-                {planLabels[store.plan.plan]}
-              </span>
-              <Badge variant="outline">{sourceLabels[store.plan.source]}</Badge>
-            </div>
-            <dl className="mt-4">
-              <DataRow label="Trial iniciado" value={formatDate(store.trialStartedAt)} />
-              <DataRow label="Fim do trial efetivo" value={formatDate(store.plan.trialEndsAt)} />
-              <DataRow label="Trial disponível" value={store.plan.trialAvailable ? "Sim" : "Não"} />
-            </dl>
-          </CardContent>
-        </Card>
+          <CardContent className="grid gap-8 lg:grid-cols-2 lg:gap-0">
+            <section className="lg:pr-8">
+              <h3 className="text-sm font-medium text-muted-foreground">Acesso atual</h3>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="font-heading text-2xl font-semibold">
+                  Plano {planLabels[store.plan.plan]}
+                </span>
+                <Badge variant="outline">{sourceLabels[store.plan.source]}</Badge>
+              </div>
+              <dl className="mt-4">
+                <DataRow label="Trial iniciado" value={formatDate(store.trialStartedAt)} />
+                <DataRow label="Fim do trial" value={formatDate(store.plan.trialEndsAt)} />
+                <DataRow
+                  label="Pode iniciar um trial"
+                  value={store.plan.trialAvailable ? "Sim" : "Não"}
+                />
+              </dl>
+            </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ReceiptText className="size-4 text-primary" aria-hidden="true" />
-              Assinatura local
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {store.subscription ? (
-              <div className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline">
-                    {store.subscription.status
-                      ? subscriptionLabels[store.subscription.status]
-                      : "Sem status"}
-                  </Badge>
-                  {store.subscription.cancelAtPeriodEnd ? (
-                    <Badge variant="secondary">Cancelamento agendado</Badge>
-                  ) : null}
-                </div>
-                <dl>
-                  <DataRow
-                    label="Plano registrado"
-                    value={
-                      store.subscription.plan ? planLabels[store.subscription.plan] : "Ausente"
-                    }
-                  />
-                  <DataRow
-                    label="Fim do período"
-                    value={formatDate(store.subscription.currentPeriodEnd)}
-                  />
-                  <DataRow label="Atualizada em" value={formatDate(store.subscription.updatedAt)} />
-                </dl>
-                <div className="space-y-2">
-                  <CopyValue
-                    label="Copiar ID do cliente Stripe"
-                    value={store.subscription.stripeCustomerId}
-                  />
-                  {store.subscription.stripeSubscriptionId ? (
-                    <CopyValue
-                      label="Copiar ID da assinatura Stripe"
-                      value={store.subscription.stripeSubscriptionId}
+            <section className="border-t pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
+              <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <ReceiptText className="size-4" aria-hidden="true" />
+                Registro da Stripe
+              </h3>
+              {store.subscription ? (
+                <div className="mt-3 space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline">
+                      {store.subscription.status
+                        ? subscriptionLabels[store.subscription.status]
+                        : "Assinatura sem status"}
+                    </Badge>
+                    {store.subscription.cancelAtPeriodEnd ? (
+                      <Badge variant="secondary">Cancelamento agendado</Badge>
+                    ) : null}
+                  </div>
+                  <dl>
+                    <DataRow
+                      label="Plano registrado"
+                      value={
+                        store.subscription.plan
+                          ? `Plano ${planLabels[store.subscription.plan]}`
+                          : "Ausente"
+                      }
                     />
-                  ) : null}
+                    <DataRow
+                      label="Fim do período"
+                      value={formatDate(store.subscription.currentPeriodEnd)}
+                    />
+                    <DataRow
+                      label="Atualizada em"
+                      value={formatDate(store.subscription.updatedAt)}
+                    />
+                  </dl>
+                  <dl>
+                    <DataRow
+                      label="ID do cliente Stripe"
+                      value={
+                        <CopyValue
+                          label="Copiar ID do cliente Stripe"
+                          value={store.subscription.stripeCustomerId}
+                        />
+                      }
+                    />
+                    {store.subscription.stripeSubscriptionId ? (
+                      <DataRow
+                        label="ID da assinatura Stripe"
+                        value={
+                          <CopyValue
+                            label="Copiar ID da assinatura Stripe"
+                            value={store.subscription.stripeSubscriptionId}
+                          />
+                        }
+                      />
+                    ) : null}
+                  </dl>
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild variant="ghost" size="sm">
+                      <Link href={store.subscription.customerDashboardUrl} target="_blank">
+                        Cliente na Stripe <ExternalLink aria-hidden="true" />
+                      </Link>
+                    </Button>
+                    {store.subscription.subscriptionDashboardUrl ? (
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={store.subscription.subscriptionDashboardUrl} target="_blank">
+                          Assinatura na Stripe <ExternalLink aria-hidden="true" />
+                        </Link>
+                      </Button>
+                    ) : null}
+                  </div>
+                  <div className="rounded-xl bg-muted/60 p-3 text-xs text-muted-foreground">
+                    {store.lastStripeWebhook ? (
+                      <>
+                        Último webhook:{" "}
+                        <span className="font-medium text-foreground">
+                          {store.lastStripeWebhook.type}
+                        </span>
+                        {" · "}
+                        {formatDate(store.lastStripeWebhook.processedAt)}
+                      </>
+                    ) : (
+                      "Nenhum webhook relacionado foi registrado. Eventos anteriores a esta versão não possuem vínculo retroativo."
+                    )}
+                  </div>
+                  <div className="rounded-xl border border-dashed p-3 text-xs leading-5 text-muted-foreground">
+                    Consulte a Stripe quando o acesso atual parecer diferente da assinatura, por
+                    exemplo após um cancelamento ou pagamento cujo webhook não chegou.
+                  </div>
+                  <ReconcileBillingDialog storeId={store.id} storeName={store.name} />
                 </div>
-              </div>
-            ) : (
-              <div className="flex gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-                <ReceiptText className="size-5 shrink-0" aria-hidden="true" />
-                Nenhuma assinatura Stripe registrada para esta loja.
-              </div>
-            )}
+              ) : (
+                <div className="mt-3 flex gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                  <ReceiptText className="size-5 shrink-0" aria-hidden="true" />
+                  Nenhuma assinatura Stripe registrada para esta loja.
+                </div>
+              )}
+            </section>
           </CardContent>
         </Card>
       </div>
