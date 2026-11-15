@@ -48,5 +48,8 @@ export type PlatformStoreDetailDTO = {
     trialUsedAt: string | null;
     cancelAtPeriodEnd: boolean;
     updatedAt: string;
+    customerDashboardUrl: string;
+    subscriptionDashboardUrl: string | null;
   } | null;
+  lastStripeWebhook: { id: string; type: string; processedAt: string } | null;
 };

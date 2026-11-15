@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PlatformStoreDetailDTO } from "../contracts/store-detail";
 import { CopyValue } from "./copy-value";
+import { ReconcileBillingDialog } from "./reconcile-billing-dialog";
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "medium",
@@ -227,6 +228,35 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
                     />
                   ) : null}
                 </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href={store.subscription.customerDashboardUrl} target="_blank">
+                      Cliente na Stripe <ExternalLink aria-hidden="true" />
+                    </Link>
+                  </Button>
+                  {store.subscription.subscriptionDashboardUrl ? (
+                    <Button asChild variant="ghost" size="sm">
+                      <Link href={store.subscription.subscriptionDashboardUrl} target="_blank">
+                        Assinatura na Stripe <ExternalLink aria-hidden="true" />
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
+                <div className="rounded-xl bg-muted/60 p-3 text-xs text-muted-foreground">
+                  {store.lastStripeWebhook ? (
+                    <>
+                      Último webhook:{" "}
+                      <span className="font-medium text-foreground">
+                        {store.lastStripeWebhook.type}
+                      </span>
+                      {" · "}
+                      {formatDate(store.lastStripeWebhook.processedAt)}
+                    </>
+                  ) : (
+                    "Nenhum webhook relacionado foi registrado. Eventos anteriores a esta versão não possuem vínculo retroativo."
+                  )}
+                </div>
+                <ReconcileBillingDialog storeId={store.id} storeName={store.name} />
               </div>
             ) : (
               <div className="flex gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">

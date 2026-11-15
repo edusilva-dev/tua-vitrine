@@ -24,14 +24,14 @@ intencional, sem criar uma segunda implementação das regras de cobrança.
 
 ## Critérios de aceite
 
-- [ ] a tela diferencia estado local de informação obtida na reconciliação;
-- [ ] reconciliação atualiza o banco conforme a mesma regra dos webhooks;
-- [ ] repetir a operação sem mudança não corrompe datas ou estado;
-- [ ] falha da Stripe não altera parcialmente a assinatura local;
-- [ ] ação exige confirmação e motivo;
-- [ ] toda tentativa gera auditoria com sucesso ou falha;
-- [ ] testes cobrem assinatura ativa, cancelada, ausente e erro remoto;
-- [ ] nenhuma chave Stripe ou dado de pagamento chega ao cliente.
+- [x] a tela diferencia estado local de informação obtida na reconciliação;
+- [x] reconciliação atualiza o banco conforme a mesma regra dos webhooks;
+- [x] repetir a operação sem mudança não corrompe datas ou estado;
+- [x] falha da Stripe não altera parcialmente a assinatura local;
+- [x] ação exige confirmação e motivo;
+- [x] toda tentativa gera auditoria com sucesso ou falha;
+- [x] testes cobrem assinatura ativa, cancelada, ausente e erro remoto;
+- [x] nenhuma chave Stripe ou dado de pagamento chega ao cliente.
 
 ## Validação
 

@@ -40,3 +40,14 @@ ampliar as capacidades do Super Admin.
 - conceda acesso apenas no ambiente necessário;
 - revogue o acesso assim que ele deixar de ser necessário;
 - não edite `PlatformAdmin` por endpoints ou formulários do produto.
+
+## Auditoria administrativa
+
+Mutações do Super Admin registram um evento imutável com administrador, loja, ação, resultado,
+motivo e snapshots operacionais mínimos. Respostas completas de integrações, mensagens de suporte,
+tokens e dados de pagamento não entram nesses registros. A aplicação não oferece rotas de edição ou
+exclusão da auditoria.
+
+Os registros devem ser preservados por no mínimo 24 meses. Uma rotina de limpeza só pode ser criada
+depois que a política de retenção for revisada; até lá, não há exclusão automática. A consulta e os
+filtros da trilha serão entregues na tarefa 07 da Sprint 2.

@@ -47,6 +47,11 @@ export async function queryPlatformStoreDetail(
             updatedAt: true,
           },
         },
+        stripeWebhookEvents: {
+          orderBy: { processedAt: "desc" },
+          take: 1,
+          select: { id: true, type: true, processedAt: true },
+        },
       },
     }),
     db.product.count({ where: { storeId, archivedAt: null, published: true } }),
@@ -68,6 +73,9 @@ export async function queryPlatformStoreDetail(
     },
     now
   );
+  const dashboardPrefix = process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_")
+    ? "https://dashboard.stripe.com"
+    : "https://dashboard.stripe.com/test";
 
   return {
     id: store.id,
@@ -105,6 +113,16 @@ export async function queryPlatformStoreDetail(
           trialEnd: store.subscription.trialEnd?.toISOString() ?? null,
           trialUsedAt: store.subscription.trialUsedAt?.toISOString() ?? null,
           updatedAt: store.subscription.updatedAt.toISOString(),
+          customerDashboardUrl: `${dashboardPrefix}/customers/${store.subscription.stripeCustomerId}`,
+          subscriptionDashboardUrl: store.subscription.stripeSubscriptionId
+            ? `${dashboardPrefix}/subscriptions/${store.subscription.stripeSubscriptionId}`
+            : null,
+        }
+      : null,
+    lastStripeWebhook: store.stripeWebhookEvents[0]
+      ? {
+          ...store.stripeWebhookEvents[0],
+          processedAt: store.stripeWebhookEvents[0].processedAt.toISOString(),
         }
       : null,
   };
