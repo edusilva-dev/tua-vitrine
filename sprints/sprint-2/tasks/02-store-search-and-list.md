@@ -1,5 +1,7 @@
 # 02 — Criar a busca e a listagem de lojas
 
+> **Status:** concluída em 13 de novembro de 2026.
+
 ## Objetivo
 
 Permitir que a equipe encontre rapidamente a loja correta a partir das informações recebidas em uma
@@ -23,14 +25,14 @@ lojas ou expor mais dados do que o necessário.
 
 ## Critérios de aceite
 
-- [ ] todos os identificadores previstos encontram a loja correta;
-- [ ] busca parcial por nome, slug e e-mail é normalizada de forma segura;
-- [ ] UUID ou ID Stripe inexistente retorna estado vazio, sem erro técnico;
-- [ ] resultados são paginados e preservados ao navegar para o detalhe e voltar;
-- [ ] plano e estado exibidos correspondem às regras reais da aplicação;
-- [ ] a API não retorna telefone, conteúdo do catálogo ou outros campos desnecessários;
-- [ ] usuário sem permissão não acessa a consulta;
-- [ ] testes cobrem busca, filtros, paginação e autorização.
+- [x] todos os identificadores previstos encontram a loja correta;
+- [x] busca parcial por nome, slug e e-mail é normalizada de forma segura;
+- [x] UUID ou ID Stripe inexistente retorna estado vazio, sem erro técnico;
+- [x] resultados são paginados e preservados ao navegar para o detalhe e voltar;
+- [x] plano e estado exibidos correspondem às regras reais da aplicação;
+- [x] a API não retorna telefone, conteúdo do catálogo ou outros campos desnecessários;
+- [x] usuário sem permissão não acessa a consulta;
+- [x] testes cobrem busca, filtros, paginação e autorização.
 
 ## Validação
 

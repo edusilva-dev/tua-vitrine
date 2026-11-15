@@ -18,6 +18,7 @@ export const reservedSlugs = [
   "recuperar-senha",
   "redefinir-senha",
   "verificar-email",
+  "super-admin",
 ];
 
 export function normalizeSlug(value: string) {
