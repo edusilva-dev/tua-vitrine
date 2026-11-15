@@ -156,28 +156,49 @@ export async function reconcileStripeBillingForStore(
   const before = billingSnapshot(billing);
   let remote: Stripe.Subscription | null = null;
 
-  if (billing.stripeSubscriptionId) {
-    try {
-      remote = await stripe.subscriptions.retrieve(billing.stripeSubscriptionId);
-    } catch (error) {
-      if (!(error instanceof Stripe.errors.StripeInvalidRequestError) || error.statusCode !== 404)
-        throw error;
+  try {
+    if (billing.stripeSubscriptionId) {
+      try {
+        remote = await stripe.subscriptions.retrieve(billing.stripeSubscriptionId);
+      } catch (error) {
+        if (!(error instanceof Stripe.errors.StripeInvalidRequestError) || error.statusCode !== 404)
+          throw error;
+      }
     }
-  }
 
-  if (!remote) {
-    const subscriptions = await stripe.subscriptions.list({
-      customer: billing.stripeCustomerId,
-      status: "all",
-      limit: 10,
-    });
+    if (!remote) {
+      const subscriptions = await stripe.subscriptions.list({
+        customer: billing.stripeCustomerId,
+        status: "all",
+        limit: 10,
+      });
 
-    remote =
-      subscriptions.data.find((subscription) =>
-        RECOVERABLE_STRIPE_STATUSES.has(subscription.status)
-      ) ??
-      subscriptions.data[0] ??
-      null;
+      remote =
+        subscriptions.data.find((subscription) =>
+          RECOVERABLE_STRIPE_STATUSES.has(subscription.status)
+        ) ??
+        subscriptions.data[0] ??
+        null;
+    }
+  } catch (error) {
+    if (
+      error instanceof Stripe.errors.StripeInvalidRequestError &&
+      error.code === "resource_missing"
+    )
+      throw new AppError(
+        409,
+        "STRIPE_RESOURCE_NOT_FOUND",
+        "O cliente ou a assinatura não existe na Stripe deste ambiente. Os dados locais foram preservados."
+      );
+
+    if (error instanceof Stripe.errors.StripeError)
+      throw new AppError(
+        502,
+        "STRIPE_RECONCILIATION_FAILED",
+        "A Stripe não respondeu à reconciliação. Os dados locais foram preservados."
+      );
+
+    throw error;
   }
 
   if (remote) {

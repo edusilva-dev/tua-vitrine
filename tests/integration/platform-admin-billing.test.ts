@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import type Stripe from "stripe";
+import Stripe from "stripe";
 import { db } from "@/lib/server/db";
 import { reconcileStripeBillingForStore } from "@/modules/billing/server/service";
 
@@ -53,6 +53,27 @@ function stripeWith(remote: Stripe.Subscription | null): Stripe {
 function stripeWithoutSubscriptions(): Stripe {
   return {
     subscriptions: { list: async () => ({ data: [] }) },
+  } as unknown as Stripe;
+}
+
+function stripeWithMissingCustomer(): Stripe {
+  const missing = () =>
+    new Stripe.errors.StripeInvalidRequestError({
+      type: "invalid_request_error",
+      message: "No such customer",
+      code: "resource_missing",
+      statusCode: 404,
+    });
+
+  return {
+    subscriptions: {
+      retrieve: async () => {
+        throw missing();
+      },
+      list: async () => {
+        throw missing();
+      },
+    },
   } as unknown as Stripe;
 }
 
@@ -130,4 +151,21 @@ test("cliente sem assinatura remota limpa somente o estado local de assinatura",
     stripeSubscriptionId: null,
     currentPeriodEnd: null,
   });
+});
+
+test("recurso inexistente na Stripe retorna erro operacional e preserva os dados", async () => {
+  await db.storeSubscription.update({
+    where: { storeId },
+    data: {
+      stripeSubscriptionId: `sub_missing_${marker}`,
+      plan: "PROFESSIONAL",
+      status: "ACTIVE",
+    },
+  });
+  const before = await db.storeSubscription.findUniqueOrThrow({ where: { storeId } });
+
+  expect(reconcileStripeBillingForStore(storeId, stripeWithMissingCustomer())).rejects.toThrow(
+    "não existe na Stripe deste ambiente"
+  );
+  expect(await db.storeSubscription.findUniqueOrThrow({ where: { storeId } })).toEqual(before);
 });

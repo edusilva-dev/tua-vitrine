@@ -256,6 +256,10 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
                     "Nenhum webhook relacionado foi registrado. Eventos anteriores a esta versão não possuem vínculo retroativo."
                   )}
                 </div>
+                <div className="rounded-xl border border-dashed p-3 text-xs leading-5 text-muted-foreground">
+                  Use esta consulta quando o plano exibido aqui parecer diferente do Dashboard da
+                  Stripe, por exemplo após um cancelamento ou pagamento cujo webhook não chegou.
+                </div>
                 <ReconcileBillingDialog storeId={store.id} storeName={store.name} />
               </div>
             ) : (

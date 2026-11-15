@@ -54,15 +54,16 @@ export function ReconcileBillingDialog({
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full">
           <RefreshCw aria-hidden="true" />
-          Reconciliar com a Stripe
+          Consultar Stripe e atualizar dados
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Reconciliar assinatura?</DialogTitle>
           <DialogDescription>
-            A Stripe será consultada agora e o estado local de {storeName} será atualizado pela
-            mesma regra usada nos webhooks. A tentativa ficará registrada na auditoria.
+            Esta ação compara a assinatura salva no Tua Vitrine com a assinatura atual na Stripe. Se
+            houver diferença, os dados locais de {storeName} serão corrigidos pela mesma regra usada
+            nos webhooks. Nenhuma cobrança será criada, cancelada ou reembolsada.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
@@ -88,7 +89,7 @@ export function ReconcileBillingDialog({
             Cancelar
           </Button>
           <Button onClick={reconcile} disabled={busy || reason.trim().length < 10}>
-            {busy ? "Consultando Stripe..." : "Confirmar reconciliação"}
+            {busy ? "Consultando Stripe..." : "Comparar e atualizar"}
           </Button>
         </DialogFooter>
       </DialogContent>
