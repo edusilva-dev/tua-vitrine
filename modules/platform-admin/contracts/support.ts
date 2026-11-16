@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { supportCategorySchema } from "@/modules/support/contracts";
+import { confirmedActionSchema } from "./actions";
 
 export const supportStatusSchema = z.enum(["NEW", "IN_PROGRESS", "RESOLVED"]);
 
@@ -16,7 +17,7 @@ export const supportListInputSchema = z.object({
   page: z.coerce.number().int().min(1).max(10_000).default(1),
 });
 
-export const supportUpdateSchema = z.object({
+export const supportUpdateSchema = confirmedActionSchema.extend({
   status: supportStatusSchema,
   internalNote: z.string().trim().max(1000).nullable(),
 });

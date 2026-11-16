@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { supportUpdateSchema } from "@/modules/platform-admin/contracts/support";
 import { supportRequestSchema } from "@/modules/support/contracts";
 
 describe("supportRequestSchema", () => {
@@ -21,4 +22,16 @@ describe("supportRequestSchema", () => {
       }).success
     ).toBe(false);
   });
+});
+
+test("tratamento do suporte exige motivo e confirmação explícita", () => {
+  const values = {
+    status: "IN_PROGRESS",
+    internalNote: "Contato iniciado.",
+    reason: "Chamado assumido pela equipe de suporte",
+  };
+
+  expect(supportUpdateSchema.safeParse(values).success).toBe(false);
+  expect(supportUpdateSchema.safeParse({ ...values, confirmed: false }).success).toBe(false);
+  expect(supportUpdateSchema.safeParse({ ...values, confirmed: true }).success).toBe(true);
 });

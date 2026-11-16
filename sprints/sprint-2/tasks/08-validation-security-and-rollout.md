@@ -1,5 +1,7 @@
 # 08 — Validar segurança e executar o rollout
 
+**Status:** validação automatizada concluída; smoke test em preview/test pendente do deployment.
+
 ## Objetivo
 
 Validar o fluxo completo do Super Admin e liberar o recurso de forma controlada, com documentação
@@ -35,15 +37,15 @@ pronto quando autorização, isolamento, auditoria e comportamento de falha fore
 
 ## Critérios de aceite
 
-- [ ] matriz de autorização passa em páginas e endpoints;
-- [ ] testes confirmam isolamento e ausência de enumeração indevida;
-- [ ] suporte é preservado quando a notificação por e-mail falha;
-- [ ] reconciliação e ações operacionais não deixam estado parcial;
-- [ ] toda mutação aparece na auditoria com conteúdo seguro;
-- [ ] interface funciona em 390 px e desktop, por teclado;
-- [ ] lint, typecheck, testes completos e build passam;
+- [x] matriz de autorização passa em páginas e endpoints;
+- [x] testes confirmam isolamento e ausência de enumeração indevida;
+- [x] suporte é preservado quando a notificação por e-mail falha;
+- [x] reconciliação e ações operacionais não deixam estado parcial;
+- [x] toda mutação aparece na auditoria com conteúdo seguro;
+- [x] interface funciona em 390 px e desktop, por teclado;
+- [x] lint, typecheck, testes completos e build passam;
 - [ ] smoke test em test/staging é concluído antes de produção;
-- [ ] runbook de acesso, revogação e operações está atualizado.
+- [x] runbook de acesso, revogação e operações está atualizado.
 
 ## Validação
 
