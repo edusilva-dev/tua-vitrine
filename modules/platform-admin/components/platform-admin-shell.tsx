@@ -1,4 +1,4 @@
-import { LifeBuoy, ShieldCheck, Store } from "lucide-react";
+import { History, LifeBuoy, ShieldCheck, Store } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { AuthAccountMenu } from "@/components/auth-account-menu";
@@ -48,6 +48,12 @@ export function PlatformAdminShell({
             <Link href="/super-admin/support">
               <LifeBuoy />
               Suporte
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/super-admin/audit">
+              <History />
+              Auditoria
             </Link>
           </Button>
         </div>

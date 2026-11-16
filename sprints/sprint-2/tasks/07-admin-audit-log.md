@@ -1,5 +1,7 @@
 # 07 — Criar a trilha de auditoria administrativa
 
+**Status:** concluída.
+
 ## Objetivo
 
 Registrar e consultar todas as mutações do Super Admin de forma suficiente para explicar quem alterou
@@ -33,13 +35,13 @@ definido antes de concluir as mutações de cobrança, suporte e loja.
 
 ## Critérios de aceite
 
-- [ ] toda mutação do Super Admin gera um evento de sucesso ou falha;
-- [ ] evento identifica administrador, ação, alvo, data e motivo;
-- [ ] snapshots permitem entender a mudança sem duplicar objetos completos;
-- [ ] registros não podem ser alterados ou apagados pela UI/API;
-- [ ] filtros e paginação funcionam sem carregar o histórico inteiro;
-- [ ] nenhuma informação proibida aparece em fixtures, banco ou respostas;
-- [ ] testes garantem cobertura das ações e sanitização dos snapshots.
+- [x] toda mutação do Super Admin gera um evento de sucesso ou falha;
+- [x] evento identifica administrador, ação, alvo, data e motivo;
+- [x] snapshots permitem entender a mudança sem duplicar objetos completos;
+- [x] registros não podem ser alterados ou apagados pela UI/API;
+- [x] filtros e paginação funcionam sem carregar o histórico inteiro;
+- [x] nenhuma informação proibida aparece em fixtures, banco ou respostas;
+- [x] testes garantem cobertura das ações e sanitização dos snapshots.
 
 ## Validação
 

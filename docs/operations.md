@@ -38,3 +38,9 @@ cobrir os dois serviços:
 
 Nunca teste restauração sobre o branch de produção. Antes de uma migração destrutiva, crie um ponto de
 recuperação e registre o procedimento de rollback.
+## Retenção da auditoria administrativa
+
+Os eventos de auditoria do Super Admin são imutáveis pela aplicação e devem ser mantidos por, no
+mínimo, 24 meses. Não existe limpeza automática nesta sprint. Qualquer política futura de expurgo
+deve preservar esse prazo, ser executada por uma rotina interna controlada e registrar a quantidade
+e o intervalo removidos fora da própria tabela de auditoria.
