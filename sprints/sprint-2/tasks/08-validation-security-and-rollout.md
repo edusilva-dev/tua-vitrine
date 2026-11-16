@@ -1,6 +1,6 @@
 # 08 — Validar segurança e executar o rollout
 
-**Status:** validação automatizada concluída; smoke test em preview/test pendente do deployment.
+**Status:** concluída.
 
 ## Objetivo
 
@@ -44,7 +44,7 @@ pronto quando autorização, isolamento, auditoria e comportamento de falha fore
 - [x] toda mutação aparece na auditoria com conteúdo seguro;
 - [x] interface funciona em 390 px e desktop, por teclado;
 - [x] lint, typecheck, testes completos e build passam;
-- [ ] smoke test em test/staging é concluído antes de produção;
+- [x] smoke test em test/staging é concluído antes de produção;
 - [x] runbook de acesso, revogação e operações está atualizado.
 
 ## Validação
@@ -56,6 +56,14 @@ pronto quando autorização, isolamento, auditoria e comportamento de falha fore
 - rodar os cenários Playwright do Super Admin;
 - executar `git diff --check` e revisar segredos/dados pessoais;
 - realizar smoke test manual em test/staging.
+
+## Evidência do rollout
+
+Em 16 de novembro de 2026, o deployment de preview ligado ao banco de test foi validado com uma
+sessão real de Super Admin. O smoke test cobriu login, busca e detalhe da loja, suporte, auditoria,
+bloqueio e desbloqueio reversíveis e a interface em viewport de 390 px. Os dois eventos operacionais
+foram registrados na auditoria, a loja terminou desbloqueada e a autorização temporária usada no
+teste foi revogada após a validação.
 
 ## Fora do escopo
 

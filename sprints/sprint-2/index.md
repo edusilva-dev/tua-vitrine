@@ -6,7 +6,7 @@
 
 ## Estado do sprint
 
-- **Status:** implementação iniciada; tarefas 01 a 07 concluídas.
+- **Status:** concluída; tarefas 01 a 08 entregues e validadas.
 - **Tema:** operação segura de lojas, assinaturas e solicitações de suporte.
 - **Produto:** Tua Vitrine.
 - **Público:** equipe interna da Tua Vitrine com permissão explícita de administrador da plataforma.
@@ -218,7 +218,7 @@ quem alterou o quê, quando e por qual motivo; não é uma solução de observab
 | 05 | [Suporte persistido e caixa operacional](./tasks/05-persisted-support-workflow.md) | 01, 03 | Concluída |
 | 06 | [Ações operacionais controladas](./tasks/06-controlled-operational-actions.md) | 01, 03, 04 | Concluída |
 | 07 | [Trilha de auditoria](./tasks/07-admin-audit-log.md) | 01; integrada a 04–06 | Concluída |
-| 08 | [Validação, segurança e rollout](./tasks/08-validation-security-and-rollout.md) | 01–07 | Pendente |
+| 08 | [Validação, segurança e rollout](./tasks/08-validation-security-and-rollout.md) | 01–07 | Concluída |
 
 As tarefas 04 e 05 podem avançar em paralelo depois da tarefa 03. A estrutura de auditoria da tarefa
 07 deve ser definida antes de concluir qualquer mutação das tarefas 04 a 06, mesmo que sua interface
