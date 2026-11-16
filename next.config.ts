@@ -17,6 +17,7 @@ export default withSentryConfig(nextConfig, {
   ...(process.env.SENTRY_AUTH_TOKEN ? { authToken: process.env.SENTRY_AUTH_TOKEN } : {}),
   silent: !process.env.CI,
   useRunAfterProductionCompileHook: true,
+  widenClientFileUpload: true,
   sourcemaps: {
     deleteSourcemapsAfterUpload: true,
   },
