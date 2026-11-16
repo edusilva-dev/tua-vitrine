@@ -100,9 +100,6 @@ export default function Home() {
             href="/"
             className="flex items-center gap-2.5 font-heading text-xl font-bold tracking-tight"
           >
-            <span className="grid size-9 place-items-center rounded-xl bg-brand-forest text-brand-lime">
-              <Store size={20} aria-hidden="true" />
-            </span>
             <span className="hidden min-[430px]:inline">
               tua vitrine<span className="-ml-2.5 text-brand-sage">.</span>
             </span>
