@@ -72,6 +72,12 @@ export async function listSupportRequests(input: unknown): Promise<SupportListDT
   };
 }
 
+export async function countNewSupportRequests(): Promise<number> {
+  await requirePlatformAdmin();
+
+  return db.supportRequest.count({ where: { status: "NEW" } });
+}
+
 export async function getSupportRequest(id: string): Promise<SupportDetailDTO | null> {
   await requirePlatformAdmin();
 

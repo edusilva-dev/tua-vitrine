@@ -2,15 +2,18 @@ import { History, LifeBuoy, ShieldCheck, Store } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { AuthAccountMenu } from "@/components/auth-account-menu";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { PlatformAdminIdentity } from "../server/access";
 
 export function PlatformAdminShell({
   children,
   identity,
+  newSupportCount,
 }: {
   children: ReactNode;
   identity: PlatformAdminIdentity;
+  newSupportCount: number;
 }) {
   return (
     <div className="min-h-svh bg-muted/35">
@@ -48,6 +51,14 @@ export function PlatformAdminShell({
             <Link href="/super-admin/support">
               <LifeBuoy />
               Suporte
+              {newSupportCount > 0 ? (
+                <Badge
+                  className="min-w-5 px-1.5 tabular-nums"
+                  aria-label={`${newSupportCount} ${newSupportCount === 1 ? "nova solicitação" : "novas solicitações"}`}
+                >
+                  {newSupportCount > 99 ? "99+" : newSupportCount}
+                </Badge>
+              ) : null}
             </Link>
           </Button>
           <Button asChild variant="ghost" size="sm">
