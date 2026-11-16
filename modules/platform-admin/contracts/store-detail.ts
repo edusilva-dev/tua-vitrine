@@ -52,4 +52,10 @@ export type PlatformStoreDetailDTO = {
     subscriptionDashboardUrl: string | null;
   } | null;
   lastStripeWebhook: { id: string; type: string; processedAt: string } | null;
+  recentSupportRequests: Array<{
+    id: string;
+    subject: string;
+    status: "NEW" | "IN_PROGRESS" | "RESOLVED";
+    createdAt: string;
+  }>;
 };

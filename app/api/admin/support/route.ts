@@ -9,8 +9,8 @@ export async function POST(request: Request) {
     const [context, identity] = await Promise.all([getAdminContext(), getAdminIdentity()]);
 
     rateLimit(`support:${identity.userId ?? context.storeId}`, 3);
-    await sendSupportRequest(context, identity.userId, await jsonBody(request));
+    const result = await sendSupportRequest(context, identity.userId, await jsonBody(request));
 
-    return Response.json({ data: { sent: true } });
+    return Response.json({ data: { received: true, id: result.id } });
   });
 }

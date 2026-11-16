@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/server/context";
-import { getEnv } from "@/lib/server/env";
 import { PlatformFeedbackForm } from "@/modules/feedback/components/platform-feedback-form";
 import { StorefrontFeedbackSummary } from "@/modules/feedback/components/storefront-feedback-summary";
 import { getStorefrontFeedbackSummary } from "@/modules/feedback/server/service";
@@ -10,8 +9,6 @@ import { SupportForm } from "@/modules/support/components/support-form";
 export default async function SupportPage() {
   if (!(await getCurrentStore())) redirect("/admin/onboarding");
 
-  const env = getEnv();
-  const enabled = Boolean(env.SUPPORT_EMAIL);
   const summary = await getStorefrontFeedbackSummary(await getAdminContext());
 
   return (
@@ -32,7 +29,7 @@ export default async function SupportPage() {
               Dúvidas e problemas que precisam de resposta continuam pelo canal de suporte.
             </p>
           </div>
-          <SupportForm enabled={enabled} />
+          <SupportForm enabled />
         </section>
         <PlatformFeedbackForm />
       </div>
