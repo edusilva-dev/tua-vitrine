@@ -146,4 +146,55 @@ describe("entitlements", () => {
       trialEndsAt: null,
     });
   });
+
+  test("concessão temporária expira pela leitura e não reduz uma assinatura superior", () => {
+    const base = {
+      onboardingCompletedAt: new Date("2026-09-01T12:00:00.000Z"),
+      trialStartedAt: null,
+      subscriptionPlan: null,
+      subscriptionStatus: null,
+      publishedProducts: 20,
+      manualGrantPlan: "ESSENTIAL" as const,
+    };
+
+    expect(
+      resolveEntitlements(
+        { ...base, manualGrantExpiresAt: new Date("2026-09-25T12:00:00.000Z") },
+        now
+      )
+    ).toMatchObject({ plan: "ESSENTIAL", source: "MANUAL_GRANT", productLimit: 50 });
+    expect(
+      resolveEntitlements(
+        { ...base, manualGrantExpiresAt: new Date("2026-09-23T12:00:00.000Z") },
+        now
+      )
+    ).toMatchObject({ plan: "FREE", source: "FREE" });
+    expect(
+      resolveEntitlements(
+        {
+          ...base,
+          subscriptionPlan: "PROFESSIONAL",
+          subscriptionStatus: "ACTIVE",
+          manualGrantExpiresAt: new Date("2026-09-25T12:00:00.000Z"),
+        },
+        now
+      )
+    ).toMatchObject({ plan: "PROFESSIONAL", source: "SUBSCRIPTION" });
+  });
+
+  test("trial encerrado não volta a conceder acesso nem fica disponível novamente", () => {
+    expect(
+      resolveEntitlements(
+        {
+          onboardingCompletedAt: new Date("2026-09-20T12:00:00.000Z"),
+          trialStartedAt: new Date("2026-09-20T12:00:00.000Z"),
+          trialEndedAt: new Date("2026-09-22T12:00:00.000Z"),
+          subscriptionPlan: null,
+          subscriptionStatus: null,
+          publishedProducts: 1,
+        },
+        now
+      )
+    ).toMatchObject({ plan: "FREE", source: "FREE", trialAvailable: false });
+  });
 });

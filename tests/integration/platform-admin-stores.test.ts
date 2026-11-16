@@ -172,6 +172,16 @@ test("pagina em lotes fixos e retorna somente o DTO operacional", async () => {
   expect(secondPage.items).toHaveLength(2);
   expect(new Set([...firstPage.items, ...secondPage.items].map(({ id }) => id)).size).toBe(22);
   expect(Object.keys(firstPage.items[0] ?? {}).sort()).toEqual(
-    ["createdAt", "id", "name", "owner", "plan", "slug", "status", "subscriptionStatus"].sort()
+    [
+      "adminBlocked",
+      "createdAt",
+      "id",
+      "name",
+      "owner",
+      "plan",
+      "slug",
+      "status",
+      "subscriptionStatus",
+    ].sort()
   );
 });

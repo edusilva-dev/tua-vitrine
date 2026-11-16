@@ -15,11 +15,14 @@ const ACTIVE_PAID_STATUSES = new Set<SubscriptionStatus>(["ACTIVE", "TRIALING"])
 type EntitlementState = {
   onboardingCompletedAt: Date | null;
   trialStartedAt: Date | null;
+  trialEndedAt?: Date | null;
   subscriptionPlan: DatabaseBillingPlan | null;
   subscriptionStatus: SubscriptionStatus | null;
   trialUsedAt?: Date | null;
   publishedProducts: number;
   catalogProducts?: number;
+  manualGrantPlan?: DatabaseBillingPlan | null;
+  manualGrantExpiresAt?: Date | null;
 };
 
 function addDays(value: Date, days: number): Date {
@@ -42,10 +45,24 @@ export function resolveEntitlements(state: EntitlementState, now = new Date()): 
   } else if (state.trialStartedAt && !state.trialUsedAt) {
     const end = addDays(state.trialStartedAt, INTERNAL_TRIAL_DAYS);
 
-    if (end.getTime() > now.getTime()) {
+    if (!state.trialEndedAt && end.getTime() > now.getTime()) {
       plan = "PROFESSIONAL";
       source = "INTERNAL_TRIAL";
       trialEndsAt = end;
+    }
+  }
+
+  if (
+    state.manualGrantPlan &&
+    state.manualGrantExpiresAt &&
+    state.manualGrantExpiresAt.getTime() > now.getTime()
+  ) {
+    const rank = { FREE: 0, ESSENTIAL: 1, PROFESSIONAL: 2 } as const;
+
+    if (rank[state.manualGrantPlan] > rank[plan]) {
+      plan = state.manualGrantPlan;
+      source = "MANUAL_GRANT";
+      trialEndsAt = null;
     }
   }
 
@@ -62,6 +79,7 @@ export function resolveEntitlements(state: EntitlementState, now = new Date()): 
     trialAvailable: Boolean(
       state.onboardingCompletedAt &&
         !state.trialStartedAt &&
+        !state.trialEndedAt &&
         !state.trialUsedAt &&
         source === "FREE"
     ),
@@ -79,7 +97,9 @@ const getEntitlementsForStore = cache(async (storeId: string): Promise<Entitleme
       select: {
         onboardingCompletedAt: true,
         trialStartedAt: true,
+        trialEndedAt: true,
         subscription: { select: { plan: true, status: true, trialUsedAt: true } },
+        manualPlanGrant: { select: { plan: true, expiresAt: true } },
         _count: {
           select: { products: { where: { archivedAt: null, published: true } } },
         },
@@ -91,11 +111,14 @@ const getEntitlementsForStore = cache(async (storeId: string): Promise<Entitleme
   return resolveEntitlements({
     onboardingCompletedAt: store.onboardingCompletedAt,
     trialStartedAt: store.trialStartedAt,
+    trialEndedAt: store.trialEndedAt,
     subscriptionPlan: store.subscription?.plan ?? null,
     subscriptionStatus: store.subscription?.status ?? null,
     trialUsedAt: store.subscription?.trialUsedAt ?? null,
     publishedProducts: store._count.products,
     catalogProducts,
+    manualGrantPlan: store.manualPlanGrant?.plan ?? null,
+    manualGrantExpiresAt: store.manualPlanGrant?.expiresAt ?? null,
   });
 });
 

@@ -30,6 +30,7 @@ export type PlatformStoreListItemDTO = {
   owner: { name: string; email: string } | null;
   plan: "FREE" | "ESSENTIAL" | "PROFESSIONAL";
   status: "DRAFT" | "ACTIVE";
+  adminBlocked: boolean;
   subscriptionStatus:
     | "INCOMPLETE"
     | "INCOMPLETE_EXPIRED"

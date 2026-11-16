@@ -6,7 +6,7 @@
 
 ## Estado do sprint
 
-- **Status:** implementação iniciada; tarefas 01 a 05 concluídas.
+- **Status:** implementação iniciada; tarefas 01 a 06 concluídas.
 - **Tema:** operação segura de lojas, assinaturas e solicitações de suporte.
 - **Produto:** Tua Vitrine.
 - **Público:** equipe interna da Tua Vitrine com permissão explícita de administrador da plataforma.
@@ -216,7 +216,7 @@ quem alterou o quê, quando e por qual motivo; não é uma solução de observab
 | 03 | [Detalhe operacional da loja](./tasks/03-store-operational-detail.md) | 01, 02 | Concluída |
 | 04 | [Cobrança e reconciliação](./tasks/04-billing-diagnostics-and-reconciliation.md) | 01, 03 | Concluída |
 | 05 | [Suporte persistido e caixa operacional](./tasks/05-persisted-support-workflow.md) | 01, 03 | Concluída |
-| 06 | [Ações operacionais controladas](./tasks/06-controlled-operational-actions.md) | 01, 03, 04 | Pendente |
+| 06 | [Ações operacionais controladas](./tasks/06-controlled-operational-actions.md) | 01, 03, 04 | Concluída |
 | 07 | [Trilha de auditoria](./tasks/07-admin-audit-log.md) | 01; integrada a 04–06 | Pendente |
 | 08 | [Validação, segurança e rollout](./tasks/08-validation-security-and-rollout.md) | 01–07 | Pendente |
 

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { resolveMemberStore } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
-import { createStore, saveIdentity } from "@/modules/stores/server/service";
+import { createStore, getStoreBySlug, saveIdentity } from "@/modules/stores/server/service";
 
 const database = new URL(process.env.DATABASE_URL ?? "http://invalid");
 
@@ -100,6 +100,29 @@ test("store and ownership are created atomically, and a missing user rolls back 
       where: { storeId_userId: { storeId: ownedStoreId, userId: firstUserId } },
     })
   ).toMatchObject({ role: "OWNER" });
+});
+
+test("bloqueio impede o painel sem retirar a vitrine do ar", async () => {
+  const store = await db.store.update({
+    where: { id: foreignStoreId },
+    data: {
+      status: "ACTIVE",
+      whatsapp: "+5511999999999",
+      onboardingCompletedAt: new Date(),
+      adminBlockedAt: new Date(),
+    },
+    select: { slug: true },
+  });
+
+  await expect(resolveMemberStore(secondUserId, foreignStoreId)).rejects.toThrow(
+    "temporariamente bloqueado"
+  );
+  expect(await getStoreBySlug(store.slug)).toMatchObject({ id: foreignStoreId, status: "ACTIVE" });
+
+  await db.store.update({ where: { id: foreignStoreId }, data: { adminBlockedAt: null } });
+  expect(await resolveMemberStore(secondUserId, foreignStoreId)).toEqual({
+    storeId: foreignStoreId,
+  });
 });
 
 test("a conta não cria uma segunda loja e a revogação remove o acesso imediatamente", async () => {

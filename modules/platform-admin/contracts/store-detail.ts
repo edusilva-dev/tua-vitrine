@@ -10,6 +10,8 @@ export type PlatformStoreDetailDTO = {
   updatedAt: string;
   onboardingCompletedAt: string | null;
   trialStartedAt: string | null;
+  trialEndedAt: string | null;
+  adminBlockedAt: string | null;
   members: Array<{
     userId: string;
     name: string;
@@ -52,6 +54,12 @@ export type PlatformStoreDetailDTO = {
     subscriptionDashboardUrl: string | null;
   } | null;
   lastStripeWebhook: { id: string; type: string; processedAt: string } | null;
+  manualPlanGrant: {
+    id: string;
+    plan: "ESSENTIAL" | "PROFESSIONAL";
+    expiresAt: string;
+    reason: string;
+  } | null;
   recentSupportRequests: Array<{
     id: string;
     subject: string;

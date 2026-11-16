@@ -50,6 +50,8 @@ model Store {
  onboardingCompletedAt DateTime?
  signupPlan BillingPlan @default(FREE)
  trialStartedAt DateTime?
+ trialEndedAt DateTime?
+ adminBlockedAt DateTime?
  createdAt DateTime @default(now())
  updatedAt DateTime @updatedAt
  products Product[]
@@ -65,6 +67,7 @@ model Store {
  supportRequests SupportRequest[]
  adminAuditEvents AdminAuditEvent[]
  stripeWebhookEvents StripeWebhookEvent[]
+ manualPlanGrant ManualPlanGrant?
 }
 model StoreSubscription {
  id String @id @default(uuid()) @db.Uuid
@@ -270,12 +273,35 @@ model PlatformAdmin {
  updatedAt DateTime @updatedAt
  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
  auditEvents AdminAuditEvent[]
+ manualPlanGrants ManualPlanGrant[]
  @@index([revokedAt])
 }
 
 enum AdminAuditAction {
  BILLING_RECONCILE
  SUPPORT_UPDATE
+ STORE_BLOCK
+ STORE_UNBLOCK
+ STOREFRONT_PUBLISH
+ STOREFRONT_UNPUBLISH
+ EMAIL_VERIFICATION_RESEND
+ TRIAL_END
+ MANUAL_PLAN_GRANT
+}
+
+model ManualPlanGrant {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @unique @db.Uuid
+ plan BillingPlan
+ expiresAt DateTime
+ reason String
+ grantedById String @db.Uuid
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+ grantedBy PlatformAdmin @relation(fields: [grantedById], references: [id], onDelete: Restrict)
+ @@index([expiresAt])
+ @@index([grantedById, createdAt])
 }
 
 enum SupportCategory {

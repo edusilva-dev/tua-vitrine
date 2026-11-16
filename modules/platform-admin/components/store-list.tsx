@@ -48,6 +48,7 @@ function StoreBadges({ store }: { store: PlatformStoreListItemDTO }) {
         {statusLabels[store.status]}
       </Badge>
       <Badge variant="outline">{planLabels[store.plan]}</Badge>
+      {store.adminBlocked ? <Badge variant="destructive">Acesso bloqueado</Badge> : null}
       {store.subscriptionStatus && (
         <Badge variant="outline">{subscriptionLabels[store.subscriptionStatus]}</Badge>
       )}
