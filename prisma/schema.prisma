@@ -62,6 +62,7 @@ model Store {
  subscription StoreSubscription?
  promotionCampaign PromotionCampaign?
  feedbacks Feedback[]
+ supportRequests SupportRequest[]
  adminAuditEvents AdminAuditEvent[]
  stripeWebhookEvents StripeWebhookEvent[]
 }
@@ -258,6 +259,7 @@ model User {
  memberships StoreMember[]
  feedbacks Feedback[]
  platformAdmin PlatformAdmin?
+ supportRequests SupportRequest[]
 }
 
 model PlatformAdmin {
@@ -273,6 +275,50 @@ model PlatformAdmin {
 
 enum AdminAuditAction {
  BILLING_RECONCILE
+ SUPPORT_UPDATE
+}
+
+enum SupportCategory {
+ QUESTION
+ BILLING
+ TECHNICAL
+ FEEDBACK
+}
+
+enum SupportStatus {
+ NEW
+ IN_PROGRESS
+ RESOLVED
+}
+
+enum SupportNotificationStatus {
+ PENDING
+ SENT
+ FAILED
+}
+
+model SupportRequest {
+ id String @id @default(uuid()) @db.Uuid
+ storeId String @db.Uuid
+ requesterId String?
+ requesterName String
+ replyEmail String
+ category SupportCategory
+ subject String
+ message String
+ status SupportStatus @default(NEW)
+ internalNote String?
+ notificationStatus SupportNotificationStatus @default(PENDING)
+ notificationAttemptedAt DateTime?
+ notificationErrorCode String?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ resolvedAt DateTime?
+ store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+ requester User? @relation(fields: [requesterId], references: [id], onDelete: SetNull)
+ @@index([storeId, createdAt])
+ @@index([status, createdAt])
+ @@index([category, createdAt])
 }
 
 enum AdminAuditResult {

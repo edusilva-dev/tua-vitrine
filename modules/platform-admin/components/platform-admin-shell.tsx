@@ -1,7 +1,8 @@
-import { ShieldCheck, Store } from "lucide-react";
+import { LifeBuoy, ShieldCheck, Store } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { AuthAccountMenu } from "@/components/auth-account-menu";
+import { Button } from "@/components/ui/button";
 import type { PlatformAdminIdentity } from "../server/access";
 
 export function PlatformAdminShell({
@@ -35,6 +36,22 @@ export function PlatformAdminShell({
           <AuthAccountMenu />
         </div>
       </header>
+      <nav className="border-b bg-background" aria-label="Navegação do Super Admin">
+        <div className="mx-auto flex max-w-7xl gap-1 px-4 py-2 sm:px-6">
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/super-admin">
+              <Store />
+              Lojas
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/super-admin/support">
+              <LifeBuoy />
+              Suporte
+            </Link>
+          </Button>
+        </div>
+      </nav>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>
     </div>
   );

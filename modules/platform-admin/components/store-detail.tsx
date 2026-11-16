@@ -3,6 +3,7 @@ import {
   CalendarClock,
   CircleAlert,
   ExternalLink,
+  LifeBuoy,
   Package,
   ReceiptText,
   ShieldCheck,
@@ -291,19 +292,45 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {[
-          ["Suporte recente", "Os chamados aparecerão aqui após a tarefa de suporte persistido."],
-          [
-            "Auditoria recente",
-            "As ações administrativas aparecerão aqui após a trilha de auditoria.",
-          ],
-        ].map(([title, description]) => (
-          <section key={title} className="rounded-2xl border border-dashed bg-card/50 p-5">
-            <Package className="size-5 text-muted-foreground" aria-hidden="true" />
-            <h2 className="mt-3 font-heading font-semibold">{title}</h2>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
-          </section>
-        ))}
+        <section className="rounded-2xl border bg-card p-5">
+          <LifeBuoy className="size-5 text-primary" aria-hidden="true" />
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <h2 className="font-heading font-semibold">Suporte recente</h2>
+            <Button asChild variant="ghost" size="sm">
+              <Link href={`/super-admin/support?storeId=${store.id}`}>Ver todos</Link>
+            </Button>
+          </div>
+          <div className="mt-3 space-y-2">
+            {store.recentSupportRequests.length ? (
+              store.recentSupportRequests.map((request) => (
+                <Link
+                  key={request.id}
+                  href={`/super-admin/support/${request.id}`}
+                  className="block rounded-xl border p-3 transition-colors hover:bg-muted/40"
+                >
+                  <p className="truncate text-sm font-medium">{request.subject}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {request.status === "NEW"
+                      ? "Novo"
+                      : request.status === "IN_PROGRESS"
+                        ? "Em atendimento"
+                        : "Resolvido"}{" "}
+                    · {formatDate(request.createdAt)}
+                  </p>
+                </Link>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">Nenhum chamado registrado.</p>
+            )}
+          </div>
+        </section>
+        <section className="rounded-2xl border border-dashed bg-card/50 p-5">
+          <Package className="size-5 text-muted-foreground" aria-hidden="true" />
+          <h2 className="mt-3 font-heading font-semibold">Auditoria recente</h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            As ações administrativas aparecerão aqui após a trilha de auditoria.
+          </p>
+        </section>
       </div>
     </div>
   );

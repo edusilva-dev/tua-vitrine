@@ -52,6 +52,11 @@ export async function queryPlatformStoreDetail(
           take: 1,
           select: { id: true, type: true, processedAt: true },
         },
+        supportRequests: {
+          orderBy: { createdAt: "desc" },
+          take: 3,
+          select: { id: true, subject: true, status: true, createdAt: true },
+        },
       },
     }),
     db.product.count({ where: { storeId, archivedAt: null, published: true } }),
@@ -125,6 +130,10 @@ export async function queryPlatformStoreDetail(
           processedAt: store.stripeWebhookEvents[0].processedAt.toISOString(),
         }
       : null,
+    recentSupportRequests: store.supportRequests.map((request) => ({
+      ...request,
+      createdAt: request.createdAt.toISOString(),
+    })),
   };
 }
 

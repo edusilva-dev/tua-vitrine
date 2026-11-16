@@ -42,12 +42,12 @@ export function SupportForm({ enabled }: { enabled: boolean }) {
     setErrors({});
 
     try {
-      await api<{ sent: true }>("/api/admin/support", {
+      await api<{ received: true }>("/api/admin/support", {
         method: "POST",
         body: JSON.stringify(parsed.data),
       });
       setValues(initialValues);
-      toast.success("Mensagem enviada. Responderemos no e-mail da sua conta.");
+      toast.success("Solicitação recebida. Responderemos no e-mail da sua conta.");
     } catch (cause) {
       if (cause instanceof ApiError && cause.fieldErrors) {
         setErrors(cause.fieldErrors);
