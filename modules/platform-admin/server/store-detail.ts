@@ -59,6 +59,18 @@ export async function queryPlatformStoreDetail(
           take: 3,
           select: { id: true, subject: true, status: true, createdAt: true },
         },
+        adminAuditEvents: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          select: {
+            id: true,
+            action: true,
+            result: true,
+            reason: true,
+            createdAt: true,
+            platformAdmin: { select: { user: { select: { name: true } } } },
+          },
+        },
         manualPlanGrant: {
           select: { id: true, plan: true, expiresAt: true, reason: true },
         },
@@ -152,6 +164,14 @@ export async function queryPlatformStoreDetail(
     recentSupportRequests: store.supportRequests.map((request) => ({
       ...request,
       createdAt: request.createdAt.toISOString(),
+    })),
+    recentAuditEvents: store.adminAuditEvents.map((event) => ({
+      id: event.id,
+      action: event.action,
+      result: event.result,
+      reason: event.reason,
+      createdAt: event.createdAt.toISOString(),
+      adminName: event.platformAdmin.user.name,
     })),
   };
 }

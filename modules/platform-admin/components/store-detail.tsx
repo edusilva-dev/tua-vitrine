@@ -14,6 +14,7 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { adminAuditActionLabels } from "../contracts/audit";
 import type { PlatformStoreDetailDTO } from "../contracts/store-detail";
 import { CopyValue } from "./copy-value";
 import { OperationalActions } from "./operational-actions";
@@ -354,12 +355,36 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
             )}
           </div>
         </section>
-        <section className="rounded-2xl border border-dashed bg-card/50 p-5">
-          <Package className="size-5 text-muted-foreground" aria-hidden="true" />
-          <h2 className="mt-3 font-heading font-semibold">Auditoria recente</h2>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            As ações administrativas aparecerão aqui após a trilha de auditoria.
-          </p>
+        <section className="rounded-2xl border bg-card p-5">
+          <Package className="size-5 text-primary" aria-hidden="true" />
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <h2 className="font-heading font-semibold">Auditoria recente</h2>
+            <Button asChild variant="ghost" size="sm">
+              <Link href={`/super-admin/audit?storeId=${store.id}`}>Ver todos</Link>
+            </Button>
+          </div>
+          <div className="mt-3 space-y-2">
+            {store.recentAuditEvents.length ? (
+              store.recentAuditEvents.map((event) => (
+                <div key={event.id} className="rounded-xl border p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium">{adminAuditActionLabels[event.action]}</p>
+                    <Badge variant={event.result === "SUCCESS" ? "secondary" : "destructive"}>
+                      {event.result === "SUCCESS" ? "Sucesso" : "Falha"}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{event.reason}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {event.adminName} · {formatDate(event.createdAt)}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Nenhuma ação administrativa registrada.
+              </p>
+            )}
+          </div>
         </section>
       </div>
     </div>

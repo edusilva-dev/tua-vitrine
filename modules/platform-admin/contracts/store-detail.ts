@@ -1,4 +1,5 @@
 import type { BillingPlan, Entitlements } from "@/modules/billing/contracts";
+import type { AdminAuditAction, AdminAuditResult } from "./audit";
 
 export type PlatformStoreDetailDTO = {
   id: string;
@@ -65,5 +66,13 @@ export type PlatformStoreDetailDTO = {
     subject: string;
     status: "NEW" | "IN_PROGRESS" | "RESOLVED";
     createdAt: string;
+  }>;
+  recentAuditEvents: Array<{
+    id: string;
+    action: AdminAuditAction;
+    result: AdminAuditResult;
+    reason: string;
+    createdAt: string;
+    adminName: string;
   }>;
 };
