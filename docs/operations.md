@@ -44,3 +44,59 @@ Os eventos de auditoria do Super Admin são imutáveis pela aplicação e devem 
 mínimo, 24 meses. Não existe limpeza automática nesta sprint. Qualquer política futura de expurgo
 deve preservar esse prazo, ser executada por uma rotina interna controlada e registrar a quantidade
 e o intervalo removidos fora da própria tabela de auditoria.
+
+## Operação do Super Admin
+
+O acesso ao Super Admin é uma concessão explícita e não depende de associação com lojas. O usuário
+precisa existir e ter o e-mail verificado. Execute os comandos somente com a conexão do ambiente que
+deve ser alterado:
+
+```bash
+bun run platform-admin grant usuario@exemplo.com
+bun run platform-admin revoke usuario@exemplo.com
+```
+
+Depois de conceder, confirme `GET /api/super-admin/session` com a sessão do usuário e verifique se a
+área `/super-admin` abre. Depois de revogar, a mesma sessão deve receber `404` nas APIs internas e a
+página não pode renderizar informações operacionais. Nunca conceda acesso por e-mail, domínio,
+associação de loja ou alteração manual de cookie.
+
+### Conta comprometida
+
+1. revogue imediatamente o acesso com `platform-admin revoke` no ambiente afetado;
+2. encerre as sessões do usuário e solicite redefinição de senha;
+3. filtre a auditoria pelo administrador e pelo período suspeito;
+4. confira bloqueios, publicação, concessões de plano, suporte e reconciliações executadas;
+5. corrija cada estado por uma nova ação auditada; não edite ou apague eventos anteriores;
+6. conceda novamente somente após confirmar a identidade e a segurança da conta.
+
+### Reconciliação de assinatura
+
+Use **Reconciliar assinatura** somente quando o estado local divergir do Dashboard da Stripe. Registre
+um motivo objetivo, confirme a ação e confira o evento de sucesso ou falha na auditoria. A operação
+consulta a Stripe e reaplica a regra dos webhooks; reembolso, troca manual e edição de pagamento
+continuam no Dashboard da Stripe. Em falha remota, preserve o estado local e tente novamente depois
+de confirmar as chaves e o ambiente da Stripe.
+
+### Falha de notificação de suporte
+
+Uma falha do Resend não apaga o chamado. Filtre **Suporte** pelos registros com falha, abra o chamado
+e responda pelo endereço do lojista quando necessário. Confirme domínio, remetente e logs do Resend
+antes de corrigir a configuração. Ao alterar estado ou nota interna, informe o motivo e confirme a
+ação; a mensagem e a nota não são copiadas para a auditoria.
+
+### Rollout e smoke test
+
+Libere primeiro em preview/test e staging. Para cada ambiente:
+
+1. confirme as migrações e a variável que habilita a autenticação;
+2. conceda acesso a um administrador de teste e entre com uma sessão real;
+3. busque uma loja, abra o detalhe, suporte e auditoria;
+4. execute uma ação reversível com motivo e confirmação;
+5. confira a alteração no banco e o evento correspondente na auditoria;
+6. revogue o administrador e confirme o bloqueio imediato da sessão existente;
+7. valide a interface em 390 px e desktop, sem rolagem horizontal.
+
+Produção só deve ser habilitada após `bun run check`, build, Playwright do Super Admin e esse smoke
+test passarem. Reverta o deployment se páginas ou APIs internas permitirem acesso sem concessão, se
+uma mutação não gerar auditoria ou se uma operação deixar estado parcial.

@@ -132,7 +132,7 @@ export async function updateSupportRequest(id: string, input: unknown): Promise<
     result: "SUCCESS",
     resourceType: "SupportRequest",
     resourceId: id,
-    reason: "Tratamento da solicitação de suporte",
+    reason: values.reason,
     before: { status: before.status, hasInternalNote: Boolean(before.internalNote) },
     after: { status: after.status, hasInternalNote: Boolean(after.internalNote) },
   });

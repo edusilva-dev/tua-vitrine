@@ -1,5 +1,7 @@
 # 08 — Validar segurança e executar o rollout
 
+**Status:** concluída.
+
 ## Objetivo
 
 Validar o fluxo completo do Super Admin e liberar o recurso de forma controlada, com documentação
@@ -35,15 +37,15 @@ pronto quando autorização, isolamento, auditoria e comportamento de falha fore
 
 ## Critérios de aceite
 
-- [ ] matriz de autorização passa em páginas e endpoints;
-- [ ] testes confirmam isolamento e ausência de enumeração indevida;
-- [ ] suporte é preservado quando a notificação por e-mail falha;
-- [ ] reconciliação e ações operacionais não deixam estado parcial;
-- [ ] toda mutação aparece na auditoria com conteúdo seguro;
-- [ ] interface funciona em 390 px e desktop, por teclado;
-- [ ] lint, typecheck, testes completos e build passam;
-- [ ] smoke test em test/staging é concluído antes de produção;
-- [ ] runbook de acesso, revogação e operações está atualizado.
+- [x] matriz de autorização passa em páginas e endpoints;
+- [x] testes confirmam isolamento e ausência de enumeração indevida;
+- [x] suporte é preservado quando a notificação por e-mail falha;
+- [x] reconciliação e ações operacionais não deixam estado parcial;
+- [x] toda mutação aparece na auditoria com conteúdo seguro;
+- [x] interface funciona em 390 px e desktop, por teclado;
+- [x] lint, typecheck, testes completos e build passam;
+- [x] smoke test em test/staging é concluído antes de produção;
+- [x] runbook de acesso, revogação e operações está atualizado.
 
 ## Validação
 
@@ -54,6 +56,14 @@ pronto quando autorização, isolamento, auditoria e comportamento de falha fore
 - rodar os cenários Playwright do Super Admin;
 - executar `git diff --check` e revisar segredos/dados pessoais;
 - realizar smoke test manual em test/staging.
+
+## Evidência do rollout
+
+Em 16 de novembro de 2026, o deployment de preview ligado ao banco de test foi validado com uma
+sessão real de Super Admin. O smoke test cobriu login, busca e detalhe da loja, suporte, auditoria,
+bloqueio e desbloqueio reversíveis e a interface em viewport de 390 px. Os dois eventos operacionais
+foram registrados na auditoria, a loja terminou desbloqueada e a autorização temporária usada no
+teste foi revogada após a validação.
 
 ## Fora do escopo
 
