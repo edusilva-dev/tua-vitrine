@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { db } from "@/lib/server/db";
-import { queryAdminAuditEvents } from "@/modules/platform-admin/server/audit-list";
 import { writeAdminAuditEvent } from "@/modules/platform-admin/server/audit";
+import { queryAdminAuditEvents } from "@/modules/platform-admin/server/audit-list";
 
 const database = new URL(process.env.DATABASE_URL ?? "http://invalid");
 
@@ -34,6 +34,7 @@ beforeAll(async () => {
   const store = await db.store.create({
     data: { name: `Loja auditada ${marker}`, slug: `audit-${marker}` },
   });
+
   adminId = admin.id;
   storeId = store.id;
 
