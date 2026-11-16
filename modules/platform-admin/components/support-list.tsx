@@ -99,7 +99,16 @@ export function SupportList({
               className="grid gap-2 border-b p-4 transition-colors last:border-0 hover:bg-muted/40 md:grid-cols-[1fr_180px_150px] md:items-center"
             >
               <div className="min-w-0">
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {item.status === "NEW" ? (
+                    <span>
+                      <span className="sr-only">Solicitação nova</span>
+                      <span
+                        className="block size-2 shrink-0 rounded-full bg-primary ring-4 ring-primary/10"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  ) : null}
                   <Badge variant={item.status === "NEW" ? "default" : "secondary"}>
                     {statusLabels[item.status]}
                   </Badge>
