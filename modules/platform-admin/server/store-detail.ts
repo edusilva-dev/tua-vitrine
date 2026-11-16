@@ -24,6 +24,8 @@ export async function queryPlatformStoreDetail(
         updatedAt: true,
         onboardingCompletedAt: true,
         trialStartedAt: true,
+        trialEndedAt: true,
+        adminBlockedAt: true,
         members: {
           orderBy: [{ role: "asc" }, { createdAt: "asc" }],
           select: {
@@ -57,6 +59,9 @@ export async function queryPlatformStoreDetail(
           take: 3,
           select: { id: true, subject: true, status: true, createdAt: true },
         },
+        manualPlanGrant: {
+          select: { id: true, plan: true, expiresAt: true, reason: true },
+        },
       },
     }),
     db.product.count({ where: { storeId, archivedAt: null, published: true } }),
@@ -70,11 +75,14 @@ export async function queryPlatformStoreDetail(
     {
       onboardingCompletedAt: store.onboardingCompletedAt,
       trialStartedAt: store.trialStartedAt,
+      trialEndedAt: store.trialEndedAt,
       subscriptionPlan: store.subscription?.plan ?? null,
       subscriptionStatus: store.subscription?.status ?? null,
       trialUsedAt: store.subscription?.trialUsedAt ?? null,
       publishedProducts: published,
       catalogProducts: published + unpublished,
+      manualGrantPlan: store.manualPlanGrant?.plan ?? null,
+      manualGrantExpiresAt: store.manualPlanGrant?.expiresAt ?? null,
     },
     now
   );
@@ -92,6 +100,8 @@ export async function queryPlatformStoreDetail(
     updatedAt: store.updatedAt.toISOString(),
     onboardingCompletedAt: store.onboardingCompletedAt?.toISOString() ?? null,
     trialStartedAt: store.trialStartedAt?.toISOString() ?? null,
+    trialEndedAt: store.trialEndedAt?.toISOString() ?? null,
+    adminBlockedAt: store.adminBlockedAt?.toISOString() ?? null,
     members: store.members.map((member) => ({
       userId: member.userId,
       role: member.role,
@@ -130,6 +140,15 @@ export async function queryPlatformStoreDetail(
           processedAt: store.stripeWebhookEvents[0].processedAt.toISOString(),
         }
       : null,
+    manualPlanGrant:
+      store.manualPlanGrant && store.manualPlanGrant.plan !== "FREE"
+        ? {
+            id: store.manualPlanGrant.id,
+            plan: store.manualPlanGrant.plan,
+            reason: store.manualPlanGrant.reason,
+            expiresAt: store.manualPlanGrant.expiresAt.toISOString(),
+          }
+        : null,
     recentSupportRequests: store.supportRequests.map((request) => ({
       ...request,
       createdAt: request.createdAt.toISOString(),

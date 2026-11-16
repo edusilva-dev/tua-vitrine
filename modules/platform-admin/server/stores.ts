@@ -27,6 +27,7 @@ function internalTrialWhere(now: Date): Prisma.StoreWhereInput {
   return {
     AND: [
       { NOT: activePaidWhere() },
+      { trialEndedAt: null },
       { trialStartedAt: { gt: startedAfter, lte: now } },
       {
         OR: [{ subscription: { is: null } }, { subscription: { is: { trialUsedAt: null } } }],
@@ -35,14 +36,35 @@ function internalTrialWhere(now: Date): Prisma.StoreWhereInput {
   };
 }
 
+function manualGrantWhere(now: Date, plan?: "ESSENTIAL" | "PROFESSIONAL"): Prisma.StoreWhereInput {
+  return {
+    manualPlanGrant: {
+      is: { expiresAt: { gt: now }, plan: plan ?? { in: [...PAID_PLANS] } },
+    },
+  };
+}
+
 function effectivePlanWhere(
   plan: "FREE" | "ESSENTIAL" | "PROFESSIONAL",
   now: Date
 ): Prisma.StoreWhereInput {
-  if (plan === "ESSENTIAL") return activePaidWhere("ESSENTIAL");
+  if (plan === "ESSENTIAL") {
+    return {
+      OR: [
+        activePaidWhere("ESSENTIAL"),
+        { AND: [manualGrantWhere(now, "ESSENTIAL"), { NOT: activePaidWhere("PROFESSIONAL") }] },
+      ],
+    };
+  }
 
   if (plan === "PROFESSIONAL") {
-    return { OR: [activePaidWhere("PROFESSIONAL"), internalTrialWhere(now)] };
+    return {
+      OR: [
+        activePaidWhere("PROFESSIONAL"),
+        internalTrialWhere(now),
+        manualGrantWhere(now, "PROFESSIONAL"),
+      ],
+    };
   }
 
   const startedAfter = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
@@ -50,11 +72,13 @@ function effectivePlanWhere(
   return {
     AND: [
       { NOT: activePaidWhere() },
+      { NOT: manualGrantWhere(now) },
       {
         OR: [
           { trialStartedAt: null },
           { trialStartedAt: { lte: startedAfter } },
           { trialStartedAt: { gt: now } },
+          { trialEndedAt: { not: null } },
           { subscription: { is: { trialUsedAt: { not: null } } } },
         ],
       },
@@ -128,6 +152,8 @@ export async function queryPlatformStores(
         createdAt: true,
         onboardingCompletedAt: true,
         trialStartedAt: true,
+        trialEndedAt: true,
+        adminBlockedAt: true,
         members: {
           where: { role: "OWNER" },
           orderBy: { createdAt: "asc" },
@@ -135,6 +161,7 @@ export async function queryPlatformStores(
           select: { user: { select: { name: true, email: true } } },
         },
         subscription: { select: { plan: true, status: true, trialUsedAt: true } },
+        manualPlanGrant: { select: { plan: true, expiresAt: true } },
         _count: { select: { products: { where: { archivedAt: null, published: true } } } },
       },
     }),
@@ -150,14 +177,18 @@ export async function queryPlatformStores(
         {
           onboardingCompletedAt: store.onboardingCompletedAt,
           trialStartedAt: store.trialStartedAt,
+          trialEndedAt: store.trialEndedAt,
           subscriptionPlan: store.subscription?.plan ?? null,
           subscriptionStatus: store.subscription?.status ?? null,
           trialUsedAt: store.subscription?.trialUsedAt ?? null,
           publishedProducts: store._count.products,
+          manualGrantPlan: store.manualPlanGrant?.plan ?? null,
+          manualGrantExpiresAt: store.manualPlanGrant?.expiresAt ?? null,
         },
         now
       ).plan,
       status: store.status,
+      adminBlocked: Boolean(store.adminBlockedAt),
       subscriptionStatus: store.subscription?.status ?? null,
       createdAt: store.createdAt.toISOString(),
     })),

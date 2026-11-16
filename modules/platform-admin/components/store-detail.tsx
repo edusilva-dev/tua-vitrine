@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PlatformStoreDetailDTO } from "../contracts/store-detail";
 import { CopyValue } from "./copy-value";
+import { OperationalActions } from "./operational-actions";
 import { ReconcileBillingDialog } from "./reconcile-billing-dialog";
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -28,6 +29,7 @@ const sourceLabels = {
   FREE: "Plano gratuito",
   INTERNAL_TRIAL: "Trial interno",
   SUBSCRIPTION: "Assinatura Stripe",
+  MANUAL_GRANT: "Concessão temporária",
 };
 const subscriptionLabels = {
   INCOMPLETE: "Assinatura incompleta",
@@ -72,6 +74,7 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
               {store.status === "ACTIVE" ? "Loja publicada" : "Loja em rascunho"}
             </Badge>
             <Badge variant="outline">Plano {planLabels[store.plan.plan]}</Badge>
+            {store.adminBlockedAt ? <Badge variant="destructive">Acesso bloqueado</Badge> : null}
           </div>
           <h1 className="mt-4 break-words font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
             {store.name}
@@ -114,6 +117,14 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
               <DataRow
                 label="ID da loja"
                 value={<CopyValue label="Copiar ID da loja" value={store.id} />}
+              />
+              <DataRow
+                label="Vitrine pública"
+                value={store.status === "ACTIVE" ? "Publicada" : "Despublicada"}
+              />
+              <DataRow
+                label="Acesso ao painel"
+                value={store.adminBlockedAt ? "Bloqueado" : "Liberado"}
               />
               <DataRow label="Criada em" value={formatDate(store.createdAt)} />
               <DataRow label="Última atualização" value={formatDate(store.updatedAt)} />
@@ -186,6 +197,12 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
                   label="Pode iniciar um trial"
                   value={store.plan.trialAvailable ? "Sim" : "Não"}
                 />
+                {store.manualPlanGrant ? (
+                  <DataRow
+                    label="Concessão temporária até"
+                    value={formatDate(store.manualPlanGrant.expiresAt)}
+                  />
+                ) : null}
               </dl>
             </section>
 
@@ -290,6 +307,19 @@ export function PlatformStoreDetail({ store }: { store: PlatformStoreDetailDTO }
           </CardContent>
         </Card>
       </div>
+
+      <OperationalActions
+        store={{
+          id: store.id,
+          adminBlocked: Boolean(store.adminBlockedAt),
+          published: store.status === "ACTIVE",
+          trialActive: store.plan.source === "INTERNAL_TRIAL",
+          ownerEmailVerified: owner?.emailVerified ?? true,
+          manualGrant: store.manualPlanGrant
+            ? { plan: store.manualPlanGrant.plan, expiresAt: store.manualPlanGrant.expiresAt }
+            : null,
+        }}
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-2xl border bg-card p-5">

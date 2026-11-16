@@ -16,7 +16,7 @@ export const billingPlans = {
 
 export const entitlementsSchema = z.object({
   plan: billingPlanSchema,
-  source: z.enum(["FREE", "INTERNAL_TRIAL", "SUBSCRIPTION"]),
+  source: z.enum(["FREE", "INTERNAL_TRIAL", "SUBSCRIPTION", "MANUAL_GRANT"]),
   trialEndsAt: z.string().datetime().nullable(),
   trialDaysRemaining: z.number().int().nonnegative(),
   trialAvailable: z.boolean(),

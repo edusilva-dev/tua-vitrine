@@ -72,12 +72,19 @@ export async function resolveMemberStore(userId: string, selected?: string): Pro
   const membership = await db.storeMember.findFirst({
     where: { userId, role: "OWNER", ...(selected ? { storeId: selected } : {}) },
     orderBy: { createdAt: "asc" },
-    select: { storeId: true },
+    select: { storeId: true, store: { select: { adminBlockedAt: true } } },
   });
 
   if (!membership) {
     throw new AppError(404, selected ? "NOT_FOUND" : "NO_STORE", "Loja não encontrada.");
   }
+
+  if (membership.store.adminBlockedAt)
+    throw new AppError(
+      403,
+      "STORE_BLOCKED",
+      "O acesso administrativo desta loja está temporariamente bloqueado."
+    );
 
   return { storeId: membership.storeId };
 }
