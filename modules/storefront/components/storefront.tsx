@@ -341,9 +341,6 @@ export function Storefront({
       <main className="mx-auto max-w-6xl px-5 pb-20 sm:px-8">
         <section className="relative my-7 overflow-hidden rounded-3xl border bg-card px-7 py-9 sm:my-9 sm:px-10 sm:py-12">
           <div className="pointer-events-none absolute -right-16 -top-32 size-96 rounded-full border-[55px] border-primary/5" />
-          <p className="relative mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            Compre de quem está perto
-          </p>
           <h1 className="relative max-w-xl font-heading text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
             {store.customization.tagline || "Encontre seu próximo favorito."}
           </h1>
