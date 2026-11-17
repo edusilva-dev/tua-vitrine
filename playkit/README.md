@@ -1,10 +1,11 @@
 # tua vitrine · playkit
 
-Versão 0.1 — proposta inicial, 17 de novembro de 2026.
+Versão 0.2 — identidade aplicada, 17 de novembro de 2026.
 
 Este é o ponto de partida da identidade. A paleta e as fontes vêm do produto existente;
-o símbolo segue a referência escolhida pelo usuário e as regras de composição são propostas para discussão. Esta entrega não
-substitui ainda o favicon nem as assinaturas nas telas.
+o símbolo segue a referência escolhida pelo usuário. As combinações petróleo sobre
+creme e verde claro sobre floresta foram aprovadas: devem transmitir leveza e calma.
+A logo e os ícones estão aplicados no site, autenticação e painel.
 
 ## Essência
 
@@ -13,7 +14,8 @@ online e conduzir a compra pelo WhatsApp.
 
 **Promessa:** sua loja online, simples e do seu jeito.
 
-**Assinatura:** Seu negócio mais perto.
+**Assinatura verbal:** sem slogan por enquanto. Usar apenas símbolo e nome; textos
+de apresentação devem explicar concretamente a vitrine e os pedidos pelo WhatsApp.
 
 **Valores traduzidos em comportamento:**
 
@@ -39,7 +41,10 @@ A alça comunica sacola. O corpo vazado sustenta um toldo de três módulos arre
 A fachada remete ao pequeno comércio e a sacola remete à compra. Usar uma única
 estrutura em traço uniforme, sem adicionar porta, janela, carrinho ou balão de conversa.
 
-- [Prévia atual](./simbolo-02.png): símbolo redesenhado em contorno a partir da referência escolhida.
+- [Logo nas duas combinações aprovadas](./logo.png).
+- [Logo SVG flexível](./assets/logo.svg), [para fundo claro](./assets/logo-fundo-claro.svg)
+  e [para fundo escuro](./assets/logo-fundo-escuro.svg).
+- [Estudo do símbolo](./simbolo-02.png): símbolo redesenhado em contorno a partir da referência escolhida.
 - [Prancha inicial](./conceito-01.png): exploração gerada por IA, descartada para o desenho do símbolo.
 - [Símbolo vetorial](./assets/simbolo.svg): desenho geométrico editável com `currentColor`.
 - [Princípios visuais](./direcao-visual.md): orientação para evolução da marca.
@@ -81,9 +86,10 @@ Na interface, referenciar os tokens semânticos em vez de repetir hex em classes
 ## Tipografia e composição
 
 Manter as famílias já usadas em `app/layout.tsx`: **Montserrat** para marca e títulos,
-**Inter** para texto e interface. Proposta de logotipo: Montserrat Semibold, em
-minúsculas, com espaçamento ajustado visualmente. O lettering da prancha é ilustrativo;
-um logotipo vetorial definitivo ainda precisa de composição e revisão.
+**Inter** para texto e interface. A logo usa Montserrat Semibold (peso 600), em
+minúsculas, convertida em curvas: os SVGs não dependem de fontes instaladas.
+Fonte de origem: [Google Fonts / Montserrat](https://github.com/google/fonts/tree/main/ofl/montserrat),
+sob licença SIL Open Font License. O espaçamento preserva o kerning da família.
 
 Usar o símbolo à esquerda do nome. Reservar ao menos 1/4 da largura do símbolo
 ao redor da assinatura e entre símbolo e nome. Evitar sombras, contornos adicionais,
@@ -112,16 +118,21 @@ O SVG isolado tem nome acessível. Quando acompanhado pelo nome visível da marc
 remover seu `role`/`aria-label` e usar `aria-hidden="true"` na versão inline para evitar
 leitura duplicada. Links contendo apenas o símbolo precisam de um nome acessível.
 
-## Próxima aplicação
+## Aplicação no produto
 
-Após escolhermos a direção, finalizar o wordmark vetorial e aplicar a assinatura no
-site, autenticação e painel. Substituir `app/favicon.ico`, gerar `app/icon.svg` e
-`app/apple-icon.png` a partir da geometria aprovada. O favicon deve ter cor explícita
-ou estilos próprios para fundos claros/escuros: ele não herda o CSS da página.
+- `components/brand-logo.tsx`: logo e símbolo inline, com `currentColor`. A logo
+  tem nome acessível; o símbolo isolado é decorativo e exige nome no controle que o contém.
+- `app/icon.svg`: favicon vetorial com verde claro sobre placa floresta.
+- `app/favicon.ico`: substitui o ícone anterior, com versões de 16, 32 e 48 px.
+- `app/apple-icon.png`: ícone de 180 px para atalhos em dispositivos Apple.
 
-Verificar o ícone em 16, 24, 32 e 48 px, além das telas em 390 px e desktop.
-Revisar contraste, foco de links e leitura por tecnologia assistiva na integração.
-A referência escolhida tem corpo vazado e traço arredondado. O SVG redesenha essa
-estrutura, sem incorporar pixels do PNG. Falta revisar o desenho com o usuário e
-finalizar a composição tipográfica. O nome na prévia usa fonte de sistema e não é
-o wordmark definitivo.
+A placa floresta preserva contraste em abas claras e escuras sem depender do tema
+da página. Os ícones usam cores explícitas porque o favicon não herda CSS.
+O Next.js registra os arquivos automaticamente pelas convenções de metadata.
+
+As versões de download em `assets/` têm fundo transparente. Para uso inline,
+preferir `logo.svg`; para uso como imagem externa, escolher a variante de cor adequada.
+Manter a mesma geometria nos arquivos e em `components/brand-logo.tsx` ao revisar a marca.
+
+O estudo inicial `conceito-01.png` é apenas histórico: seu desenho e slogan foram
+descartados. A referência atual de composição é `logo.png`.

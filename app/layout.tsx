@@ -16,7 +16,7 @@ const fontMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "tua vitrine · Seu negócio mais perto",
+  title: "tua vitrine",
   description:
     "Sua loja online, simples e do seu jeito. Catálogo de produtos e atendimento pelo WhatsApp.",
 };

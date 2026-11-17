@@ -11,13 +11,13 @@ import {
   Package,
   Paintbrush,
   ShieldCheck,
-  Store,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AuthAccountMenu } from "@/components/auth-account-menu";
+import { BrandLogo, BrandSymbol } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -100,10 +100,7 @@ export function AppShell({
           href="/admin"
           className="flex items-center gap-3 px-6 py-8 text-2xl font-bold tracking-tight"
         >
-          <span className="grid size-10 place-items-center rounded-xl bg-brand-lime text-brand-forest">
-            <Store size={23} />
-          </span>
-          tua vitrine<span className="text-brand-lime">.</span>
+          <BrandLogo className="h-10 text-brand-lime" />
         </Link>
         <div className="px-5 pb-6">
           <p className="mb-2 text-[10px] font-semibold tracking-[.18em] text-white/45">
@@ -157,7 +154,7 @@ export function AppShell({
           onClick={() => startNavigation("/admin")}
           className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-forest text-brand-lime"
         >
-          <Store size={21} aria-hidden="true" />
+          <BrandSymbol className="h-7" />
         </Link>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-foreground">
@@ -185,11 +182,8 @@ export function AppShell({
             <SheetHeader className="gap-4 border-b border-white/10 p-5 pr-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-lime text-brand-forest">
-                    <Store size={21} aria-hidden="true" />
-                  </span>
                   <SheetTitle className="truncate text-lg font-bold tracking-tight text-white">
-                    tua vitrine<span className="text-brand-lime">.</span>
+                    <BrandLogo className="h-9 text-brand-lime" />
                   </SheetTitle>
                 </div>
                 <SheetClose asChild>
