@@ -1,6 +1,6 @@
 # 02 — Preparar produção e alertas
 
-**Status:** em andamento.
+**Status:** concluída.
 
 ## Objetivo
 
@@ -19,8 +19,8 @@ os produziu.
 ## Critérios de aceite
 
 - [x] DSN e token de source maps estão configurados na Vercel sem segredo versionado;
-- [ ] preview envia evento com ambiente correto;
-- [ ] stack trace aponta para arquivo e linha legíveis;
+- [x] preview envia evento com ambiente correto;
+- [x] stack trace aponta para arquivo e linha legíveis;
 - [x] alerta de erro novo está ativo somente para produção;
 - [x] procedimento operacional está documentado.
 
@@ -45,5 +45,6 @@ produção. Staging e previews permanecem consultáveis, mas não disparam esse 
 - alerta `Novo erro em produção`: primeira ocorrência, ambiente `production`, e-mail para a equipe
   `Tua Vitrine`.
 
-A validação final do ambiente e dos source maps deve acontecer no primeiro deployment de preview
-desta branch. Depois do merge, a mesma conferência deve ser repetida uma vez em produção.
+O primeiro deployment de preview enviou um evento pelo túnel publicado com `environment=preview`,
+respondeu ao health check e confirmou o upload dos source maps nos logs do build. Depois do merge, a
+mesma conferência deve ser repetida uma vez em produção.

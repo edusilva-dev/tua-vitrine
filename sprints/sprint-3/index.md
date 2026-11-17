@@ -5,7 +5,7 @@
 
 ## Estado do sprint
 
-- **Status:** implementação em andamento.
+- **Status:** concluída.
 - **Tema:** detecção e diagnóstico de erros em produção.
 - **Produto:** Tua Vitrine.
 - **Plataforma:** Next.js na Vercel.
@@ -101,7 +101,7 @@ concede acesso operacional e nunca deve ser salvo no repositório ou exposto ao 
 | Ordem | Tarefa | Status |
 | --- | --- | --- |
 | 01 | [Instrumentar e validar o Sentry](./tasks/01-sentry-foundation.md) | Concluída |
-| 02 | [Preparar produção e alertas](./tasks/02-production-rollout.md) | Em andamento |
+| 02 | [Preparar produção e alertas](./tasks/02-production-rollout.md) | Concluída |
 
 ## Definição de pronto
 
