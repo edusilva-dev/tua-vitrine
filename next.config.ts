@@ -1,13 +1,30 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   experimental: {
     agentUpgrade: "security",
   },
-  output: "standalone",
+  ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
   reactCompiler: true,
   images: { unoptimized: true },
+  transpilePackages: ["@sentry/bun", "@sentry/nextjs"],
   serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg", "pino", "sharp"],
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: "tua-vitrine",
+  project: "tua-vitrine",
+  ...(process.env.SENTRY_AUTH_TOKEN ? { authToken: process.env.SENTRY_AUTH_TOKEN } : {}),
+  silent: !process.env.CI,
+  useRunAfterProductionCompileHook: true,
+  widenClientFileUpload: true,
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+});
