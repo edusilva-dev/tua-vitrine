@@ -113,8 +113,10 @@ test("destaca as notificações por status no topo central", async ({ context, p
     },
   ]);
   await page.goto("/admin/settings");
-  await page.waitForLoadState("networkidle");
-  await page.getByRole("button", { name: "Copiar link" }).click();
+  const copyLinkButton = page.getByRole("button", { name: "Copiar link" });
+
+  await expect(copyLinkButton).toBeVisible();
+  await copyLinkButton.click();
 
   const toaster = page.locator("[data-sonner-toaster]");
   const toast = page.locator("[data-sonner-toast][data-type='success']");

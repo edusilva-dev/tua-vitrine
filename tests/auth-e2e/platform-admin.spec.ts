@@ -225,6 +225,7 @@ test("percorre busca, detalhe, suporte, ação crítica e auditoria por teclado"
     await signIn(admin, emails.admin);
     await page.goto(`/super-admin?q=${runId}`);
     await expect(page.getByRole("heading", { name: "Lojas", level: 1 })).toBeVisible();
+    await expect(page.getByLabel("1 nova solicitação")).toBeVisible();
     await page.getByRole("link", { name: `Loja operacional ${runId}` }).click();
     await expect(page).toHaveURL(`/super-admin/stores/${storeId}`);
     await expect(page.getByText("Publicados", { exact: true })).toBeVisible();
@@ -242,7 +243,10 @@ test("percorre busca, detalhe, suporte, ação crítica e auditoria por teclado"
     await expect(page.getByText("Ação concluída.")).toBeVisible();
     await expect(page.getByText("Acesso bloqueado")).toBeVisible();
 
-    await page.goto(`/super-admin/support/${supportRequestId}`);
+    await page.goto("/super-admin/support");
+    await expect(page.getByText("Solicitação nova")).toBeAttached();
+    await page.getByRole("link", { name: new RegExp(`Chamado operacional ${runId}`) }).click();
+    await expect(page).toHaveURL(`/super-admin/support/${supportRequestId}`);
     await expect(page.getByText("Falha no e-mail")).toBeVisible();
     await page.getByRole("combobox").click();
     await page.getByRole("option", { name: "Em atendimento" }).click();
@@ -253,6 +257,7 @@ test("percorre busca, detalhe, suporte, ação crítica e auditoria por teclado"
     await page.getByText("Confirmo o estado, a nota interna e o motivo desta alteração").click();
     await page.getByRole("button", { name: "Salvar tratamento" }).click();
     await expect(page.getByText("Chamado atualizado.")).toBeVisible();
+    await expect(page.getByLabel("1 nova solicitação")).toHaveCount(0);
 
     await page.goto(`/super-admin/audit?storeId=${storeId}`);
     await expect(page.locator("article").filter({ hasText: "Bloqueio da loja" })).toBeVisible();

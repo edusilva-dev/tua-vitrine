@@ -1,4 +1,5 @@
 import "server-only";
+import * as Sentry from "@sentry/nextjs";
 import { ZodError } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { logger } from "./logger";
@@ -60,6 +61,7 @@ export async function handle(action: () => Promise<Response>): Promise<Response>
         { status: 404 }
       );
 
+    Sentry.captureException(error, { tags: { boundary: "api_handle" } });
     logger.error({ err: error }, "Unhandled request error");
 
     return Response.json(
