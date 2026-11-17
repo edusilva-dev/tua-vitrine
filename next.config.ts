@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   experimental: {
     agentUpgrade: "security",
   },
-  output: "standalone",
+  ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
   reactCompiler: true,
   images: { unoptimized: true },
   serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg", "pino", "sharp"],
