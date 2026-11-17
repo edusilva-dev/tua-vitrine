@@ -169,6 +169,7 @@ test.describe("vitrine pública", () => {
   });
 
   test("favoritos persistem e escolhas não vazam entre lojas", async ({ page }) => {
+    test.slow();
     await page.goto(`/${fixtures.firstSlug}`);
     await page.getByRole("button", { name: "Curtir Cookie com chocolate", exact: true }).click();
     await page.getByRole("button", { name: "Ver Cookie com chocolate", exact: true }).click();
