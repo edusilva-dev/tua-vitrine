@@ -8,7 +8,15 @@ const nextConfig: NextConfig = {
   ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
   reactCompiler: true,
   images: { unoptimized: true },
-  serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg", "pino", "sharp"],
+  serverExternalPackages: [
+    "@prisma/client",
+    "@prisma/adapter-pg",
+    "@sentry/bun",
+    "@sentry/nextjs",
+    "pg",
+    "pino",
+    "sharp",
+  ],
 };
 
 export default withSentryConfig(nextConfig, {
