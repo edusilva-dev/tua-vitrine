@@ -13,6 +13,7 @@ import {
   Store,
 } from "lucide-react";
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -100,9 +101,7 @@ export default function Home() {
             href="/"
             className="flex items-center gap-2.5 font-heading text-xl font-bold tracking-tight"
           >
-            <span className="hidden min-[430px]:inline">
-              tua vitrine<span className="-ml-2.5 text-brand-sage">.</span>
-            </span>
+            <BrandLogo className="h-8 text-primary sm:h-10" />
           </Link>
           <nav aria-label="Navegação principal" className="hidden items-center gap-8 md:flex">
             <Link href="#recursos" className="text-sm text-brand-copy hover:text-brand-forest">
@@ -142,7 +141,7 @@ export default function Home() {
                 14 dias grátis para colocar sua loja no ar
               </span>
               <h1 className="mt-7 font-heading text-4xl font-semibold leading-[1.08] tracking-[-0.045em] sm:text-5xl lg:text-6xl">
-                Seu negócio mais perto de quem quer comprar.
+                Seus produtos online. Pedidos pelo WhatsApp.
               </h1>
               <p className="mt-6 max-w-xl text-base leading-7 text-brand-copy sm:text-lg sm:leading-8">
                 Crie uma vitrine bonita, compartilhe seus produtos e transforme interesse em
@@ -408,7 +407,7 @@ export default function Home() {
       <footer className="bg-brand-forest-deep text-white/60">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 sm:flex-row sm:items-center sm:justify-between lg:px-8">
           <Link href="/" className="font-heading text-lg font-bold text-white">
-            tua vitrine<span className="text-brand-lime-muted">.</span>
+            <BrandLogo className="text-brand-lime" />
           </Link>
           <p className="text-xs">Sua loja online, simples e do seu jeito.</p>
           <div className="flex gap-5 text-xs">
