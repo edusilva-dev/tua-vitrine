@@ -1,7 +1,16 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowDown, ArrowUp, Download, Link as LinkIcon, Loader2, Upload } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Download,
+  Link as LinkIcon,
+  Loader2,
+  LockKeyhole,
+  Upload,
+} from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -388,28 +397,50 @@ export function StoreSettings({
                   title: "Lista",
                   description: "Mostra cada produto em uma linha, com foto e detalhes lado a lado.",
                 },
-              ].map(({ value, title, description }) => (
-                <button
-                  key={value}
-                  type="button"
-                  disabled={!entitlements.canUseFullCustomization}
-                  aria-pressed={template === value}
-                  onClick={() => form.setValue("template", value, { shouldDirty: true })}
-                  className={cn(
-                    "flex min-w-0 flex-col rounded-xl border p-4 text-left transition-colors",
-                    template === value
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "hover:bg-muted"
-                  )}
-                >
-                  <TemplatePreview template={value} />
-                  <p className="text-sm font-semibold">{title}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    {description}
-                  </p>
-                </button>
-              ))}
+              ].map(({ value, title, description }) => {
+                const requiresProfessional =
+                  value === "list" && !entitlements.canUseFullCustomization;
+
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    disabled={requiresProfessional}
+                    aria-pressed={template === value}
+                    onClick={() => form.setValue("template", value, { shouldDirty: true })}
+                    className={cn(
+                      "flex min-w-0 flex-col rounded-xl border p-4 text-left transition-colors",
+                      requiresProfessional && "cursor-not-allowed opacity-65",
+                      template === value
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "hover:bg-muted"
+                    )}
+                  >
+                    <TemplatePreview template={value} />
+                    <p className="text-sm font-semibold">{title}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {description}
+                    </p>
+                    {requiresProfessional ? (
+                      <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
+                        <LockKeyhole aria-hidden="true" size={13} /> Plano Profissional
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
             </fieldset>
+            {!entitlements.canUseFullCustomization ? (
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                O modelo em lista faz parte da personalização completa do plano Profissional.{" "}
+                <Link
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                  href="/admin/billing"
+                >
+                  Conhecer os planos
+                </Link>
+              </p>
+            ) : null}
             <fieldset
               aria-label="Organização por categoria"
               className="mt-6 grid gap-3 sm:grid-cols-2"
