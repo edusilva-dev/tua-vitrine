@@ -99,6 +99,31 @@ os links enviados por e-mail. Produção e staging não devem confiar automatica
 Na Vercel, limite `DATABASE_URL` e `DATABASE_URL_UNPOOLED` do banco `staging` à branch Git `staging`;
 essas variáveis sobrescrevem o banco `test` compartilhado pelos demais previews.
 
+### Product analytics
+
+O PostHog é opcional e usa projetos separados para produção e staging/preview. Configure em cada
+ambiente o token público, o host regional fornecido pelo PostHog e o ambiente lógico:
+
+- `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` e `NEXT_PUBLIC_POSTHOG_HOST` para o navegador;
+- `POSTHOG_PROJECT_TOKEN` e `POSTHOG_HOST` para eventos confirmados no servidor;
+- `NEXT_PUBLIC_APP_ENV` como `production` ou `staging`;
+- `APP_RELEASE` somente quando a release não puder ser obtida de `VERCEL_GIT_COMMIT_SHA`.
+
+O token de projeto permite apenas ingestão e pode aparecer no browser; chaves pessoais e
+administrativas do PostHog nunca pertencem à Vercel nem ao bundle. A ausência das variáveis mantém o
+adaptador desabilitado. Configuração parcial falha durante o bootstrap para evitar eventos enviados
+ao projeto ou à região errados.
+
+A fundação desabilita autocapture, pageviews, pageleave, feature flags e Session Replay. Em produção,
+o SDK web inicia sem capturar até que o visitante conceda consentimento, e o adaptador de servidor
+permanece desligado até a política de privacidade da Sprint 1 ser aprovada. Não habilite essas opções
+diretamente no PostHog antes das tarefas correspondentes.
+
+Não há CSP customizada no projeto atualmente. Se uma política for adicionada, permita o host regional
+em `connect-src`; os bundles opcionais exigem `script-src https://*.posthog.com`, e replay exige
+`worker-src blob: data:`. A validação de ingestão deve acontecer primeiro em staging e confirmar que
+nenhum evento chegou ao projeto de produção.
+
 ## 3. E-mail e imagens
 
 O cadastro exige confirmação de e-mail e a recuperação de senha depende de entrega real. Enquanto o
