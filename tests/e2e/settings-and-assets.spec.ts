@@ -46,8 +46,16 @@ test("explica e permite comparar os modelos e a organização da vitrine", async
   const continuous = page.getByRole("button", { name: /^Grade contínua/ });
   const sections = page.getByRole("button", { name: /^Seções por categoria/ });
 
-  await expect(gallery).toBeDisabled();
+  await expect(gallery).toBeEnabled();
   await expect(list).toBeDisabled();
+  await expect(page.getByText("Plano Profissional", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("O modelo em lista faz parte da personalização completa do plano Profissional.")
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Conhecer os planos" })).toHaveAttribute(
+    "href",
+    "/admin/billing"
+  );
   await sections.click();
   await expect(sections).toHaveAttribute("aria-pressed", "true");
   await expect(continuous).toHaveAttribute("aria-pressed", "false");
