@@ -101,7 +101,8 @@ essas variáveis sobrescrevem o banco `test` compartilhado pelos demais previews
 
 ### Product analytics
 
-O PostHog é opcional e usa projetos separados para produção e staging/preview. Configure em cada
+O PostHog é opcional. O plano atual permite um único projeto, portanto produção e staging/preview
+usam o mesmo token com `environment` obrigatório em todos os eventos e filtros. Configure em cada
 ambiente o token público, o host regional fornecido pelo PostHog e o ambiente lógico:
 
 - `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` e `NEXT_PUBLIC_POSTHOG_HOST` para o navegador;
@@ -122,7 +123,9 @@ diretamente no PostHog antes das tarefas correspondentes.
 Não há CSP customizada no projeto atualmente. Se uma política for adicionada, permita o host regional
 em `connect-src`; os bundles opcionais exigem `script-src https://*.posthog.com`, e replay exige
 `worker-src blob: data:`. A validação de ingestão deve acontecer primeiro em staging e confirmar que
-nenhum evento chegou ao projeto de produção.
+o smoke test possui `environment = development`. Todo insight de produção deve filtrar
+`environment = production`; se o plano passar a permitir mais projetos, migre produção para um
+projeto isolado antes do rollout.
 
 ## 3. E-mail e imagens
 

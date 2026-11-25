@@ -76,5 +76,6 @@ recomendada pela versão instalada somente após conferir a documentação ofici
 - build passou com e sem configuração e o token exclusivo do servidor não apareceu em `.next/static`;
 - evento `sdk_setup_smoke_test` confirmado no projeto não produtivo com `environment`, `release` e
   `schema_version`; o emissor temporário foi removido;
-- variáveis do projeto não produtivo configuradas como Config no ambiente Preview da Vercel;
-- produção permanece sem variáveis PostHog e sem captura até o rollout previsto na tarefa 11.
+- organização limitada a um projeto não demonstrativo; `environment` separa produção e staging;
+- variáveis configuradas como Config nos ambientes Preview e Production da Vercel;
+- produção permanece em opt-out no browser e noop no servidor até o rollout previsto na tarefa 11.

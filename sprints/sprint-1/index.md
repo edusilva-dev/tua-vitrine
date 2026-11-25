@@ -507,3 +507,4 @@ O sprint está pronto somente quando:
 | 2026-10-29 | resultado no servidor; interação no browser | confiabilidade sem perder contexto de UX |
 | 2026-10-29 | IDs internos, sem PII direta | minimização e correlação estável |
 | 2026-10-29 | replay com máscara máxima e consentimento | rollout conservador para dados não essenciais |
+| 2026-11-25 | projeto único com `environment` obrigatório | plano atual limita a organização a um projeto |
