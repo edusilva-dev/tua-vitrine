@@ -6,7 +6,7 @@
 
 ## Estado do sprint
 
-- **Status:** em implementação; fundação e contrato de eventos concluídos.
+- **Status:** em implementação; fundação, contrato de eventos e identidade concluídos.
 - **Tema:** product analytics e UX analytics com PostHog.
 - **Produto:** Tua Vitrine.
 - **Públicos observados:** lojistas autenticados e visitantes anônimos das vitrines públicas.
@@ -456,7 +456,7 @@ aprovação de texto e hipótese legal é uma dependência do produto/jurídico,
 | --- | --- | --- |
 | Vazamento de dados em replay | Alto | consentimento, máscara máxima, `ph-no-capture`, auditoria bloqueante |
 | Eventos duplicados | Alto | origem de sucesso no servidor, idempotência Stripe, testes de reentrega |
-| Identidades misturadas | Alto | `identify` com UUID interno, `reset` no logout, teste de troca de conta/loja |
+| Identidades misturadas | Alto | `identify` com ID interno estável, `reset` no logout, teste de troca de conta/loja |
 | Preferência só no browser não alcançar webhook | Alto | base legal separada ou consentimento persistido e consultado no servidor |
 | Dados de teste em produção | Médio | projetos separados ou `environment` obrigatório, SDK noop em testes |
 | Métricas inconsistentes com PostgreSQL | Médio | responsabilidades distintas e definições explícitas; não prometer igualdade 1:1 |
@@ -484,7 +484,7 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 | --- | --- | --- | --- |
 | 01 | [Instalar e configurar o PostHog](./tasks/01-posthog-installation-and-configuration.md) | — | Concluída |
 | 02 | [Criar contrato e wrapper de analytics](./tasks/02-analytics-contract-and-wrapper.md) | 01 | Concluída |
-| 03 | [Identificar o usuário autenticado](./tasks/03-user-identification.md) | 02 | Pendente |
+| 03 | [Identificar o usuário autenticado](./tasks/03-user-identification.md) | 02 | Concluída |
 | 04 | [Identificar e agrupar por loja](./tasks/04-store-identification.md) | 02, 03 | Pendente |
 | 05 | [Implementar consentimento e política do servidor](./tasks/05-consent-and-server-privacy-policy.md) | 01–04 | Pendente |
 | 06 | [Instrumentar eventos do lojista](./tasks/06-merchant-lifecycle-events.md) | 02–05 | Pendente |

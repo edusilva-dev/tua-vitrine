@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/client/auth";
 import { cn } from "@/lib/utils";
+import { analytics } from "@/modules/observability/client/analytics";
 
 export function AuthAccountMenu({ menuItem = false }: { menuItem?: boolean }) {
   const [pending, setPending] = useState(false);
@@ -23,6 +24,7 @@ export function AuthAccountMenu({ menuItem = false }: { menuItem?: boolean }) {
         return;
       }
 
+      analytics.reset();
       window.location.assign("/entrar");
     } catch {
       setFailed(true);
