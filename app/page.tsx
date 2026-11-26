@@ -17,6 +17,7 @@ import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { LandingAnalytics } from "@/modules/observability/components/landing-analytics";
 
 const benefits = [
   {
@@ -45,6 +46,7 @@ const plans = [
   {
     name: "Free",
     slug: "free",
+    analyticsPlan: "FREE",
     price: "0",
     description: "Para conhecer a Tua Vitrine e colocar seus primeiros produtos no ar.",
     features: [
@@ -58,6 +60,7 @@ const plans = [
   {
     name: "Essencial",
     slug: "essencial",
+    analyticsPlan: "ESSENTIAL",
     price: "19",
     description: "Para ganhar tempo e acompanhar o interesse dos clientes.",
     features: [
@@ -72,6 +75,7 @@ const plans = [
   {
     name: "Profissional",
     slug: "profissional",
+    analyticsPlan: "PROFESSIONAL",
     price: "39",
     description: "Para catálogos maiores e campanhas que destacam seus produtos.",
     features: [
@@ -95,6 +99,7 @@ const steps = [
 export default function Home() {
   return (
     <div className="min-h-svh overflow-hidden bg-background text-foreground">
+      <LandingAnalytics />
       <header className="sticky top-0 z-50 border-b border-foreground/8 bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-5 lg:px-8">
           <Link
@@ -123,7 +128,11 @@ export default function Home() {
               </Link>
             </Button>
             <Button asChild className="bg-brand-forest px-3 sm:px-5 hover:bg-primary">
-              <Link href="/cadastro">
+              <Link
+                href="/cadastro"
+                data-analytics-cta="start_free"
+                data-analytics-location="header"
+              >
                 <span className="sm:hidden">Criar</span>
                 <span className="hidden sm:inline">Começar grátis</span>
               </Link>
@@ -149,7 +158,11 @@ export default function Home() {
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="h-12 bg-brand-forest px-6 hover:bg-primary">
-                  <Link href="/cadastro">
+                  <Link
+                    href="/cadastro"
+                    data-analytics-cta="create_store"
+                    data-analytics-location="hero"
+                  >
                     Criar minha vitrine grátis
                     <ArrowRight />
                   </Link>
@@ -372,7 +385,12 @@ export default function Home() {
                           : "bg-brand-forest hover:bg-primary"
                       )}
                     >
-                      <Link href={`/cadastro?plano=${plan.slug}`}>
+                      <Link
+                        href={`/cadastro?plano=${plan.slug}`}
+                        data-analytics-cta={plan.name === "Free" ? "start_free" : "start_trial"}
+                        data-analytics-location="pricing"
+                        data-analytics-plan={plan.analyticsPlan}
+                      >
                         {plan.name === "Free" ? "Começar grátis" : "Testar por 14 dias"}
                         <ArrowRight />
                       </Link>
@@ -396,7 +414,11 @@ export default function Home() {
               Crie sua vitrine hoje e experimente grátis por 14 dias.
             </p>
             <Button asChild size="lg" className="mt-7 h-12 bg-brand-forest px-7 hover:bg-primary">
-              <Link href="/cadastro">
+              <Link
+                href="/cadastro"
+                data-analytics-cta="create_store"
+                data-analytics-location="final_cta"
+              >
                 Quero criar minha vitrine
                 <ArrowRight />
               </Link>
@@ -417,7 +439,12 @@ export default function Home() {
             <Link href="/entrar" className="hover:text-white">
               Acessar painel
             </Link>
-            <Link href="/cadastro" className="hover:text-white">
+            <Link
+              href="/cadastro"
+              className="hover:text-white"
+              data-analytics-cta="create_store"
+              data-analytics-location="footer"
+            >
               Criar conta
             </Link>
           </div>

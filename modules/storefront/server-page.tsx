@@ -12,6 +12,7 @@ import { Storefront } from "./components/storefront";
 export async function StorefrontPage({
   store,
   searchParams,
+  plan,
   preview = false,
   showFreeBranding = false,
 }: {
@@ -55,6 +56,7 @@ export async function StorefrontPage({
       categories={categories}
       optionFilters={optionFilters}
       filters={filters}
+      plan={plan}
       preview={preview}
       showFreeBranding={showFreeBranding}
       promotion={promotion}
