@@ -36,7 +36,7 @@ funcional, de privacidade, custos e operação.
 
 - [ ] lint, typecheck, testes relacionados, suíte completa e build passam;
 - [ ] busca confirma SDK restrito aos adaptadores/bootstrap;
-- [ ] os 11 eventos foram exercitados com resultado esperado;
+- [ ] os 13 eventos foram exercitados com resultado esperado;
 - [ ] eventos não duplicam em retries previstos;
 - [ ] PostHog indisponível não bloqueia fluxos;
 - [ ] rejeição/revogação interrompe captura client-side/replay e a política server-side aprovada é
@@ -51,7 +51,7 @@ funcional, de privacidade, custos e operação.
 
 Executar, no mínimo:
 
-1. cadastro → verificação/login → criação da loja → primeiro produto → publicação;
+1. LP → CTA → cadastro → verificação/login → criação da loja → primeiro produto → publicação;
 2. criação, edição, importação e exclusão simples/em lote de produtos;
 3. vitrine → produto → WhatsApp por hero, card, detalhe e carrinho;
 4. assinatura iniciada, reentrega de webhook e cancelamento;

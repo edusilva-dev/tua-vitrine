@@ -2,8 +2,8 @@
 
 ## Objetivo
 
-Criar e validar dois funis complementares: onboarding do lojista e ativação da loja até o primeiro
-clique no WhatsApp.
+Criar e validar três funis complementares: conversão da LP, onboarding do lojista e ativação da loja
+até o primeiro clique no WhatsApp.
 
 ## Contexto
 
@@ -14,6 +14,8 @@ dados.
 
 ## Implementação esperada
 
+- criar **Landing Conversion Funnel — Sprint 1**, agregado por pessoa, com `landing_page_viewed` →
+  `landing_cta_clicked` → `account_created` e a limitação de consentimento documentada;
 - criar **Merchant Onboarding Funnel — Sprint 1**, agregado por pessoa, com `account_created` →
   `store_created` → primeiro `product_created` → `store_published`;
 - criar **Store Activation Funnel — Sprint 1**, agregado por loja, com `store_created` → primeiro
@@ -37,6 +39,7 @@ dados.
 
 ## Critérios de aceite
 
+- [ ] funil da LP contém os três passos definidos, agrega por pessoa e declara sua cobertura parcial;
 - [ ] funil do lojista contém os quatro passos definidos e agrega por pessoa;
 - [ ] funil da loja contém os cinco passos definidos e agrega por loja;
 - [ ] janela de conversão de 14 dias;
@@ -46,11 +49,11 @@ dados.
 - [ ] breakdown por plano funciona;
 - [ ] fluxo canônico aparece em ordem e sem duplicidade indevida;
 - [ ] drop-offs podem ser abertos para eventos/replays consentidos;
-- [ ] descrições explicam onboarding, ativação e por que os funis não foram unidos.
+- [ ] descrições explicam aquisição, onboarding, ativação e por que os funis não foram unidos.
 
 ## Validação
 
-- criar uma conta/loja sintética em staging e concluir toda a jornada;
+- abrir a LP, aceitar analytics, clicar em CTA e criar uma conta/loja sintética em staging;
 - conferir timestamps, pessoa, grupo, propriedades e contagem em cada passo;
 - repetir um passo e confirmar que o funil não infla a unidade agregada;
 - se usar HogQL, comparar o resultado com uma contagem manual por `store_id`;

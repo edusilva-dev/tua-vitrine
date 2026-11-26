@@ -7,14 +7,16 @@ Associar sessões do painel ao UUID interno do lojista e limpar corretamente a i
 ## Contexto
 
 O Better Auth já resolve `userId` verificado em `lib/server/context.ts`. O layout do admin é o ponto
-central para entregar essa identidade a um componente cliente. Visitantes da vitrine devem continuar
-anônimos. A identificação não deve enviar nome ou e-mail.
+central para entregar essa identidade a um componente cliente. A sessão anônima consentida da LP deve
+ser preservada ao identificar a conta criada para viabilizar o funil de conversão. Visitantes da
+vitrine continuam anônimos. A identificação não deve enviar nome ou e-mail.
 
 ## Implementação esperada
 
 - expor apenas `userId` necessário no layout do admin;
 - criar `AnalyticsIdentity` client component idempotente;
 - chamar `identify(userId)` apenas quando a identidade conhecida mudar;
+- preservar a sessão anônima consentida da LP quando ela se torna uma conta identificada;
 - configurar perfis como `identified_only`;
 - resetar o PostHog após logout bem-sucedido e antes de redirecionar;
 - cobrir transições login, logout, nova conta e troca de pessoa no mesmo navegador;
@@ -34,6 +36,7 @@ anônimos. A identificação não deve enviar nome ou e-mail.
 ## Critérios de aceite
 
 - [ ] lojista autenticado aparece com `distinct_id = user.id`;
+- [ ] cadastro consentido associa `landing_page_viewed` e `landing_cta_clicked` à conta criada;
 - [ ] e-mail, nome e telefone não são propriedades de pessoa;
 - [ ] identify não dispara repetidamente a cada render;
 - [ ] logout chama reset e a próxima sessão recebe identidade independente;

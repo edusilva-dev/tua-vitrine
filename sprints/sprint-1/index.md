@@ -6,7 +6,7 @@
 
 ## Estado do sprint
 
-- **Status:** documentação pronta para revisão; implementação não iniciada.
+- **Status:** em implementação; fundação e contrato de eventos concluídos.
 - **Tema:** product analytics e UX analytics com PostHog.
 - **Produto:** Tua Vitrine.
 - **Públicos observados:** lojistas autenticados e visitantes anônimos das vitrines públicas.
@@ -62,6 +62,7 @@ Ao final do sprint, o administrador deve conseguir:
 - SDK web e SDK de servidor para Next.js App Router;
 - contrato tipado e versionado de eventos;
 - wrapper único para captura no browser e no servidor;
+- conversão da landing page, da visualização aos CTAs de cadastro;
 - identificação de lojista autenticado e reset no logout;
 - associação de eventos à loja;
 - eventos principais de conta, onboarding, catálogo, WhatsApp e assinatura;
@@ -126,8 +127,9 @@ modules/observability/
 
 ### 3. Captura no ponto que confirma o resultado
 
-- **Eventos de intenção/interação** (`product_creation_started`, `catalog_viewed`, `product_viewed`,
-  `whatsapp_clicked`) nascem no browser.
+- **Eventos de intenção/interação** (`landing_page_viewed`, `landing_cta_clicked`,
+  `product_creation_started`, `catalog_viewed`, `product_viewed`, `whatsapp_clicked`) nascem no
+  browser.
 - **Eventos de resultado de negócio** (`store_created`, `store_published`, `product_created`,
   `product_deleted`, `subscription_started`, `subscription_cancelled`) nascem no servidor, após a
   operação persistir com sucesso.
@@ -249,7 +251,7 @@ Todo evento deve receber automaticamente, quando aplicável:
   schema_version: 1,
   environment: "development" | "staging" | "production",
   release: string | null,
-  surface: "admin" | "storefront" | "billing" | "auth",
+  surface: "landing" | "admin" | "storefront" | "billing" | "auth",
   source: string,
   store_id?: string,
   plan?: "FREE" | "ESSENTIAL" | "PROFESSIONAL"
@@ -270,6 +272,8 @@ contrato.
 
 | Evento | Origem confiável | Propriedades específicas mínimas |
 | --- | --- | --- |
+| `landing_page_viewed` | montagem real da landing page | `source` |
+| `landing_cta_clicked` | clique em CTA que leva ao cadastro | `source`, `cta`, `location`, `selected_plan?` |
 | `account_created` | criação concluída pelo Better Auth | `signup_plan`, `source` |
 | `store_created` | `createStore`/`saveIdentity` após persistência | `store_id`, `plan`, `source` |
 | `store_published` | transação que conclui onboarding e ativa a loja | `store_id`, `plan`, `product_count` |
@@ -285,17 +289,34 @@ contrato.
 `store_published` ocorre uma vez, quando a primeira criação de produto transforma a loja de `DRAFT`
 em `ACTIVE`. Editar produtos ou republicar produtos não repete o evento.
 
+`landing_cta_clicked.cta` aceita `start_free`, `create_store` e `start_trial`; `location` aceita
+`header`, `hero`, `pricing`, `final_cta` e `footer`. `selected_plan` aparece somente nos cards de
+preço. A origem é reduzida a `direct`, `organic`, `social`, `referral` ou `campaign`; nunca enviar
+texto do CTA, referrer, URL completa ou parâmetros UTM.
+
 `whatsapp_clicked.location` aceita apenas `store_hero`, `product_card`, `product_detail` e `cart`.
 Nunca enviar número, mensagem, nome do produto ou conteúdo do carrinho.
 
 ## Activation Funnel
 
-A jornada atravessa duas identidades: o lojista cria/configura a loja, enquanto um visitante anônimo
-abre a vitrine e clica no WhatsApp. PostHog associa grupos a eventos, não retroativamente às pessoas.
-Por isso, um único funil por pessoa ou por loja começando em `account_created` produziria números
-incorretos. O sprint cria dois insights complementares.
+A jornada atravessa identidades diferentes: o visitante anônimo da LP pode se tornar lojista, o
+lojista cria/configura a loja e outro visitante anônimo abre a vitrine e clica no WhatsApp. PostHog
+associa grupos a eventos, não retroativamente às pessoas. Por isso, um único funil da LP ao WhatsApp
+produziria números incorretos. O sprint cria três insights complementares.
 
-### 1. Merchant Onboarding Funnel — Sprint 1
+### 1. Landing Conversion Funnel — Sprint 1
+
+Agregação: pessoa no browser. A identificação após o cadastro deve preservar a sessão anônima anterior
+quando houver consentimento, permitindo associar a conversão sem enviar PII.
+
+1. `landing_page_viewed`;
+2. `landing_cta_clicked`;
+3. `account_created`.
+
+O funil mede somente sessões que consentiram com analytics e não representa todo o tráfego da LP.
+Ad blockers, rejeição e troca de dispositivo reduzem a conversão observável.
+
+### 2. Merchant Onboarding Funnel — Sprint 1
 
 Agregação: pessoa identificada (`user.id`). Todos os eventos server-side deste trecho devem receber o
 `distinct_id` do lojista responsável.
@@ -305,7 +326,7 @@ Agregação: pessoa identificada (`user.id`). Todos os eventos server-side deste
 3. `product_created` com `is_first_product = true`;
 4. `store_published`.
 
-### 2. Store Activation Funnel — Sprint 1
+### 3. Store Activation Funnel — Sprint 1
 
 Este é o **Activation Funnel** principal. Agregação: grupo `store`. Group Analytics é dependência do
 funil padrão, pois um breakdown/filtro por `store_id` não muda a unidade de agregação de pessoa.
@@ -333,7 +354,7 @@ conversão sequencial.
 
 A sequência preserva `product_created` e `store_published` como passos distintos porque o primeiro
 mede criação de valor e o segundo confirma a mudança de estado da loja. Eles podem ter timestamps
-próximos, mas significados diferentes. O dashboard pode apresentar os dois funis lado a lado, mas não
+próximos, mas significados diferentes. O dashboard pode apresentar os três funis lado a lado, mas não
 deve uni-los artificialmente.
 
 ## Product Health Dashboard
@@ -342,20 +363,22 @@ Nome: **Product Health — Sprint 1**. Período padrão: últimos 30 dias, com f
 
 Cartões mínimos:
 
-1. contas criadas — total e usuários únicos;
-2. lojas criadas — total de grupos únicos;
-3. lojas publicadas — total e taxa sobre lojas criadas;
-4. primeiros produtos criados — `product_created` com `is_first_product = true`;
-5. lojas ativas em 7 dias — lojas com pelo menos um dos eventos `store_created`,
+1. visualizações da LP — total e visitantes únicos consentidos;
+2. cliques em CTA da LP — total, visitantes únicos e taxa sobre `landing_page_viewed`;
+3. contas criadas — total e usuários únicos;
+4. lojas criadas — total de grupos únicos;
+5. lojas publicadas — total e taxa sobre lojas criadas;
+6. primeiros produtos criados — `product_created` com `is_first_product = true`;
+7. lojas ativas em 7 dias — lojas com pelo menos um dos eventos `store_created`,
    `product_creation_started`, `product_created`, `product_deleted`, `store_published`,
    `catalog_viewed`, `product_viewed`, `whatsapp_clicked`, `subscription_started` ou
    `subscription_cancelled` nos últimos 7 dias, agregadas por grupo `store` ou consulta HogQL por
    `store_id`;
-6. visualizações de catálogo — total e lojas únicas;
-7. visualizações de produto — total e taxa por `catalog_viewed`;
-8. cliques no WhatsApp — total, lojas únicas e taxa por `catalog_viewed`;
-9. assinaturas iniciadas e canceladas — tendência por plano;
-10. conversão dos funis de onboarding do lojista e ativação da loja.
+8. visualizações de catálogo — total e lojas únicas;
+9. visualizações de produto — total e taxa por `catalog_viewed`;
+10. cliques no WhatsApp — total, lojas únicas e taxa por `catalog_viewed`;
+11. assinaturas iniciadas e canceladas — tendência por plano;
+12. conversão dos três funis de LP, onboarding do lojista e ativação da loja.
 
 Cada cartão deve ter descrição de negócio, evento/filtro, agregação, janela e limitações. Não chamar
 um número de “lojas ativas” sem declarar a definição acima.
@@ -403,7 +426,7 @@ aprovação de texto e hipótese legal é uma dependência do produto/jurídico,
 ### Técnicos
 
 - zero import de SDK fora dos adaptadores/bootstrap autorizados;
-- todos os 11 eventos tipados, documentados e com testes de propriedades proibidas;
+- todos os 13 eventos tipados, documentados e com testes de propriedades proibidas;
 - eventos de servidor não quebram a operação quando o PostHog está indisponível;
 - eventos do Stripe não duplicam em reentrega do mesmo webhook;
 - produção, staging e desenvolvimento podem ser filtrados sem ambiguidade;
@@ -413,7 +436,7 @@ aprovação de texto e hipótese legal é uma dependência do produto/jurídico,
 
 ### Produto
 
-- um fluxo canônico aparece nos dois funis complementares, cobrindo da conta ao WhatsApp sem misturar
+- um fluxo canônico aparece nos três funis complementares, cobrindo da LP ao WhatsApp sem misturar
   identidades;
 - o dashboard contém todos os cartões definidos e possui descrições;
 - é possível filtrar por plano, origem e loja;
@@ -460,12 +483,12 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 | Ordem | Tarefa | Depende de | Status |
 | --- | --- | --- | --- |
 | 01 | [Instalar e configurar o PostHog](./tasks/01-posthog-installation-and-configuration.md) | — | Concluída |
-| 02 | [Criar contrato e wrapper de analytics](./tasks/02-analytics-contract-and-wrapper.md) | 01 | Pendente |
+| 02 | [Criar contrato e wrapper de analytics](./tasks/02-analytics-contract-and-wrapper.md) | 01 | Concluída |
 | 03 | [Identificar o usuário autenticado](./tasks/03-user-identification.md) | 02 | Pendente |
 | 04 | [Identificar e agrupar por loja](./tasks/04-store-identification.md) | 02, 03 | Pendente |
 | 05 | [Implementar consentimento e política do servidor](./tasks/05-consent-and-server-privacy-policy.md) | 01–04 | Pendente |
 | 06 | [Instrumentar eventos do lojista](./tasks/06-merchant-lifecycle-events.md) | 02–05 | Pendente |
-| 07 | [Instrumentar vitrine, WhatsApp e billing](./tasks/07-storefront-whatsapp-and-billing-events.md) | 02–05 | Pendente |
+| 07 | [Instrumentar LP, vitrine, WhatsApp e billing](./tasks/07-storefront-whatsapp-and-billing-events.md) | 02–05 | Pendente |
 | 08 | [Habilitar replay e privacy masking](./tasks/08-session-replay-and-privacy-masking.md) | 01–05 | Pendente |
 | 09 | [Criar Activation Funnel](./tasks/09-activation-funnel.md) | 06, 07 | Pendente |
 | 10 | [Criar Product Health Dashboard](./tasks/10-product-health-dashboard.md) | 06, 07, 09 | Pendente |
