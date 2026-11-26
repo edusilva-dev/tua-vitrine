@@ -45,6 +45,13 @@ type EventFactory<TInput> = (
   context: AnalyticsRuntimeContext
 ) => ReturnType<(typeof analyticsEvents)[keyof typeof analyticsEvents]>;
 
+export function hasAnalyticsConsent(
+  environment: AnalyticsRuntimeContext["environment"],
+  hasOptedIn: () => boolean
+): boolean {
+  return environment !== "production" || hasOptedIn();
+}
+
 export function createClientAnalytics(options: ClientAnalyticsOptions) {
   let currentStoreGroup: string | null = null;
 
@@ -169,7 +176,9 @@ const enabled = Boolean(
 
 export const analytics = createClientAnalytics({
   enabled,
-  hasConsent: () => posthog.has_opted_in_capturing(),
+  hasConsent: () =>
+    environment.success &&
+    hasAnalyticsConsent(environment.data, () => posthog.has_opted_in_capturing()),
   capture: (name, properties) => posthog.capture(name, properties),
   group: (type, key, properties) => posthog.group(type, key, properties),
   identity: {

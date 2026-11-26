@@ -1,5 +1,8 @@
 import { describe, expect, mock, test } from "bun:test";
-import { createClientAnalytics } from "@/modules/observability/client/analytics";
+import {
+  createClientAnalytics,
+  hasAnalyticsConsent,
+} from "@/modules/observability/client/analytics";
 import {
   analyticsEventSchemas,
   analyticsEvents,
@@ -217,6 +220,13 @@ describe("contrato de analytics", () => {
 });
 
 describe("adaptador de analytics do browser", () => {
+  test("captura em staging e exige opt-in explícito somente em produção", () => {
+    expect(hasAnalyticsConsent("staging", () => false)).toBe(true);
+    expect(hasAnalyticsConsent("development", () => false)).toBe(true);
+    expect(hasAnalyticsConsent("production", () => false)).toBe(false);
+    expect(hasAnalyticsConsent("production", () => true)).toBe(true);
+  });
+
   test("identifica de forma idempotente e preserva a sessão anônima", () => {
     let distinctId = "anonymous-session";
     let identifiedUserId: string | undefined;
