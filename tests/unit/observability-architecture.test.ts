@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
 const allowedImports = [
-  "instrumentation-client.ts",
   "modules/observability/client/analytics.ts",
+  "modules/observability/client/posthog-consent.ts",
   "modules/observability/server/posthog.ts",
 ];
 

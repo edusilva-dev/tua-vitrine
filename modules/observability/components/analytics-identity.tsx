@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { analytics } from "../client/analytics";
+import { ANALYTICS_CONSENT_CHANGED_EVENT } from "../client/consent";
 import type { AnalyticsStoreGroupInput } from "../contracts/events";
 
 export function AnalyticsIdentity({
@@ -17,13 +18,29 @@ export function AnalyticsIdentity({
   const onboardingStep = store?.onboardingStep;
 
   useEffect(() => {
-    if (userId) analytics.identify(userId);
+    function syncIdentity() {
+      if (userId) analytics.identify(userId);
+    }
+
+    syncIdentity();
+    window.addEventListener(ANALYTICS_CONSENT_CHANGED_EVENT, syncIdentity);
+
+    return () => window.removeEventListener(ANALYTICS_CONSENT_CHANGED_EVENT, syncIdentity);
   }, [userId]);
 
   useEffect(() => {
     if (!storeId || !plan || !status || !onboardingStep) return;
 
-    analytics.groupStore({ storeId, plan, status, onboardingStep });
+    const storeInput = { storeId, plan, status, onboardingStep };
+
+    function syncStore() {
+      analytics.groupStore(storeInput);
+    }
+
+    syncStore();
+    window.addEventListener(ANALYTICS_CONSENT_CHANGED_EVENT, syncStore);
+
+    return () => window.removeEventListener(ANALYTICS_CONSENT_CHANGED_EVENT, syncStore);
   }, [storeId, plan, status, onboardingStep]);
 
   return null;

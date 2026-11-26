@@ -4,6 +4,12 @@ import {
   hasAnalyticsConsent,
 } from "@/modules/observability/client/analytics";
 import {
+  ANALYTICS_CONSENT_STORAGE_KEY,
+  ANALYTICS_CONSENT_VERSION,
+  readAnalyticsConsent,
+} from "@/modules/observability/client/consent";
+import { createAnalyticsConsentController } from "@/modules/observability/client/posthog-consent";
+import {
   analyticsEventSchemas,
   analyticsEvents,
   createAnalyticsStoreGroup,
@@ -220,11 +226,63 @@ describe("contrato de analytics", () => {
 });
 
 describe("adaptador de analytics do browser", () => {
-  test("captura em staging e exige opt-in explícito somente em produção", () => {
-    expect(hasAnalyticsConsent("staging", () => false)).toBe(true);
-    expect(hasAnalyticsConsent("development", () => false)).toBe(true);
-    expect(hasAnalyticsConsent("production", () => false)).toBe(false);
-    expect(hasAnalyticsConsent("production", () => true)).toBe(true);
+  test("exige opt-in explícito em todos os ambientes", () => {
+    expect(hasAnalyticsConsent(() => false)).toBe(false);
+    expect(hasAnalyticsConsent(() => true)).toBe(true);
+  });
+
+  test("trata preferência ausente, inválida ou de outra versão como desconhecida", () => {
+    const values = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    };
+
+    expect(readAnalyticsConsent(storage)).toBe("unknown");
+
+    values.set(ANALYTICS_CONSENT_STORAGE_KEY, "conteúdo inválido");
+    expect(readAnalyticsConsent(storage)).toBe("unknown");
+
+    values.set(
+      ANALYTICS_CONSENT_STORAGE_KEY,
+      JSON.stringify({ version: ANALYTICS_CONSENT_VERSION - 1, state: "accepted" })
+    );
+    expect(readAnalyticsConsent(storage)).toBe("unknown");
+  });
+
+  test("aceita sem reload e revoga limpando a identidade antes de desativar", () => {
+    const values = new Map<string, string>();
+    const order: string[] = [];
+    const changes: string[] = [];
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    };
+    const controller = createAnalyticsConsentController({
+      storage,
+      initialize: () => {
+        order.push("initialize");
+
+        return true;
+      },
+      resetAnalytics: () => order.push("reset"),
+      sdk: {
+        optIn: () => order.push("opt-in"),
+        optOut: () => order.push("opt-out"),
+      },
+      emitChange: (state) => changes.push(state),
+    });
+
+    expect(controller.restore()).toBe("unknown");
+
+    controller.accept();
+    expect(readAnalyticsConsent(storage)).toBe("accepted");
+    expect(order).toEqual(["initialize", "opt-in"]);
+
+    controller.reject();
+    expect(readAnalyticsConsent(storage)).toBe("rejected");
+    expect(order).toEqual(["initialize", "opt-in", "reset", "opt-out"]);
+    expect(changes).toEqual(["accepted", "rejected"]);
   });
 
   test("identifica de forma idempotente e preserva a sessão anônima", () => {

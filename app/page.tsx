@@ -411,6 +411,9 @@ export default function Home() {
           </Link>
           <p className="text-xs">Sua loja online, simples e do seu jeito.</p>
           <div className="flex gap-5 text-xs">
+            <Link href="/privacidade" className="hover:text-white">
+              Privacidade
+            </Link>
             <Link href="/entrar" className="hover:text-white">
               Acessar painel
             </Link>

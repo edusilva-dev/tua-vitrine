@@ -28,7 +28,7 @@ type ClientIdentity = {
   getDistinctId: () => string;
   getIdentifiedUserId: () => string | undefined;
   identify: (distinctId: string) => unknown;
-  reset: () => unknown;
+  reset: (preserveConsent?: boolean) => unknown;
 };
 
 type ClientAnalyticsOptions = {
@@ -45,11 +45,8 @@ type EventFactory<TInput> = (
   context: AnalyticsRuntimeContext
 ) => ReturnType<(typeof analyticsEvents)[keyof typeof analyticsEvents]>;
 
-export function hasAnalyticsConsent(
-  environment: AnalyticsRuntimeContext["environment"],
-  hasOptedIn: () => boolean
-): boolean {
-  return environment !== "production" || hasOptedIn();
+export function hasAnalyticsConsent(hasOptedIn: () => boolean): boolean {
+  return hasOptedIn();
 }
 
 export function createClientAnalytics(options: ClientAnalyticsOptions) {
@@ -114,11 +111,11 @@ export function createClientAnalytics(options: ClientAnalyticsOptions) {
         // Identity is best-effort and must never interrupt authentication.
       }
     },
-    reset() {
+    reset(preserveConsent = true) {
       if (!options.enabled || !options.identity) return;
 
       try {
-        options.identity.reset();
+        options.identity.reset(preserveConsent);
         currentStoreGroup = null;
       } catch {
         // Logout must complete even when analytics is unavailable.
@@ -176,9 +173,7 @@ const enabled = Boolean(
 
 export const analytics = createClientAnalytics({
   enabled,
-  hasConsent: () =>
-    environment.success &&
-    hasAnalyticsConsent(environment.data, () => posthog.has_opted_in_capturing()),
+  hasConsent: () => hasAnalyticsConsent(() => posthog.has_opted_in_capturing()),
   capture: (name, properties) => posthog.capture(name, properties),
   group: (type, key, properties) => posthog.group(type, key, properties),
   identity: {
@@ -189,7 +184,13 @@ export const analytics = createClientAnalytics({
       return typeof userId === "string" ? userId : undefined;
     },
     identify: (distinctId) => posthog.identify(distinctId),
-    reset: () => posthog.reset(),
+    reset: (preserveConsent = true) => {
+      const shouldRestoreConsent = preserveConsent && posthog.has_opted_in_capturing();
+
+      posthog.reset();
+
+      if (shouldRestoreConsent) posthog.opt_in_capturing({ captureEventName: false });
+    },
   },
   context: {
     environment: environment.success ? environment.data : "development",
