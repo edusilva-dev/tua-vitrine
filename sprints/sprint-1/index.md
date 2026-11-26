@@ -6,7 +6,7 @@
 
 ## Estado do sprint
 
-- **Status:** documentação pronta para revisão; implementação não iniciada.
+- **Status:** em implementação; fundação e contrato de eventos concluídos.
 - **Tema:** product analytics e UX analytics com PostHog.
 - **Produto:** Tua Vitrine.
 - **Públicos observados:** lojistas autenticados e visitantes anônimos das vitrines públicas.
@@ -460,7 +460,7 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 | Ordem | Tarefa | Depende de | Status |
 | --- | --- | --- | --- |
 | 01 | [Instalar e configurar o PostHog](./tasks/01-posthog-installation-and-configuration.md) | — | Concluída |
-| 02 | [Criar contrato e wrapper de analytics](./tasks/02-analytics-contract-and-wrapper.md) | 01 | Pendente |
+| 02 | [Criar contrato e wrapper de analytics](./tasks/02-analytics-contract-and-wrapper.md) | 01 | Concluída |
 | 03 | [Identificar o usuário autenticado](./tasks/03-user-identification.md) | 02 | Pendente |
 | 04 | [Identificar e agrupar por loja](./tasks/04-store-identification.md) | 02, 03 | Pendente |
 | 05 | [Implementar consentimento e política do servidor](./tasks/05-consent-and-server-privacy-policy.md) | 01–04 | Pendente |

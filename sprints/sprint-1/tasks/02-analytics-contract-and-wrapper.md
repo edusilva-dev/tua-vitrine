@@ -1,5 +1,7 @@
 # 02 — Criar contrato e wrapper de analytics
 
+**Status:** concluída em 2026-11-25.
+
 ## Objetivo
 
 Criar a única API autorizada para eventos, com nomes e propriedades tipados, defaults comuns,
@@ -37,15 +39,15 @@ camada fica em `modules/observability`.
 
 ## Critérios de aceite
 
-- [ ] todos os eventos do documento mestre possuem método e payload tipado;
-- [ ] não existe método público genérico com nome/payload livres;
-- [ ] propriedades comuns são aplicadas de modo consistente;
-- [ ] propriedades proibidas e desconhecidas falham em teste/desenvolvimento;
-- [ ] noop é silencioso e testado no cliente e no servidor;
-- [ ] cliente respeita consentimento e servidor respeita a política de habilitação definida;
-- [ ] falha do fornecedor não altera o resultado da operação de negócio;
-- [ ] imports de `posthog-js`/`posthog-node` ficam restritos aos adaptadores/bootstrap;
-- [ ] testes cobrem nome final, propriedades, sanitização e erro do cliente PostHog.
+- [x] todos os eventos do documento mestre possuem método e payload tipado;
+- [x] não existe método público genérico com nome/payload livres;
+- [x] propriedades comuns são aplicadas de modo consistente;
+- [x] propriedades proibidas e desconhecidas falham em teste/desenvolvimento;
+- [x] noop é silencioso e testado no cliente e no servidor;
+- [x] cliente respeita consentimento e servidor respeita a política de habilitação definida;
+- [x] falha do fornecedor não altera o resultado da operação de negócio;
+- [x] imports de `posthog-js`/`posthog-node` ficam restritos aos adaptadores/bootstrap;
+- [x] testes cobrem nome final, propriedades, sanitização e erro do cliente PostHog.
 
 ## Validação
 
@@ -58,3 +60,12 @@ camada fica em `modules/observability`.
 
 IDs internos não são PII direta, mas continuam dados pseudonimizados. Não permitir e-mail, nome,
 telefone, slug, mensagem, descrição, termo de busca, URL completa ou objeto livre no contrato.
+
+## Evidências
+
+- catálogo versionado com os 11 eventos, propriedades finais em `snake_case` e vocabulários fechados;
+- métodos explícitos para browser e servidor, sem API pública para nomes ou payloads arbitrários;
+- captura do browser depende de configuração e consentimento; servidor permanece noop em produção;
+- payload inválido falha em desenvolvimento/teste e é descartado em produção;
+- falhas do SDK são isoladas da operação de negócio e o servidor registra somente o nome do evento;
+- teste de arquitetura limita imports dos SDKs ao bootstrap e aos adaptadores autorizados.
