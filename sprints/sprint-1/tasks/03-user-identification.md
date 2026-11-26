@@ -1,6 +1,6 @@
 # 03 — Identificar o usuário autenticado
 
-**Status:** implementação concluída em 2026-11-25; inspeção no PostHog depende do consentimento da
+**Status:** implementação concluída em 2026-11-26; inspeção no PostHog depende do consentimento da
 tarefa 05.
 
 ## Objetivo
