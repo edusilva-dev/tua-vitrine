@@ -3,11 +3,13 @@ import { createClientAnalytics } from "@/modules/observability/client/analytics"
 import {
   analyticsEventSchemas,
   analyticsEvents,
+  createAnalyticsStoreGroup,
   type ProductCreatedInput,
 } from "@/modules/observability/contracts/events";
 import { createServerAnalytics } from "@/modules/observability/server/analytics";
 
 const storeId = "11111111-1111-4111-8111-111111111111";
+const secondStoreId = "33333333-3333-4333-8333-333333333333";
 const productId = "22222222-2222-4222-8222-222222222222";
 const context = {
   environment: "staging" as const,
@@ -183,6 +185,35 @@ describe("contrato de analytics", () => {
     expect(product.storeId).toBe(storeId);
     expect(whatsapp.storeId).toBe(storeId);
   });
+
+  test("limita o grupo de loja a propriedades seguras", () => {
+    expect(
+      createAnalyticsStoreGroup({
+        storeId,
+        plan: "PROFESSIONAL",
+        status: "ACTIVE",
+        onboardingStep: 4,
+      })
+    ).toEqual({
+      type: "store",
+      key: storeId,
+      properties: {
+        plan: "PROFESSIONAL",
+        status: "ACTIVE",
+        onboarding_step: 4,
+      },
+    });
+
+    expect(() =>
+      createAnalyticsStoreGroup({
+        storeId,
+        plan: "FREE",
+        status: "DRAFT",
+        onboardingStep: 1,
+        name: "Loja que não pode sair do produto",
+      } as Parameters<typeof createAnalyticsStoreGroup>[0])
+    ).toThrow();
+  });
 });
 
 describe("adaptador de analytics do browser", () => {
@@ -265,8 +296,75 @@ describe("adaptador de analytics do browser", () => {
     expect(() => analytics.reset()).not.toThrow();
   });
 
+  test("associa e atualiza a loja sem alterar a identidade da pessoa", () => {
+    const identify = mock(() => undefined);
+    const group = mock(
+      (_type: "store", _key: string, _properties: Record<string, unknown>) => undefined
+    );
+    const analytics = createClientAnalytics({
+      enabled: true,
+      hasConsent: () => true,
+      capture: () => undefined,
+      group,
+      identity: {
+        getDistinctId: () => "user-internal",
+        getIdentifiedUserId: () => "user-internal",
+        identify,
+        reset: () => undefined,
+      },
+      context,
+    });
+    const firstStore = {
+      storeId,
+      plan: "FREE" as const,
+      status: "DRAFT" as const,
+      onboardingStep: 2 as const,
+    };
+
+    analytics.identify("user-internal");
+    analytics.groupStore(firstStore);
+    analytics.groupStore(firstStore);
+    analytics.reset();
+    analytics.groupStore(firstStore);
+    analytics.groupStore({
+      storeId: secondStoreId,
+      plan: "ESSENTIAL",
+      status: "ACTIVE",
+      onboardingStep: 4,
+    });
+
+    expect(identify).not.toHaveBeenCalled();
+    expect(group.mock.calls).toEqual([
+      ["store", storeId, { plan: "FREE", status: "DRAFT", onboarding_step: 2 }],
+      ["store", storeId, { plan: "FREE", status: "DRAFT", onboarding_step: 2 }],
+      ["store", secondStoreId, { plan: "ESSENTIAL", status: "ACTIVE", onboarding_step: 4 }],
+    ]);
+  });
+
+  test("não associa loja sem consentimento", () => {
+    const group = mock(
+      (_type: "store", _key: string, _properties: Record<string, unknown>) => undefined
+    );
+    const analytics = createClientAnalytics({
+      enabled: true,
+      hasConsent: () => false,
+      capture: () => undefined,
+      group,
+      context,
+    });
+
+    analytics.groupStore({
+      storeId,
+      plan: "FREE",
+      status: "ACTIVE",
+      onboardingStep: 4,
+    });
+
+    expect(group).not.toHaveBeenCalled();
+  });
+
   test("captura somente com configuração e consentimento", () => {
-    const capture = mock(() => undefined);
+    const capture = mock((_name: string, _properties: Record<string, unknown>) => undefined);
     const withoutConsent = createClientAnalytics({
       enabled: true,
       hasConsent: () => false,
@@ -326,8 +424,12 @@ describe("adaptador de analytics do browser", () => {
 describe("adaptador de analytics do servidor", () => {
   test("envia identidade fora de propriedades e encerra o cliente", async () => {
     const capture = mock(
-      (_input: { distinctId: string; event: string; properties: Record<string, unknown> }) =>
-        undefined
+      (_input: {
+        distinctId: string;
+        event: string;
+        groups?: { store: string };
+        properties: Record<string, unknown>;
+      }) => undefined
     );
     const shutdown = mock(async () => undefined);
     const reportError = mock(() => undefined);
@@ -343,11 +445,40 @@ describe("adaptador de analytics do servidor", () => {
     expect(capture).toHaveBeenCalledWith({
       distinctId: "user-interno",
       event: "product_created",
+      groups: { store: storeId },
       properties: expect.objectContaining({ store_id: storeId, product_id: productId }),
     });
     expect(capture.mock.calls[0]?.[0].properties).not.toHaveProperty("distinct_id");
     expect(shutdown).toHaveBeenCalledTimes(1);
     expect(reportError).not.toHaveBeenCalled();
+  });
+
+  test("mantém eventos de duas lojas isolados pelo grupo", async () => {
+    const capture = mock(
+      (_input: {
+        distinctId: string;
+        event: string;
+        groups?: { store: string };
+        properties: Record<string, unknown>;
+      }) => undefined
+    );
+    const analytics = createServerAnalytics({
+      enabled: true,
+      context,
+      createClient: () => ({ capture, shutdown: async () => undefined }),
+      reportError: () => undefined,
+    });
+
+    await analytics.productCreated({ distinctId: "user" }, validInputs.productCreated);
+    await analytics.productCreated(
+      { distinctId: "user" },
+      { ...validInputs.productCreated, storeId: secondStoreId }
+    );
+
+    expect(capture.mock.calls.map(([input]) => input.groups)).toEqual([
+      { store: storeId },
+      { store: secondStoreId },
+    ]);
   });
 
   test("permanece noop quando desabilitado ou em produção", async () => {

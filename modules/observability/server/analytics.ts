@@ -28,6 +28,7 @@ type ServerPostHogClient = {
   capture(input: {
     distinctId: string;
     event: string;
+    groups?: { store: string };
     properties: Record<string, unknown>;
   }): unknown;
   shutdown(): Promise<void>;
@@ -74,9 +75,12 @@ export function createServerAnalytics(options: ServerAnalyticsOptions) {
     let providerError: unknown;
 
     try {
+      const storeId = "store_id" in event.properties ? event.properties.store_id : undefined;
+
       await client.capture({
         distinctId: identity.distinctId,
         event: event.name,
+        ...(typeof storeId === "string" ? { groups: { store: storeId } } : {}),
         properties: event.properties,
       });
     } catch (error) {

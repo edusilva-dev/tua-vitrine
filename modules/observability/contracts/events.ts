@@ -27,6 +27,37 @@ const internalIdSchema = z.string().uuid();
 const countSchema = z.number().int().nonnegative();
 const landingSourceSchema = z.enum(["direct", "organic", "social", "referral", "campaign"]);
 
+export const analyticsStoreGroupInputSchema = z
+  .object({
+    storeId: internalIdSchema,
+    plan: analyticsPlanSchema,
+    status: z.enum(["DRAFT", "ACTIVE"]),
+    onboardingStep: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+  })
+  .strict();
+
+export type AnalyticsStoreGroupInput = z.infer<typeof analyticsStoreGroupInputSchema>;
+
+export function createAnalyticsStoreGroup(input: AnalyticsStoreGroupInput) {
+  const result = analyticsStoreGroupInputSchema.safeParse(input);
+
+  if (result.success) {
+    return {
+      type: "store" as const,
+      key: result.data.storeId,
+      properties: {
+        plan: result.data.plan,
+        status: result.data.status,
+        onboarding_step: result.data.onboardingStep,
+      },
+    };
+  }
+
+  if (process.env.NODE_ENV === "production") return null;
+
+  throw result.error;
+}
+
 export const landingPageViewedInputSchema = z
   .object({
     source: landingSourceSchema,
