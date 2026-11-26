@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getEntitlements } from "@/modules/billing/server/entitlements";
 import { StorefrontPage } from "@/modules/storefront/server-page";
 import { getCurrentStore } from "@/modules/stores/server/service";
 
@@ -13,5 +14,9 @@ export default async function PreviewPage({
 
   if (!store) redirect("/admin/onboarding");
 
-  return <StorefrontPage store={store} searchParams={searchParams} preview />;
+  const entitlements = await getEntitlements({ storeId: store.id });
+
+  return (
+    <StorefrontPage store={store} searchParams={searchParams} plan={entitlements.plan} preview />
+  );
 }

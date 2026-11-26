@@ -23,6 +23,7 @@ export default async function PublicStorePage({
     <StorefrontPage
       store={store}
       searchParams={searchParams}
+      plan={entitlements.plan}
       showFreeBranding={entitlements.plan === "FREE"}
     />
   );

@@ -4,9 +4,11 @@ import posthog from "posthog-js";
 import {
   type AccountCreatedInput,
   type AnalyticsRuntimeContext,
+  type AnalyticsStoreGroupInput,
   analyticsEnvironmentSchema,
   analyticsEvents,
   type CatalogViewedInput,
+  createAnalyticsStoreGroup,
   type LandingCtaClickedInput,
   type LandingPageViewedInput,
   type ProductCreatedInput,
@@ -34,6 +36,7 @@ type ClientAnalyticsOptions = {
   hasConsent: () => boolean;
   capture: ClientCapture;
   context: AnalyticsRuntimeContext;
+  group?: (type: "store", key: string, properties: Record<string, unknown>) => unknown;
   identity?: ClientIdentity;
 };
 
@@ -42,7 +45,16 @@ type EventFactory<TInput> = (
   context: AnalyticsRuntimeContext
 ) => ReturnType<(typeof analyticsEvents)[keyof typeof analyticsEvents]>;
 
+export function hasAnalyticsConsent(
+  environment: AnalyticsRuntimeContext["environment"],
+  hasOptedIn: () => boolean
+): boolean {
+  return environment !== "production" || hasOptedIn();
+}
+
 export function createClientAnalytics(options: ClientAnalyticsOptions) {
+  let currentStoreGroup: string | null = null;
+
   function send<TInput>(factory: EventFactory<TInput>, input: TInput): void {
     if (!options.enabled || !options.hasConsent()) return;
 
@@ -66,6 +78,24 @@ export function createClientAnalytics(options: ClientAnalyticsOptions) {
   }
 
   return {
+    groupStore(input: AnalyticsStoreGroupInput) {
+      if (!options.enabled || !options.hasConsent() || !options.group) return;
+
+      try {
+        const group = createAnalyticsStoreGroup(input);
+
+        if (!group) return;
+
+        const fingerprint = JSON.stringify([group.key, group.properties]);
+
+        if (currentStoreGroup === fingerprint) return;
+
+        options.group(group.type, group.key, group.properties);
+        currentStoreGroup = fingerprint;
+      } catch (error) {
+        if (process.env.NODE_ENV !== "production") throw error;
+      }
+    },
     identify(userId: string) {
       if (!options.enabled || !options.hasConsent() || !options.identity || !userId.trim()) return;
 
@@ -74,7 +104,10 @@ export function createClientAnalytics(options: ClientAnalyticsOptions) {
 
         const identifiedUserId = options.identity.getIdentifiedUserId();
 
-        if (identifiedUserId && identifiedUserId !== userId) options.identity.reset();
+        if (identifiedUserId && identifiedUserId !== userId) {
+          options.identity.reset();
+          currentStoreGroup = null;
+        }
 
         options.identity.identify(userId);
       } catch {
@@ -86,6 +119,7 @@ export function createClientAnalytics(options: ClientAnalyticsOptions) {
 
       try {
         options.identity.reset();
+        currentStoreGroup = null;
       } catch {
         // Logout must complete even when analytics is unavailable.
       }
@@ -142,8 +176,11 @@ const enabled = Boolean(
 
 export const analytics = createClientAnalytics({
   enabled,
-  hasConsent: () => posthog.has_opted_in_capturing(),
+  hasConsent: () =>
+    environment.success &&
+    hasAnalyticsConsent(environment.data, () => posthog.has_opted_in_capturing()),
   capture: (name, properties) => posthog.capture(name, properties),
+  group: (type, key, properties) => posthog.group(type, key, properties),
   identity: {
     getDistinctId: () => posthog.get_distinct_id(),
     getIdentifiedUserId: () => {
