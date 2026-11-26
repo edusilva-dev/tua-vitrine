@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { filterSentryEvent, sentryEnvironment, sentryTracesSampleRate } from "@/lib/sentry-options";
-import { restoreAnalyticsConsent } from "@/modules/observability/client/posthog-consent";
+import { initializePostHog } from "@/modules/observability/client/posthog-consent";
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -19,7 +19,7 @@ Sentry.init({
 });
 
 try {
-  restoreAnalyticsConsent();
+  initializePostHog();
 } catch (error) {
   Sentry.captureException(error);
 }

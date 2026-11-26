@@ -14,11 +14,11 @@ type StoredAnalyticsConsent = {
 type ConsentStorage = Pick<Storage, "getItem" | "setItem">;
 
 export function readAnalyticsConsent(storage: ConsentStorage): AnalyticsConsentState {
-  const value = storage.getItem(ANALYTICS_CONSENT_STORAGE_KEY);
-
-  if (!value) return "unknown";
-
   try {
+    const value = storage.getItem(ANALYTICS_CONSENT_STORAGE_KEY);
+
+    if (!value) return "unknown";
+
     const parsed = JSON.parse(value) as Partial<StoredAnalyticsConsent>;
 
     if (parsed.version !== ANALYTICS_CONSENT_VERSION) return "unknown";
@@ -35,8 +35,12 @@ export function writeAnalyticsConsent(
   storage: ConsentStorage,
   state: Exclude<AnalyticsConsentState, "unknown">
 ): void {
-  storage.setItem(
-    ANALYTICS_CONSENT_STORAGE_KEY,
-    JSON.stringify({ version: ANALYTICS_CONSENT_VERSION, state } satisfies StoredAnalyticsConsent)
-  );
+  try {
+    storage.setItem(
+      ANALYTICS_CONSENT_STORAGE_KEY,
+      JSON.stringify({ version: ANALYTICS_CONSENT_VERSION, state } satisfies StoredAnalyticsConsent)
+    );
+  } catch {
+    // Storage restrictions must not interrupt the product.
+  }
 }

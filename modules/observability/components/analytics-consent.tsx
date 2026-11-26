@@ -2,6 +2,7 @@
 
 import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,31 +21,20 @@ import {
 } from "../client/posthog-consent";
 
 export function AnalyticsConsent() {
+  const pathname = usePathname();
+  const isAdmin = pathname.startsWith("/admin");
   const [consent, setConsent] = useState<AnalyticsConsentState | null>(null);
-  const [footerVisible, setFooterVisible] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   useEffect(() => {
+    if (!isAdmin) return;
+
     try {
       setConsent(restoreAnalyticsConsent());
     } catch {
       setConsent("unknown");
     }
-  }, []);
-
-  useEffect(() => {
-    const footer = document.querySelector("footer");
-
-    if (!footer) return;
-
-    const observer = new IntersectionObserver(([entry]) => {
-      setFooterVisible(Boolean(entry?.isIntersecting));
-    });
-
-    observer.observe(footer);
-
-    return () => observer.disconnect();
-  }, []);
+  }, [isAdmin]);
 
   function accept() {
     acceptAnalyticsConsent();
@@ -58,7 +48,7 @@ export function AnalyticsConsent() {
     setPreferencesOpen(false);
   }
 
-  if (!consent) return null;
+  if (!isAdmin || !consent) return null;
 
   return (
     <>
@@ -101,7 +91,6 @@ export function AnalyticsConsent() {
         <Button
           aria-label="Revisar preferências de privacidade"
           className="fixed bottom-4 left-4 z-30 bg-background shadow-lg hover:bg-muted"
-          hidden={footerVisible}
           size="sm"
           variant="outline"
           onClick={() => setPreferencesOpen(true)}

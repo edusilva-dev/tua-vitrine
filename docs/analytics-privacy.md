@@ -7,10 +7,14 @@ O PostHog recebe somente eventos enumerados em
 buscas e nomes de produtos ficam fora do contrato. Autocapture, pageview automático e session replay
 estão desativados.
 
-O navegador exige consentimento explícito em todos os ambientes. A preferência usa estado versionado
-(`unknown`, `accepted` ou `rejected`) no armazenamento local. Em `unknown` e `rejected`, o SDK não
-captura eventos. O aceite inicializa a captura sem reload. A revogação reseta a identidade, desativa a
-captura e a persistência analítica.
+Na landing page e na vitrine pública, o navegador captura automaticamente em `cookieless_mode:
+"always"`, com `person_profiles: "never"`. O SDK não usa cookies, localStorage ou sessionStorage, e o
+IP é removido pelo PostHog antes do enriquecimento. O adaptador do navegador também remove
+`store_id` e `product_id` antes do envio. Identificação e grupos não são executados no browser.
+
+No painel, a preferência usa estado versionado (`unknown`, `accepted` ou `rejected`) no armazenamento
+local. Eventos com superfície administrativa só são enviados em `accepted`; landing page e storefront
+continuam agregadas independentemente dessa escolha. O aceite e a revogação passam a valer sem reload.
 
 ## Servidor
 
@@ -34,9 +38,9 @@ gate de produção em `lib/server/env.ts`.
 - acesso: somente responsáveis por produto e engenharia;
 - solicitações: `suporte@usetuavitrine.com.br`.
 
-Para atender acesso, exclusão ou anonimização, a pessoa responsável valida o solicitante, localiza os
-identificadores internos de usuário e loja, executa a ação no PostHog e registra a conclusão. Nenhum
-conteúdo livre deve ser usado para localizar ou enriquecer perfis.
+Eventos do navegador não contêm identificadores internos nem perfis e, por isso, não permitem localizar
+uma pessoa específica no PostHog. Solicitações sobre coleta e retenção são registradas e respondidas
+pelo suporte. Nenhum conteúdo livre deve ser usado para localizar ou enriquecer perfis.
 
 ## Limites
 

@@ -226,9 +226,12 @@ describe("contrato de analytics", () => {
 });
 
 describe("adaptador de analytics do browser", () => {
-  test("exige opt-in explícito em todos os ambientes", () => {
-    expect(hasAnalyticsConsent(() => false)).toBe(false);
-    expect(hasAnalyticsConsent(() => true)).toBe(true);
+  test("captura superfícies públicas automaticamente e exige aceite no painel", () => {
+    expect(hasAnalyticsConsent("landing", "unknown")).toBe(true);
+    expect(hasAnalyticsConsent("storefront", "rejected")).toBe(true);
+    expect(hasAnalyticsConsent("admin", "unknown")).toBe(false);
+    expect(hasAnalyticsConsent("admin", "rejected")).toBe(false);
+    expect(hasAnalyticsConsent("admin", "accepted")).toBe(true);
   });
 
   test("trata preferência ausente, inválida ou de outra versão como desconhecida", () => {
@@ -239,6 +242,14 @@ describe("adaptador de analytics do browser", () => {
     };
 
     expect(readAnalyticsConsent(storage)).toBe("unknown");
+    expect(
+      readAnalyticsConsent({
+        getItem: () => {
+          throw new Error("storage indisponível");
+        },
+        setItem: () => undefined,
+      })
+    ).toBe("unknown");
 
     values.set(ANALYTICS_CONSENT_STORAGE_KEY, "conteúdo inválido");
     expect(readAnalyticsConsent(storage)).toBe("unknown");
@@ -250,9 +261,8 @@ describe("adaptador de analytics do browser", () => {
     expect(readAnalyticsConsent(storage)).toBe("unknown");
   });
 
-  test("aceita sem reload e revoga limpando a identidade antes de desativar", () => {
+  test("aceita e revoga a coleta do painel sem reload", () => {
     const values = new Map<string, string>();
-    const order: string[] = [];
     const changes: string[] = [];
     const storage = {
       getItem: (key: string) => values.get(key) ?? null,
@@ -260,16 +270,6 @@ describe("adaptador de analytics do browser", () => {
     };
     const controller = createAnalyticsConsentController({
       storage,
-      initialize: () => {
-        order.push("initialize");
-
-        return true;
-      },
-      resetAnalytics: () => order.push("reset"),
-      sdk: {
-        optIn: () => order.push("opt-in"),
-        optOut: () => order.push("opt-out"),
-      },
       emitChange: (state) => changes.push(state),
     });
 
@@ -277,11 +277,9 @@ describe("adaptador de analytics do browser", () => {
 
     controller.accept();
     expect(readAnalyticsConsent(storage)).toBe("accepted");
-    expect(order).toEqual(["initialize", "opt-in"]);
 
     controller.reject();
     expect(readAnalyticsConsent(storage)).toBe("rejected");
-    expect(order).toEqual(["initialize", "opt-in", "reset", "opt-out"]);
     expect(changes).toEqual(["accepted", "rejected"]);
   });
 
@@ -431,11 +429,11 @@ describe("adaptador de analytics do browser", () => {
     expect(group).not.toHaveBeenCalled();
   });
 
-  test("captura somente com configuração e consentimento", () => {
+  test("captura público sem consentimento, bloqueia painel e remove IDs do browser", () => {
     const capture = mock((_name: string, _properties: Record<string, unknown>) => undefined);
-    const withoutConsent = createClientAnalytics({
+    const publicOnly = createClientAnalytics({
       enabled: true,
-      hasConsent: () => false,
+      hasConsent: (surface) => hasAnalyticsConsent(surface, "rejected"),
       capture,
       context,
     });
@@ -446,9 +444,20 @@ describe("adaptador de analytics do browser", () => {
       context,
     });
 
-    withoutConsent.catalogViewed(validInputs.catalogViewed);
+    publicOnly.catalogViewed(validInputs.catalogViewed);
+    publicOnly.productViewed(validInputs.productViewed);
+    publicOnly.storeCreated(validInputs.storeCreated);
     disabled.catalogViewed(validInputs.catalogViewed);
-    expect(capture).not.toHaveBeenCalled();
+
+    expect(capture).toHaveBeenCalledTimes(2);
+    expect(capture).toHaveBeenCalledWith(
+      "catalog_viewed",
+      expect.not.objectContaining({ store_id: storeId })
+    );
+    expect(capture).toHaveBeenCalledWith(
+      "product_viewed",
+      expect.not.objectContaining({ store_id: storeId, product_id: productId })
+    );
 
     const enabled = createClientAnalytics({
       enabled: true,
@@ -469,10 +478,7 @@ describe("adaptador de analytics do browser", () => {
         selected_plan: "PROFESSIONAL",
       })
     );
-    expect(capture).toHaveBeenCalledWith(
-      "product_viewed",
-      expect.objectContaining({ store_id: storeId, product_id: productId })
-    );
+    expect(capture).toHaveBeenCalledWith("product_viewed", expect.any(Object));
   });
 
   test("falha do fornecedor não escapa para o fluxo do produto", () => {

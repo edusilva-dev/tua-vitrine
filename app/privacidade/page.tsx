@@ -35,15 +35,16 @@ export default function PrivacyPage() {
           <section>
             <h2 className="font-heading text-xl font-semibold text-foreground">O que medimos</h2>
             <p className="mt-3">
-              Depois do seu aceite, registramos eventos controlados, como visita à landing page,
-              clique em chamada para ação, criação de produto, visualização de catálogo e clique no
-              WhatsApp. Os eventos podem conter identificadores internos de usuário, loja e produto,
-              plano, etapa do cadastro, origem e ambiente da aplicação.
+              Registramos eventos controlados, como visita à landing page, clique em chamada para
+              ação, criação de produto, visualização de catálogo e clique no WhatsApp. Na landing
+              page e nas vitrines públicas, a medição é automática, agregada e cookieless.
             </p>
             <p className="mt-3">
-              Não enviamos para as métricas nome, e-mail, telefone, mensagens do WhatsApp, texto de
-              busca, nome de produto ou conteúdo livre digitado nos formulários. A gravação de
-              sessão está desativada.
+              O navegador não envia identificadores de usuário, loja ou produto, nome, e-mail,
+              telefone, mensagens do WhatsApp, texto de busca, nome de produto ou conteúdo livre. O
+              PostHog não usa cookies nem armazenamento local ou de sessão para a medição e remove o
+              endereço IP antes do enriquecimento. Perfis de pessoas e gravação de sessão estão
+              desativados.
             </p>
           </section>
 
@@ -61,16 +62,16 @@ export default function PrivacyPage() {
           <section>
             <h2 className="font-heading text-xl font-semibold text-foreground">Sua escolha</h2>
             <p className="mt-3">
-              A captura no navegador começa somente depois de você selecionar “Aceitar métricas”. A
-              recusa não bloqueia nenhum recurso. O botão “Privacidade”, disponível no canto da
-              tela, permite revisar ou revogar a escolha a qualquer momento. Ao revogar,
-              interrompemos a captura e limpamos a identidade e a persistência analítica aplicável
-              no navegador.
+              As métricas agregadas da landing page e das vitrines públicas não dependem de
+              consentimento. No painel do lojista, a captura começa somente depois de você
+              selecionar “Aceitar métricas”. A recusa não bloqueia nenhum recurso. O botão
+              “Privacidade”, disponível no painel, permite revisar ou revogar a escolha a qualquer
+              momento.
             </p>
             <p className="mt-3">
-              Guardamos no armazenamento local somente a versão e o resultado dessa escolha para não
-              perguntar novamente a cada acesso. Uma alteração material nesta política usa uma nova
-              versão e solicita uma nova decisão.
+              Guardamos no armazenamento local somente a versão e o resultado da escolha feita para
+              o painel. Uma alteração material nesta política usa uma nova versão e solicita uma
+              nova decisão.
             </p>
           </section>
 
@@ -103,10 +104,10 @@ export default function PrivacyPage() {
               .
             </p>
             <p className="mt-3">
-              Após validar o solicitante, localizamos os identificadores internos relacionados,
-              executamos a exclusão ou anonimização no PostHog e registramos a conclusão. Se não for
-              possível localizar os eventos com segurança, explicamos a limitação e mantemos a
-              minimização e o prazo de retenção como proteção adicional.
+              Como os eventos do navegador não contêm identificadores internos ou perfis, eles não
+              permitem localizar uma pessoa específica no PostHog. Ainda assim, registramos e
+              respondemos solicitações relacionadas à coleta, à retenção e ao funcionamento dessas
+              métricas.
             </p>
           </section>
 
