@@ -8,7 +8,14 @@ export const metadata: Metadata = {
   description: "Como a Tua Vitrine usa métricas e protege os dados de quem usa o produto.",
 };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ retorno?: string }>;
+}) {
+  const params = await searchParams;
+  const returnToAdmin = params.retorno === "/admin";
+
   return (
     <div className="min-h-svh bg-background text-foreground">
       <header className="border-b border-foreground/8">
@@ -17,7 +24,9 @@ export default function PrivacyPage() {
             <BrandLogo className="h-8 text-primary sm:h-10" />
           </Link>
           <Button asChild variant="outline">
-            <Link href="/">Voltar</Link>
+            <Link href={returnToAdmin ? "/admin" : "/"}>
+              {returnToAdmin ? "Voltar ao painel" : "Voltar"}
+            </Link>
           </Button>
         </div>
       </header>

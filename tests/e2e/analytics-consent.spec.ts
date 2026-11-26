@@ -58,3 +58,13 @@ test("recusar não impede a navegação e a versão antiga solicita nova escolha
   await page.goto("/admin");
   await expect(page.getByRole("region", { name: "Você escolhe sobre as métricas" })).toBeVisible();
 });
+
+test("a política aberta pelo painel retorna ao painel", async ({ page }) => {
+  await page.goto("/admin");
+  await page.getByRole("link", { name: "política de privacidade" }).click();
+
+  await expect(page).toHaveURL(/\/privacidade\?retorno=/);
+  expect(new URL(page.url()).searchParams.get("retorno")).toBe("/admin");
+  await page.getByRole("link", { name: "Voltar ao painel" }).click();
+  await expect(page).toHaveURL(/\/admin$/);
+});

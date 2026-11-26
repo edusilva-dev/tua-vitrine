@@ -70,7 +70,7 @@ export function AnalyticsConsent() {
                 pode aceitar ou recusar sem alterar o funcionamento do app. Saiba mais na nossa{" "}
                 <Link
                   className="font-medium text-foreground underline underline-offset-4"
-                  href="/privacidade"
+                  href="/privacidade?retorno=/admin"
                 >
                   política de privacidade
                 </Link>
@@ -107,7 +107,7 @@ export function AnalyticsConsent() {
             <DialogDescription>
               As métricas estão {consent === "accepted" ? "permitidas" : "recusadas"}. Você pode
               mudar essa escolha quando quiser. Veja os detalhes na{" "}
-              <Link href="/privacidade">política de privacidade</Link>.
+              <Link href="/privacidade?retorno=/admin">política de privacidade</Link>.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="grid sm:grid-cols-2">
