@@ -33,6 +33,12 @@ const schema = z.object({
   STRIPE_WEBHOOK_SECRET: optionalString(z.string().startsWith("whsec_")),
   STRIPE_PRICE_BASIC_MONTHLY: optionalString(z.string().startsWith("price_")),
   STRIPE_PRICE_PRO_MONTHLY: optionalString(z.string().startsWith("price_")),
+  NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: optionalString(z.string().min(1)),
+  NEXT_PUBLIC_POSTHOG_HOST: optionalString(z.string().url().startsWith("https://")),
+  POSTHOG_PROJECT_TOKEN: optionalString(z.string().min(1)),
+  POSTHOG_HOST: optionalString(z.string().url().startsWith("https://")),
+  NEXT_PUBLIC_APP_ENV: z.enum(["development", "staging", "production"]).optional(),
+  APP_RELEASE: optionalString(z.string().regex(/^[a-zA-Z0-9._-]{7,128}$/)),
 });
 
 export function parseEnv(input: Record<string, string | undefined>) {
@@ -42,6 +48,7 @@ export function parseEnv(input: Record<string, string | undefined>) {
   const env = schema.parse({
     ...input,
     APP_URL: input.APP_URL || vercelUrl || LOCAL_APP_URL,
+    APP_RELEASE: input.APP_RELEASE || input.VERCEL_GIT_COMMIT_SHA,
   });
   const appUrl = new URL(env.APP_URL);
   const authBypass = input.E2E_AUTH_BYPASS === "1";
@@ -94,6 +101,10 @@ export function parseEnv(input: Record<string, string | undefined>) {
     env.R2_PUBLIC_URL,
   ];
   const configuredR2Values = r2Values.filter(Boolean).length;
+  const postHogClientValues = [env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN, env.NEXT_PUBLIC_POSTHOG_HOST];
+  const postHogServerValues = [env.POSTHOG_PROJECT_TOKEN, env.POSTHOG_HOST];
+  const configuredPostHogClientValues = postHogClientValues.filter(Boolean).length;
+  const configuredPostHogServerValues = postHogServerValues.filter(Boolean).length;
 
   if (configuredStripeValues > 0 && configuredStripeValues < stripeValues.length)
     throw new Error("Configure todas as quatro variáveis do Stripe juntas.");
@@ -114,6 +125,49 @@ export function parseEnv(input: Record<string, string | undefined>) {
   if (configuredR2Values > 0 && configuredR2Values < r2Values.length)
     throw new Error("Configure todas as cinco variáveis do R2 juntas.");
 
+  if (
+    configuredPostHogClientValues > 0 &&
+    configuredPostHogClientValues < postHogClientValues.length
+  )
+    throw new Error("Configure token e host públicos do PostHog juntos.");
+
+  if (
+    configuredPostHogServerValues > 0 &&
+    configuredPostHogServerValues < postHogServerValues.length
+  )
+    throw new Error("Configure token e host de servidor do PostHog juntos.");
+
+  if (
+    (configuredPostHogClientValues > 0 || configuredPostHogServerValues > 0) &&
+    !env.NEXT_PUBLIC_APP_ENV
+  )
+    throw new Error("NEXT_PUBLIC_APP_ENV é obrigatória quando o PostHog está configurado.");
+
+  if (
+    env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN &&
+    env.NEXT_PUBLIC_POSTHOG_HOST &&
+    env.POSTHOG_PROJECT_TOKEN &&
+    env.POSTHOG_HOST &&
+    (env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN !== env.POSTHOG_PROJECT_TOKEN ||
+      new URL(env.NEXT_PUBLIC_POSTHOG_HOST).origin !== new URL(env.POSTHOG_HOST).origin)
+  )
+    throw new Error("Browser e servidor devem usar o mesmo projeto PostHog.");
+
+  for (const host of [env.NEXT_PUBLIC_POSTHOG_HOST, env.POSTHOG_HOST]) {
+    if (!host) continue;
+
+    const postHogHost = new URL(host);
+
+    if (
+      postHogHost.username ||
+      postHogHost.password ||
+      postHogHost.pathname !== "/" ||
+      postHogHost.search ||
+      postHogHost.hash
+    )
+      throw new Error("Hosts do PostHog devem conter somente uma origem HTTPS.");
+  }
+
   return {
     ...env,
     TRUSTED_ORIGINS:
@@ -132,6 +186,15 @@ export function parseEnv(input: Record<string, string | undefined>) {
     STORAGE_DRIVER: configuredR2Values === r2Values.length ? ("r2" as const) : ("local" as const),
     R2_PUBLIC_URL: env.R2_PUBLIC_URL?.replace(/\/$/, ""),
     BILLING_ENABLED: configuredStripeValues === stripeValues.length,
+    POSTHOG_CLIENT_ENABLED:
+      configuredPostHogClientValues === postHogClientValues.length &&
+      !authBypass &&
+      input.NODE_ENV !== "test",
+    POSTHOG_SERVER_ENABLED:
+      configuredPostHogServerValues === postHogServerValues.length &&
+      !authBypass &&
+      input.NODE_ENV !== "test" &&
+      env.NEXT_PUBLIC_APP_ENV !== "production",
   };
 }
 

@@ -100,6 +100,71 @@ describe("configuração dos ambientes", () => {
     );
   });
 
+  test("PostHog permanece desabilitado sem configuração", () => {
+    expect(parseEnv(local)).toMatchObject({
+      POSTHOG_CLIENT_ENABLED: false,
+      POSTHOG_SERVER_ENABLED: false,
+    });
+  });
+
+  test("PostHog exige pares completos e ambiente explícito", () => {
+    expect(() => parseEnv({ ...local, NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_browser" })).toThrow(
+      /token e host públicos/
+    );
+    expect(() => parseEnv({ ...local, POSTHOG_HOST: "https://eu.i.posthog.com" })).toThrow(
+      /token e host de servidor/
+    );
+    expect(() =>
+      parseEnv({
+        ...local,
+        NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_browser",
+        NEXT_PUBLIC_POSTHOG_HOST: "https://eu.i.posthog.com",
+      })
+    ).toThrow(/NEXT_PUBLIC_APP_ENV/);
+  });
+
+  test("PostHog valida origem, release e isolamento dos testes", () => {
+    const postHog = {
+      ...local,
+      NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_browser",
+      NEXT_PUBLIC_POSTHOG_HOST: "https://eu.i.posthog.com",
+      POSTHOG_PROJECT_TOKEN: "phc_browser",
+      POSTHOG_HOST: "https://eu.i.posthog.com",
+      NEXT_PUBLIC_APP_ENV: "staging",
+      VERCEL_GIT_COMMIT_SHA: "0123456789abcdef",
+    };
+
+    expect(parseEnv(postHog)).toMatchObject({
+      APP_RELEASE: "0123456789abcdef",
+      POSTHOG_CLIENT_ENABLED: true,
+      POSTHOG_SERVER_ENABLED: true,
+    });
+    expect(parseEnv({ ...postHog, NODE_ENV: "test" }).POSTHOG_SERVER_ENABLED).toBe(false);
+    expect(parseEnv({ ...postHog, NODE_ENV: "test" }).POSTHOG_CLIENT_ENABLED).toBe(false);
+    expect(parseEnv({ ...postHog, E2E_AUTH_BYPASS: "1" }).POSTHOG_CLIENT_ENABLED).toBe(false);
+    expect(() =>
+      parseEnv({ ...postHog, NEXT_PUBLIC_POSTHOG_HOST: "https://eu.i.posthog.com/capture" })
+    ).toThrow(/somente uma origem/);
+    expect(() => parseEnv({ ...postHog, APP_RELEASE: "inválida com espaços" })).toThrow();
+    expect(() => parseEnv({ ...postHog, POSTHOG_PROJECT_TOKEN: "phc_outro_projeto" })).toThrow(
+      /mesmo projeto/
+    );
+  });
+
+  test("captura de servidor permanece desligada em produção até a política ser aprovada", () => {
+    const env = parseEnv({
+      ...production,
+      NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_browser",
+      NEXT_PUBLIC_POSTHOG_HOST: "https://us.i.posthog.com",
+      POSTHOG_PROJECT_TOKEN: "phc_browser",
+      POSTHOG_HOST: "https://us.i.posthog.com",
+      NEXT_PUBLIC_APP_ENV: "production",
+    });
+
+    expect(env.POSTHOG_CLIENT_ENABLED).toBe(true);
+    expect(env.POSTHOG_SERVER_ENABLED).toBe(false);
+  });
+
   test("URL pública do R2 aceita somente uma origem HTTPS", () => {
     expect(() => parseEnv({ ...production, R2_PUBLIC_URL: "http://assets.example" })).toThrow();
     expect(() =>

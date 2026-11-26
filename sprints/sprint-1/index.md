@@ -459,7 +459,7 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 
 | Ordem | Tarefa | Depende de | Status |
 | --- | --- | --- | --- |
-| 01 | [Instalar e configurar o PostHog](./tasks/01-posthog-installation-and-configuration.md) | — | Pendente |
+| 01 | [Instalar e configurar o PostHog](./tasks/01-posthog-installation-and-configuration.md) | — | Concluída |
 | 02 | [Criar contrato e wrapper de analytics](./tasks/02-analytics-contract-and-wrapper.md) | 01 | Pendente |
 | 03 | [Identificar o usuário autenticado](./tasks/03-user-identification.md) | 02 | Pendente |
 | 04 | [Identificar e agrupar por loja](./tasks/04-store-identification.md) | 02, 03 | Pendente |
@@ -507,3 +507,4 @@ O sprint está pronto somente quando:
 | 2026-10-29 | resultado no servidor; interação no browser | confiabilidade sem perder contexto de UX |
 | 2026-10-29 | IDs internos, sem PII direta | minimização e correlação estável |
 | 2026-10-29 | replay com máscara máxima e consentimento | rollout conservador para dados não essenciais |
+| 2026-11-25 | projeto único com `environment` obrigatório | plano atual limita a organização a um projeto |

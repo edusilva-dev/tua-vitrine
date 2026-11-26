@@ -1,5 +1,7 @@
 # 01 — Instalar e configurar o PostHog
 
+**Status:** concluída em 2026-11-25.
+
 ## Objetivo
 
 Preparar os SDKs web e servidor, as variáveis por ambiente e a inicialização segura do PostHog, sem
@@ -39,15 +41,15 @@ Não habilitar replay, identificação ou eventos nesta tarefa.
 
 ## Critérios de aceite
 
-- [ ] dependências instaladas exclusivamente com Bun e lockfile atualizado;
-- [ ] app inicia e builda com PostHog configurado e sem configuração;
-- [ ] ausência de token resulta em noop, não em crash;
-- [ ] configuração parcial/inválida falha com mensagem clara onde apropriado;
-- [ ] testes, preview e ambiente local não enviam para produção;
-- [ ] `autocapture` está desabilitado;
-- [ ] nenhuma chave administrativa ou pessoal aparece no bundle/browser;
-- [ ] o SDK de servidor é importável somente em código server-only;
-- [ ] um evento técnico temporário de smoke test pode ser visto no projeto não produtivo e depois é
+- [x] dependências instaladas exclusivamente com Bun e lockfile atualizado;
+- [x] app inicia e builda com PostHog configurado e sem configuração;
+- [x] ausência de token resulta em noop, não em crash;
+- [x] configuração parcial/inválida falha com mensagem clara onde apropriado;
+- [x] testes, preview e ambiente local não enviam para produção;
+- [x] `autocapture` está desabilitado;
+- [x] nenhuma chave administrativa ou pessoal aparece no bundle/browser;
+- [x] o SDK de servidor é importável somente em código server-only;
+- [x] um evento técnico temporário de smoke test pode ser visto no projeto não produtivo e depois é
   removido do código.
 
 ## Validação
@@ -63,3 +65,17 @@ Não habilitar replay, identificação ou eventos nesta tarefa.
 
 Usar o host regional fornecido pelo projeto PostHog. Não assumir região. Fixar a opção `defaults`
 recomendada pela versão instalada somente após conferir a documentação oficial.
+
+## Evidências
+
+- `posthog-js` 1.455.2 e `posthog-node` 6.1.0 fixados pelo Bun;
+- bootstrap web em `instrumentation-client.ts` com `defaults: "2026-08-30"`, sem autocapture,
+  pageviews, pageleave, flags ou replay;
+- adaptador server-only com envio imediato adequado às funções serverless;
+- parser cobre configuração ausente, parcial, host inválido, ambiente, release e isolamento de testes;
+- build passou com e sem configuração e o token exclusivo do servidor não apareceu em `.next/static`;
+- evento `sdk_setup_smoke_test` confirmado no projeto não produtivo com `environment`, `release` e
+  `schema_version`; o emissor temporário foi removido;
+- organização limitada a um projeto não demonstrativo; `environment` separa produção e staging;
+- variáveis configuradas como Config nos ambientes Preview e Production da Vercel;
+- produção permanece em opt-out no browser e noop no servidor até o rollout previsto na tarefa 11.
