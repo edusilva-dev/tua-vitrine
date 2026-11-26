@@ -2,8 +2,13 @@ import { expect, test } from "@playwright/test";
 
 const storageKey = "tuavitrine:analytics-consent";
 
-test("permite aceitar, persistir e revogar a preferência de métricas", async ({ page }) => {
+async function clearConsent(page: import("@playwright/test").Page) {
   await page.goto("/");
+  await page.evaluate((key) => window.localStorage.removeItem(key), storageKey);
+}
+
+test("permite aceitar, persistir e revogar a preferência de métricas", async ({ page }) => {
+  await clearConsent(page);
 
   const consent = page.getByRole("region", { name: "Você escolhe sobre as métricas" });
 
@@ -42,6 +47,7 @@ test("permite aceitar, persistir e revogar a preferência de métricas", async (
 });
 
 test("recusar não impede a navegação e a versão antiga solicita nova escolha", async ({ page }) => {
+  await clearConsent(page);
   await page.goto("/admin");
   await page.getByRole("button", { name: "Recusar métricas" }).click();
   await expect(page.getByRole("main")).toBeVisible();
@@ -60,6 +66,7 @@ test("recusar não impede a navegação e a versão antiga solicita nova escolha
 });
 
 test("a política aberta pelo painel retorna ao painel", async ({ page }) => {
+  await clearConsent(page);
   await page.goto("/admin");
   await page.getByRole("link", { name: "política de privacidade" }).click();
 
