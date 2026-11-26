@@ -21,6 +21,7 @@ import {
 
 export function AnalyticsConsent() {
   const [consent, setConsent] = useState<AnalyticsConsentState | null>(null);
+  const [footerVisible, setFooterVisible] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   useEffect(() => {
@@ -29,6 +30,20 @@ export function AnalyticsConsent() {
     } catch {
       setConsent("unknown");
     }
+  }, []);
+
+  useEffect(() => {
+    const footer = document.querySelector("footer");
+
+    if (!footer) return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      setFooterVisible(Boolean(entry?.isIntersecting));
+    });
+
+    observer.observe(footer);
+
+    return () => observer.disconnect();
   }, []);
 
   function accept() {
@@ -85,7 +100,8 @@ export function AnalyticsConsent() {
       ) : (
         <Button
           aria-label="Revisar preferências de privacidade"
-          className="fixed bottom-4 left-4 z-30 shadow-lg"
+          className="fixed bottom-4 left-4 z-30 bg-background shadow-lg hover:bg-muted"
+          hidden={footerVisible}
           size="sm"
           variant="outline"
           onClick={() => setPreferencesOpen(true)}

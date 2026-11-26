@@ -13,16 +13,25 @@ test("permite aceitar, persistir e revogar a preferência de métricas", async (
 
   await consent.getByRole("button", { name: "Aceitar métricas" }).click();
   await expect(consent).toBeHidden();
-  await expect(
-    page.getByRole("button", { name: "Revisar preferências de privacidade" })
-  ).toBeVisible();
+  const privacyButton = page.getByRole("button", {
+    name: "Revisar preferências de privacidade",
+  });
+
+  await expect(privacyButton).toBeVisible();
+  expect(
+    await privacyButton.evaluate((button) => getComputedStyle(button).backgroundColor)
+  ).not.toBe("rgba(0, 0, 0, 0)");
+
+  await page.locator("footer").scrollIntoViewIfNeeded();
+  await expect(privacyButton).toBeHidden();
   expect(await page.evaluate((key) => window.localStorage.getItem(key), storageKey)).toContain(
     '"state":"accepted"'
   );
 
   await page.reload();
   await expect(consent).toBeHidden();
-  await page.getByRole("button", { name: "Revisar preferências de privacidade" }).click();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await privacyButton.click();
   await page.getByRole("dialog").getByRole("button", { name: "Recusar métricas" }).click();
   expect(await page.evaluate((key) => window.localStorage.getItem(key), storageKey)).toContain(
     '"state":"rejected"'
