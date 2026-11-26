@@ -22,11 +22,19 @@ import {
 
 type ClientCapture = (name: string, properties: Record<string, unknown>) => unknown;
 
+type ClientIdentity = {
+  getDistinctId: () => string;
+  getIdentifiedUserId: () => string | undefined;
+  identify: (distinctId: string) => unknown;
+  reset: () => unknown;
+};
+
 type ClientAnalyticsOptions = {
   enabled: boolean;
   hasConsent: () => boolean;
   capture: ClientCapture;
   context: AnalyticsRuntimeContext;
+  identity?: ClientIdentity;
 };
 
 type EventFactory<TInput> = (
@@ -58,6 +66,30 @@ export function createClientAnalytics(options: ClientAnalyticsOptions) {
   }
 
   return {
+    identify(userId: string) {
+      if (!options.enabled || !options.hasConsent() || !options.identity || !userId.trim()) return;
+
+      try {
+        if (options.identity.getDistinctId() === userId) return;
+
+        const identifiedUserId = options.identity.getIdentifiedUserId();
+
+        if (identifiedUserId && identifiedUserId !== userId) options.identity.reset();
+
+        options.identity.identify(userId);
+      } catch {
+        // Identity is best-effort and must never interrupt authentication.
+      }
+    },
+    reset() {
+      if (!options.enabled || !options.identity) return;
+
+      try {
+        options.identity.reset();
+      } catch {
+        // Logout must complete even when analytics is unavailable.
+      }
+    },
     landingPageViewed(input: LandingPageViewedInput) {
       send(analyticsEvents.landingPageViewed, input);
     },
@@ -112,6 +144,16 @@ export const analytics = createClientAnalytics({
   enabled,
   hasConsent: () => posthog.has_opted_in_capturing(),
   capture: (name, properties) => posthog.capture(name, properties),
+  identity: {
+    getDistinctId: () => posthog.get_distinct_id(),
+    getIdentifiedUserId: () => {
+      const userId = posthog.get_property("$user_id");
+
+      return typeof userId === "string" ? userId : undefined;
+    },
+    identify: (distinctId) => posthog.identify(distinctId),
+    reset: () => posthog.reset(),
+  },
   context: {
     environment: environment.success ? environment.data : "development",
     release: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.trim() || null,

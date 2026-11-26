@@ -186,6 +186,85 @@ describe("contrato de analytics", () => {
 });
 
 describe("adaptador de analytics do browser", () => {
+  test("identifica de forma idempotente e preserva a sessão anônima", () => {
+    let distinctId = "anonymous-session";
+    let identifiedUserId: string | undefined;
+    const identify = mock((userId: string) => {
+      distinctId = userId;
+      identifiedUserId = userId;
+    });
+    const reset = mock(() => {
+      distinctId = "next-anonymous-session";
+      identifiedUserId = undefined;
+    });
+    const analytics = createClientAnalytics({
+      enabled: true,
+      hasConsent: () => true,
+      capture: () => undefined,
+      identity: {
+        getDistinctId: () => distinctId,
+        getIdentifiedUserId: () => identifiedUserId,
+        identify,
+        reset,
+      },
+      context,
+    });
+
+    analytics.identify("user-internal-a");
+    analytics.identify("user-internal-a");
+    analytics.identify("user-internal-b");
+
+    expect(identify.mock.calls).toEqual([["user-internal-a"], ["user-internal-b"]]);
+    expect(reset).toHaveBeenCalledTimes(1);
+  });
+
+  test("não identifica sem consentimento e limpa a identidade após logout", () => {
+    const identify = mock(() => undefined);
+    const reset = mock(() => undefined);
+    const analytics = createClientAnalytics({
+      enabled: true,
+      hasConsent: () => false,
+      capture: () => undefined,
+      identity: {
+        getDistinctId: () => "anonymous-session",
+        getIdentifiedUserId: () => undefined,
+        identify,
+        reset,
+      },
+      context,
+    });
+
+    analytics.identify("user-internal");
+    analytics.reset();
+
+    expect(identify).not.toHaveBeenCalled();
+    expect(reset).toHaveBeenCalledTimes(1);
+  });
+
+  test("falhas de identidade não interferem em autenticação ou logout", () => {
+    const analytics = createClientAnalytics({
+      enabled: true,
+      hasConsent: () => true,
+      capture: () => undefined,
+      identity: {
+        getDistinctId: () => {
+          throw new Error("PostHog indisponível");
+        },
+        getIdentifiedUserId: () => undefined,
+        identify: () => {
+          throw new Error("PostHog indisponível");
+        },
+        reset: () => {
+          throw new Error("PostHog indisponível");
+        },
+      },
+      context,
+    });
+
+    expect(() => analytics.identify("user-internal")).not.toThrow();
+    expect(() => analytics.reset()).not.toThrow();
+  });
+
   test("captura somente com configuração e consentimento", () => {
     const capture = mock(() => undefined);
     const withoutConsent = createClientAnalytics({

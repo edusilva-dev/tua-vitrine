@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
 import { getOptionalAdminIdentity } from "@/lib/server/context";
+import { AnalyticsIdentity } from "@/modules/observability/components/analytics-identity";
 import { resolvePlatformAdmin } from "@/modules/platform-admin/server/access";
 import { getCurrentStore } from "@/modules/stores/server/service";
 
@@ -19,11 +20,16 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   const store = await getCurrentStore();
 
-  if (!store) return <main className="admin-surface min-h-screen px-5 py-10">{children}</main>;
-
   return (
-    <AppShell store={store} authenticated={authenticated} platformAdmin={platformAdmin}>
-      {children}
-    </AppShell>
+    <>
+      {identity.userId ? <AnalyticsIdentity userId={identity.userId} /> : null}
+      {store ? (
+        <AppShell store={store} authenticated={authenticated} platformAdmin={platformAdmin}>
+          {children}
+        </AppShell>
+      ) : (
+        <main className="admin-surface min-h-screen px-5 py-10">{children}</main>
+      )}
+    </>
   );
 }

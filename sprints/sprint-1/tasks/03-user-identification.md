@@ -1,8 +1,12 @@
 # 03 — Identificar o usuário autenticado
 
+**Status:** implementação concluída em 2026-11-25; inspeção no PostHog depende do consentimento da
+tarefa 05.
+
 ## Objetivo
 
-Associar sessões do painel ao UUID interno do lojista e limpar corretamente a identidade no logout.
+Associar sessões do painel ao ID interno estável do lojista e limpar corretamente a identidade no
+logout.
 
 ## Contexto
 
@@ -35,14 +39,14 @@ vitrine continuam anônimos. A identificação não deve enviar nome ou e-mail.
 
 ## Critérios de aceite
 
-- [ ] lojista autenticado aparece com `distinct_id = user.id`;
-- [ ] cadastro consentido associa `landing_page_viewed` e `landing_cta_clicked` à conta criada;
-- [ ] e-mail, nome e telefone não são propriedades de pessoa;
-- [ ] identify não dispara repetidamente a cada render;
-- [ ] logout chama reset e a próxima sessão recebe identidade independente;
-- [ ] visitante público continua anônimo;
-- [ ] falha do PostHog não impede cadastro, login ou logout;
-- [ ] fluxo local sem auth não cria uma pessoa fictícia.
+- [x] lojista autenticado usa `distinct_id = user.id`;
+- [x] cadastro consentido identifica a conta sem resetar antes a sessão anônima da LP;
+- [x] e-mail, nome e telefone não são propriedades de pessoa;
+- [x] identify não dispara repetidamente a cada render;
+- [x] logout chama reset e a próxima sessão recebe identidade independente;
+- [x] visitante público continua anônimo;
+- [x] falha do PostHog não impede cadastro, login ou logout;
+- [x] fluxo local sem auth não cria uma pessoa fictícia.
 
 ## Validação
 
@@ -55,3 +59,14 @@ vitrine continuam anônimos. A identificação não deve enviar nome ou e-mail.
 
 A emissão de `account_created` pertence à tarefa 06, depois da decisão de privacidade. Não capturar o
 evento apenas no clique do formulário.
+
+## Evidências
+
+- o layout administrativo entrega somente o ID interno ao componente cliente de identidade;
+- cadastro e login identificam antes da navegação, preservando a sessão anônima consentida;
+- uma identidade já conhecida e diferente é resetada antes da troca de conta para não misturar
+  históricos;
+- logout limpa a identidade somente após o encerramento bem-sucedido da sessão;
+- o wrapper ignora repetição do mesmo ID, exige consentimento para identificar e isola falhas do SDK;
+- testes unitários cobrem sessão anônima, repetição, troca de conta, ausência de consentimento, reset e
+  indisponibilidade do fornecedor.
