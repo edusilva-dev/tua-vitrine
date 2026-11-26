@@ -8,21 +8,16 @@ const allowedImports = [
 
 describe("limites da integração PostHog", () => {
   test("SDKs são importados apenas pelo bootstrap e adaptadores", async () => {
-    const packageNames = [["posthog", "js"].join("-"), ["posthog", "node"].join("-")];
-    const importPattern = new RegExp(`from [\\"'](${packageNames.join("|")})[\\"']`);
-    const files: string[] = [];
+    const packageNames = `${["posthog", "js"].join("-")}|${["posthog", "node"].join("-")}`;
+    const process = Bun.spawn(
+      ["git", "grep", "-l", "-E", `from [\\"'](${packageNames})[\\"']`, "--", "*.ts", "*.tsx"],
+      { stdout: "pipe", stderr: "pipe" }
+    );
+    const output = await new Response(process.stdout).text();
+    const exitCode = await process.exited;
+    const files = output.trim().split("\n").filter(Boolean).sort();
 
-    for await (const file of new Bun.Glob("**/*.{ts,tsx}").scan({ dot: true })) {
-      if (
-        file.startsWith("node_modules/") ||
-        file.startsWith(".next/") ||
-        file.startsWith("generated/")
-      )
-        continue;
-
-      if (importPattern.test(await Bun.file(file).text())) files.push(file);
-    }
-
-    expect(files.sort()).toEqual(allowedImports.sort());
+    expect(exitCode).toBe(0);
+    expect(files).toEqual(allowedImports.sort());
   });
 });

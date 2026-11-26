@@ -1,26 +1,31 @@
-# 07 — Instrumentar vitrine, WhatsApp e billing
+# 07 — Instrumentar LP, vitrine, WhatsApp e billing
 
 ## Objetivo
 
-Registrar descoberta de catálogo, interesse em produto, intenção de contato e ciclo de assinatura.
+Registrar conversão da LP, descoberta de catálogo, interesse em produto, intenção de contato e ciclo
+de assinatura.
 
 ## Contexto
 
-A vitrine já envia métricas próprias ao PostgreSQL. O PostHog não substitui esse caminho. Eventos de
-UX são client-side; assinatura nasce do webhook Stripe para representar estado confirmado e lidar com
-redelivery.
+A LP precisa medir a conversão até o cadastro sem autocapture. A vitrine já envia métricas próprias ao
+PostgreSQL e o PostHog não substitui esse caminho. Eventos de UX são client-side; assinatura nasce do
+webhook Stripe para representar estado confirmado e lidar com redelivery.
 
 ## Implementação esperada
 
 Instrumentar:
 
+- `landing_page_viewed` — uma vez por montagem real da LP após consentimento;
+- `landing_cta_clicked` — nos CTAs de cadastro do cabeçalho, hero, preços, bloco final e rodapé;
 - `catalog_viewed` — uma vez por montagem da vitrine pública real;
 - `product_viewed` — ao abrir detalhe do produto;
 - `whatsapp_clicked` — nos quatro pontos: hero, card, detalhe e carrinho;
 - `subscription_started` — após transição confirmada para plano pago/trialing/active;
 - `subscription_cancelled` — após cancelamento confirmado ou agendado, com semântica explícita.
 
-Para WhatsApp, capturar antes da navegação com transporte apropriado, sem aguardar/bloquear a UX.
+Classificar a origem da LP sem enviar URL, referrer, UTM ou texto livre. Nos cards de preço, registrar
+o plano selecionado em enum próprio; `plan` continua reservado ao plano efetivo. Para WhatsApp,
+capturar antes da navegação com transporte apropriado, sem aguardar/bloquear a UX.
 Para Stripe, usar `event.id`/registro `StripeWebhookEvent` para impedir duplicidade. O processamento
 deve informar se o webhook foi aplicado pela primeira vez antes de capturar, evitando que uma
 reentrega que retornou cedo em `P2002` repita o evento. Captura server-side de billing permanece noop
@@ -28,6 +33,7 @@ em produção até a política definida no documento mestre ser aprovada e imple
 
 ## Arquivos/áreas afetadas
 
+- `app/page.tsx` e um componente cliente pequeno para a instrumentação da LP
 - `modules/storefront/components/storefront.tsx`
 - `modules/storefront/components/product-detail.tsx`
 - `modules/storefront/components/cart-sheet.tsx`
@@ -38,6 +44,9 @@ em produção até a política definida no documento mestre ser aprovada e imple
 
 ## Critérios de aceite
 
+- [ ] a LP registra uma visualização consentida por montagem real, sem duplicar por render;
+- [ ] os cinco locais de CTA usam enums e preservam a navegação mesmo se analytics falhar;
+- [ ] evento da LP não contém URL, referrer, UTM, texto do botão ou outra propriedade livre;
 - [ ] preview não gera eventos de storefront;
 - [ ] `catalog_viewed` não substitui nem duplica o `STORE_VIEW` interno;
 - [ ] `whatsapp_clicked` cobre as quatro localizações com enum válido;
@@ -51,7 +60,8 @@ em produção até a política definida no documento mestre ser aprovada e imple
 
 ## Validação
 
-- testes de componentes para cada origem do clique;
+- testes de componentes para visualização da LP e cada local de CTA;
+- E2E LP → CTA → cadastro;
 - E2E vitrine → produto → WhatsApp e vitrine → carrinho → WhatsApp;
 - testes de integração de webhook duplicado e transições de assinatura;
 - comparação amostral entre evento interno e PostHog, documentando que contagens podem divergir por

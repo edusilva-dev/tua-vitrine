@@ -6,6 +6,8 @@ import {
   type AnalyticsRuntimeContext,
   analyticsEvents,
   type CatalogViewedInput,
+  type LandingCtaClickedInput,
+  type LandingPageViewedInput,
   type ProductCreatedInput,
   type ProductCreationStartedInput,
   type ProductDeletedInput,
@@ -91,6 +93,12 @@ export function createServerAnalytics(options: ServerAnalyticsOptions) {
   }
 
   return {
+    landingPageViewed(identity: ServerAnalyticsIdentity, input: LandingPageViewedInput) {
+      return send(identity, analyticsEvents.landingPageViewed, input);
+    },
+    landingCtaClicked(identity: ServerAnalyticsIdentity, input: LandingCtaClickedInput) {
+      return send(identity, analyticsEvents.landingCtaClicked, input);
+    },
     accountCreated(identity: ServerAnalyticsIdentity, input: AccountCreatedInput) {
       return send(identity, analyticsEvents.accountCreated, input);
     },

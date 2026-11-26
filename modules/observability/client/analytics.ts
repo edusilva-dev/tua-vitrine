@@ -7,6 +7,8 @@ import {
   analyticsEnvironmentSchema,
   analyticsEvents,
   type CatalogViewedInput,
+  type LandingCtaClickedInput,
+  type LandingPageViewedInput,
   type ProductCreatedInput,
   type ProductCreationStartedInput,
   type ProductDeletedInput,
@@ -56,6 +58,12 @@ export function createClientAnalytics(options: ClientAnalyticsOptions) {
   }
 
   return {
+    landingPageViewed(input: LandingPageViewedInput) {
+      send(analyticsEvents.landingPageViewed, input);
+    },
+    landingCtaClicked(input: LandingCtaClickedInput) {
+      send(analyticsEvents.landingCtaClicked, input);
+    },
     accountCreated(input: AccountCreatedInput) {
       send(analyticsEvents.accountCreated, input);
     },

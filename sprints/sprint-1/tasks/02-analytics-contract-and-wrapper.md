@@ -15,7 +15,7 @@ camada fica em `modules/observability`.
 
 ## Implementação esperada
 
-- definir os 11 eventos e seus payloads em `contracts/events.ts`;
+- definir os 13 eventos e seus payloads em `contracts/events.ts`;
 - incluir `schema_version: 1`, `environment`, `release`, `surface` e `source` por adaptador;
 - criar API explícita, por exemplo `analytics.productCreated(...)`;
 - criar adaptador cliente sobre `posthog-js` e servidor sobre `posthog-node`;
@@ -63,7 +63,7 @@ telefone, slug, mensagem, descrição, termo de busca, URL completa ou objeto li
 
 ## Evidências
 
-- catálogo versionado com os 11 eventos, propriedades finais em `snake_case` e vocabulários fechados;
+- catálogo versionado com os 13 eventos, propriedades finais em `snake_case` e vocabulários fechados;
 - métodos explícitos para browser e servidor, sem API pública para nomes ou payloads arbitrários;
 - captura do browser depende de configuração e consentimento; servidor permanece noop em produção;
 - payload inválido falha em desenvolvimento/teste e é descartado em produção;

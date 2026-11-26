@@ -15,6 +15,13 @@ const context = {
 };
 
 const validInputs = {
+  landingPageViewed: { source: "organic" },
+  landingCtaClicked: {
+    source: "campaign",
+    cta: "start_trial",
+    location: "pricing",
+    selectedPlan: "PROFESSIONAL",
+  },
   accountCreated: { signupPlan: "FREE", source: "email_password" },
   storeCreated: { storeId, plan: "FREE", source: "onboarding" },
   storePublished: { storeId, plan: "FREE", productCount: 1 },
@@ -34,8 +41,10 @@ const validInputs = {
 } as const;
 
 describe("contrato de analytics", () => {
-  test("define os 11 eventos com propriedades comuns consistentes", () => {
+  test("define os 13 eventos com propriedades comuns consistentes", () => {
     const events = [
+      analyticsEvents.landingPageViewed(validInputs.landingPageViewed, context),
+      analyticsEvents.landingCtaClicked(validInputs.landingCtaClicked, context),
       analyticsEvents.accountCreated(validInputs.accountCreated, context),
       analyticsEvents.storeCreated(validInputs.storeCreated, context),
       analyticsEvents.storePublished(validInputs.storePublished, context),
@@ -50,6 +59,8 @@ describe("contrato de analytics", () => {
     ];
 
     expect(events.map((event) => event?.name)).toEqual([
+      "landing_page_viewed",
+      "landing_cta_clicked",
       "account_created",
       "store_created",
       "store_published",
@@ -73,6 +84,20 @@ describe("contrato de analytics", () => {
   });
 
   test("normaliza nomes e valores opcionais sem enviar dados livres", () => {
+    expect(analyticsEvents.landingCtaClicked(validInputs.landingCtaClicked, context)).toEqual({
+      name: "landing_cta_clicked",
+      properties: {
+        schema_version: 1,
+        environment: "staging",
+        release: "0123456789abcdef",
+        surface: "landing",
+        source: "campaign",
+        cta: "start_trial",
+        location: "pricing",
+        selected_plan: "PROFESSIONAL",
+      },
+    });
+
     expect(analyticsEvents.productCreated(validInputs.productCreated, context)).toEqual({
       name: "product_created",
       properties: {
@@ -108,6 +133,21 @@ describe("contrato de analytics", () => {
   });
 
   test("rejeita propriedades desconhecidas, PII e enums não documentados", () => {
+    expect(() =>
+      analyticsEvents.landingPageViewed(
+        {
+          ...validInputs.landingPageViewed,
+          url: "https://example.test/?utm=email",
+        } as typeof validInputs.landingPageViewed,
+        context
+      )
+    ).toThrow();
+    expect(() =>
+      analyticsEvents.landingCtaClicked(
+        { source: "direct", cta: "create_store", location: "pricing" },
+        context
+      )
+    ).toThrow();
     expect(() =>
       analyticsEvents.productCreated(
         { ...validInputs.productCreated, email: "lojista@example.test" } as ProductCreatedInput,
@@ -172,8 +212,18 @@ describe("adaptador de analytics do browser", () => {
       context,
     });
 
+    enabled.landingPageViewed(validInputs.landingPageViewed);
+    enabled.landingCtaClicked(validInputs.landingCtaClicked);
     enabled.productViewed(validInputs.productViewed);
 
+    expect(capture).toHaveBeenCalledWith(
+      "landing_cta_clicked",
+      expect.objectContaining({
+        source: "campaign",
+        location: "pricing",
+        selected_plan: "PROFESSIONAL",
+      })
+    );
     expect(capture).toHaveBeenCalledWith(
       "product_viewed",
       expect.objectContaining({ store_id: storeId, product_id: productId })

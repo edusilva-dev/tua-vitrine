@@ -4,7 +4,7 @@ export const analyticsEnvironmentSchema = z.enum(["development", "staging", "pro
 
 export const analyticsPlanSchema = z.enum(["FREE", "ESSENTIAL", "PROFESSIONAL"]);
 
-export const analyticsSurfaceSchema = z.enum(["admin", "storefront", "billing", "auth"]);
+export const analyticsSurfaceSchema = z.enum(["landing", "admin", "storefront", "billing", "auth"]);
 
 export const analyticsSourceSchema = z.enum([
   "email_password",
@@ -13,6 +13,9 @@ export const analyticsSourceSchema = z.enum([
   "manual",
   "import",
   "direct",
+  "organic",
+  "social",
+  "referral",
   "campaign",
   "share",
   "storefront",
@@ -22,6 +25,33 @@ export const analyticsSourceSchema = z.enum([
 
 const internalIdSchema = z.string().uuid();
 const countSchema = z.number().int().nonnegative();
+const landingSourceSchema = z.enum(["direct", "organic", "social", "referral", "campaign"]);
+
+export const landingPageViewedInputSchema = z
+  .object({
+    source: landingSourceSchema,
+  })
+  .strict();
+
+export const landingCtaClickedInputSchema = z
+  .object({
+    source: landingSourceSchema,
+    cta: z.enum(["start_free", "create_store", "start_trial"]),
+    location: z.enum(["header", "hero", "pricing", "final_cta", "footer"]),
+    selectedPlan: analyticsPlanSchema.optional(),
+  })
+  .strict()
+  .refine(
+    (value) => (value.location === "pricing") === Boolean(value.selectedPlan),
+    "selectedPlan é obrigatório somente nos cards de preço."
+  )
+  .refine(
+    (value) =>
+      value.location !== "pricing" ||
+      (value.selectedPlan === "FREE" && value.cta === "start_free") ||
+      (value.selectedPlan !== "FREE" && value.cta === "start_trial"),
+    "O CTA deve corresponder ao plano selecionado."
+  );
 
 export const accountCreatedInputSchema = z
   .object({
@@ -111,6 +141,10 @@ export const subscriptionCancelledInputSchema = z
   })
   .strict();
 
+export type LandingPageViewedInput = z.infer<typeof landingPageViewedInputSchema>;
+
+export type LandingCtaClickedInput = z.infer<typeof landingCtaClickedInputSchema>;
+
 export type AccountCreatedInput = z.infer<typeof accountCreatedInputSchema>;
 
 export type StoreCreatedInput = z.infer<typeof storeCreatedInputSchema>;
@@ -144,6 +178,29 @@ const commonEventSchema = z
   .strict();
 
 export const analyticsEventSchemas = {
+  landing_page_viewed: commonEventSchema.extend({
+    surface: z.literal("landing"),
+    source: landingSourceSchema,
+  }),
+  landing_cta_clicked: commonEventSchema
+    .extend({
+      surface: z.literal("landing"),
+      source: landingSourceSchema,
+      cta: z.enum(["start_free", "create_store", "start_trial"]),
+      location: z.enum(["header", "hero", "pricing", "final_cta", "footer"]),
+      selected_plan: analyticsPlanSchema.optional(),
+    })
+    .refine(
+      (value) => (value.location === "pricing") === Boolean(value.selected_plan),
+      "selected_plan é obrigatório somente nos cards de preço."
+    )
+    .refine(
+      (value) =>
+        value.location !== "pricing" ||
+        (value.selected_plan === "FREE" && value.cta === "start_free") ||
+        (value.selected_plan !== "FREE" && value.cta === "start_trial"),
+      "O CTA deve corresponder ao plano selecionado."
+    ),
   account_created: commonEventSchema.extend({
     surface: z.literal("auth"),
     source: z.literal("email_password"),
@@ -260,6 +317,23 @@ function validateEvent<TName extends AnalyticsEventName>(
 }
 
 export const analyticsEvents = {
+  landingPageViewed(input: LandingPageViewedInput, context: AnalyticsRuntimeContext) {
+    const value = landingPageViewedInputSchema.parse(input);
+
+    return validateEvent("landing_page_viewed", {
+      ...common(context, "landing", value.source),
+    });
+  },
+  landingCtaClicked(input: LandingCtaClickedInput, context: AnalyticsRuntimeContext) {
+    const value = landingCtaClickedInputSchema.parse(input);
+
+    return validateEvent("landing_cta_clicked", {
+      ...common(context, "landing", value.source),
+      cta: value.cta,
+      location: value.location,
+      ...(value.selectedPlan ? { selected_plan: value.selectedPlan } : {}),
+    });
+  },
   accountCreated(input: AccountCreatedInput, context: AnalyticsRuntimeContext) {
     const value = accountCreatedInputSchema.parse(input);
 
