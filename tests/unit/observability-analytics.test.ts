@@ -469,6 +469,7 @@ describe("adaptador de analytics do browser", () => {
     enabled.landingPageViewed(validInputs.landingPageViewed);
     enabled.landingCtaClicked(validInputs.landingCtaClicked);
     enabled.productViewed(validInputs.productViewed);
+    enabled.productCreationStarted(validInputs.productCreationStarted);
 
     expect(capture).toHaveBeenCalledWith(
       "landing_cta_clicked",
@@ -479,6 +480,10 @@ describe("adaptador de analytics do browser", () => {
       })
     );
     expect(capture).toHaveBeenCalledWith("product_viewed", expect.any(Object));
+    expect(capture).toHaveBeenCalledWith(
+      "product_creation_started",
+      expect.objectContaining({ store_id: storeId, $groups: { store: storeId } })
+    );
   });
 
   test("falha do fornecedor não escapa para o fluxo do produto", () => {
@@ -553,6 +558,36 @@ describe("adaptador de analytics do servidor", () => {
       { store: storeId },
       { store: secondStoreId },
     ]);
+  });
+
+  test("envia importação como eventos individuais usando um único cliente", async () => {
+    const capture = mock(
+      (_input: {
+        distinctId: string;
+        event: string;
+        groups?: { store: string };
+        properties: Record<string, unknown>;
+      }) => undefined
+    );
+    const shutdown = mock(async () => undefined);
+    const analytics = createServerAnalytics({
+      enabled: true,
+      context,
+      createClient: () => ({ capture, shutdown }),
+      reportError: () => undefined,
+    });
+
+    await analytics.productCreatedMany({ distinctId: "user" }, [
+      validInputs.productCreated,
+      { ...validInputs.productCreated, productId: secondStoreId, isFirstProduct: false },
+    ]);
+
+    expect(capture).toHaveBeenCalledTimes(2);
+    expect(capture.mock.calls.map(([input]) => input.properties.product_id)).toEqual([
+      productId,
+      secondStoreId,
+    ]);
+    expect(shutdown).toHaveBeenCalledTimes(1);
   });
 
   test("permanece noop quando desabilitado ou em produção", async () => {

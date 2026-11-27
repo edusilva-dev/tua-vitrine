@@ -11,6 +11,10 @@ import { getEnv } from "@/lib/server/env";
 import { AppError } from "@/lib/server/http";
 import type { Entitlements } from "@/modules/billing/contracts";
 import { getEntitlements } from "@/modules/billing/server/entitlements";
+import {
+  type MerchantLifecycleOptions,
+  merchantLifecycleAnalytics,
+} from "@/modules/observability/server/merchant-lifecycle";
 import "server-only";
 import { assetUrl } from "@/lib/server/storage-adapter";
 import {
@@ -95,20 +99,31 @@ export async function getStoreBySlug(slug: string): Promise<StoreDTO | null> {
   return store?.status === "ACTIVE" ? toStoreDTO(store) : null;
 }
 
-export async function createStore(input: unknown, ownerId?: string): Promise<StoreDTO> {
+export async function createStore(
+  input: unknown,
+  ownerId?: string,
+  lifecycle?: MerchantLifecycleOptions
+): Promise<StoreDTO> {
   const values = storeCreationSchema.parse(input);
 
   if (ownerId && (await db.storeMember.findFirst({ where: { userId: ownerId } })))
     throw new AppError(409, "STORE_LIMIT", "Sua conta já possui uma vitrine.");
 
-  return toStoreDTO(
-    await db.store.create({
-      data: {
-        ...values,
-        ...(ownerId ? { members: { create: { userId: ownerId, role: "OWNER" } } } : {}),
-      },
-    })
-  );
+  const store = await db.store.create({
+    data: {
+      ...values,
+      ...(ownerId ? { members: { create: { userId: ownerId, role: "OWNER" } } } : {}),
+    },
+  });
+  const result = await toStoreDTO(store);
+
+  if (ownerId)
+    await merchantLifecycleAnalytics(lifecycle).storeCreated(
+      { distinctId: ownerId },
+      { storeId: store.id, plan: store.signupPlan, source: "onboarding" }
+    );
+
+  return result;
 }
 
 export async function saveIdentity(

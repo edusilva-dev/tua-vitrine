@@ -8,7 +8,7 @@ import { getEnv } from "./env";
 import { AppError } from "./http";
 import { isAllowedAdminRequest } from "./request-origin";
 
-export type StoreContext = { storeId: string };
+export type StoreContext = { storeId: string; userId?: string };
 
 export const getOptionalAdminIdentity = cache(
   async (): Promise<{ userId: string | null } | null> => {
@@ -94,7 +94,11 @@ export const getAdminContext = cache(async (): Promise<StoreContext> => {
   const identity = await getAdminIdentity();
   const jar = await cookies();
 
-  if (identity.userId) return resolveMemberStore(identity.userId, jar.get("tv-store")?.value);
+  if (identity.userId)
+    return {
+      ...(await resolveMemberStore(identity.userId, jar.get("tv-store")?.value)),
+      userId: identity.userId,
+    };
 
   const selected = jar.get("tv-local-store")?.value;
 

@@ -47,6 +47,7 @@ import {
   productInputSchema,
 } from "@/modules/catalog/contracts";
 import { describeLegacyVariants } from "@/modules/catalog/variations";
+import { analytics } from "@/modules/observability/client/analytics";
 import { ProductImportDialog } from "./product-import-dialog";
 import { ProductPublicationDialog } from "./product-publication-dialog";
 
@@ -544,6 +545,7 @@ export function ProductForm({
 }
 
 export function ProductManager({
+  storeId,
   products,
   categories,
   canImportProducts = false,
@@ -553,6 +555,7 @@ export function ProductManager({
   initialQuery = "",
   initialCategory = "",
 }: {
+  storeId: string;
   products: ProductListDTO;
   categories: CategoryDTO[];
   canImportProducts?: boolean;
@@ -572,6 +575,12 @@ export function ProductManager({
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState(initialCategory || "all");
+
+  function openProductCreation() {
+    analytics.productCreationStarted({ storeId, source: "admin" });
+    setEditing(null);
+    setDirty(false);
+  }
 
   function navigate(page = 1, nextCategory = category) {
     const params = new URLSearchParams();
@@ -659,12 +668,7 @@ export function ProductManager({
         <div className="flex flex-wrap gap-2">
           <ProductPublicationDialog required={needsProductSelection} limit={productLimit} />
           <ProductImportDialog enabled={canImportProducts} />
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setDirty(false);
-            }}
-          >
+          <Button onClick={openProductCreation}>
             <Plus size={17} />
             Adicionar produto
           </Button>
@@ -813,7 +817,7 @@ export function ProductManager({
               ? "Tente outra busca ou escolha uma categoria diferente."
               : "Adicione uma boa foto, conte os detalhes e deixe seus clientes se apaixonarem."}
           </p>
-          <Button className="mt-6" onClick={() => setEditing(null)}>
+          <Button className="mt-6" onClick={openProductCreation}>
             <Plus size={16} />
             Adicionar produto
           </Button>

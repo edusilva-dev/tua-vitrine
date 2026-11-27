@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { db } from "@/lib/server/db";
 import { importProducts } from "@/modules/catalog/server/import/service";
 import { createStore, saveWhatsapp } from "@/modules/stores/server/service";
+import { createMerchantLifecycleRecorder } from "../helpers/merchant-lifecycle";
 
 const url = new URL(process.env.DATABASE_URL ?? "http://invalid");
 
@@ -47,14 +48,12 @@ const rows = [
 describe("confirmação da importação de produtos", () => {
   test("cria produtos publicados em transação e trata retry como idempotente", async () => {
     const key = randomUUID();
-    const first = await importProducts({ storeId }, { rows }, key, {
-      enabled: true,
-      productLimit: 10,
-    });
-    const retry = await importProducts({ storeId }, { rows }, key, {
-      enabled: true,
-      productLimit: 10,
-    });
+    const lifecycle = createMerchantLifecycleRecorder();
+    const context = { storeId, userId: "import-user" };
+    const allowance = { enabled: true, productLimit: 10 };
+    const options = { analytics: lifecycle.analytics };
+    const first = await importProducts(context, { rows }, key, allowance, options);
+    const retry = await importProducts(context, { rows }, key, allowance, options);
     const saved = await db.product.findMany({
       where: { storeId, name: { startsWith: "Produto importado" } },
       orderBy: { name: "asc" },
@@ -65,6 +64,18 @@ describe("confirmação da importação de produtos", () => {
     expect(saved).toHaveLength(2);
     expect(saved.every((product) => product.published)).toBe(true);
     expect(await db.category.count({ where: { storeId, name: "Importados" } })).toBe(1);
+    expect(lifecycle.calls).toEqual(
+      saved.map((product, index) => ({
+        event: "product_created",
+        distinctId: context.userId,
+        input: {
+          storeId,
+          productId: product.id,
+          creationMethod: "import",
+          isFirstProduct: index === 0,
+        },
+      }))
+    );
   });
 
   test("recusa plano sem importação e lote acima das vagas restantes", async () => {

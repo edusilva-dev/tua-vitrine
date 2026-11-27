@@ -10,7 +10,9 @@ export default async function ProductsPage({
 }: {
   searchParams: Promise<{ q?: string; category?: string; page?: string }>;
 }) {
-  if (!(await getCurrentStore())) redirect("/admin/onboarding");
+  const store = await getCurrentStore();
+
+  if (!store) redirect("/admin/onboarding");
 
   const params = await searchParams;
   const context = await getAdminContext();
@@ -27,6 +29,7 @@ export default async function ProductsPage({
 
   return (
     <ProductManager
+      storeId={store.id}
       products={products}
       categories={categories}
       canImportProducts={entitlements.canImportProducts}

@@ -15,6 +15,7 @@ import {
   saveProduct,
 } from "@/modules/catalog/server/service";
 import { createStore, saveIdentity, saveWhatsapp } from "@/modules/stores/server/service";
+import { createMerchantLifecycleRecorder } from "../helpers/merchant-lifecycle";
 
 const url = new URL(process.env.DATABASE_URL ?? "http://invalid");
 
@@ -273,6 +274,75 @@ describe("Catálogo e isolamento real PostgreSQL", () => {
     await expect(
       saveProduct({ storeId }, input("Outro payload"), undefined, key)
     ).rejects.toThrow();
+  });
+  test("emite eventos somente para criação, publicação e exclusão confirmadas", async () => {
+    const draft = await createStore({
+      name: "Ciclo de analytics",
+      slug: `analytics-${run}`,
+      signupPlan: "ESSENTIAL",
+    });
+    const context = { storeId: draft.id, userId: `merchant-${run}` };
+    const lifecycle = createMerchantLifecycleRecorder();
+    const options = { analytics: lifecycle.analytics };
+    const key = randomUUID();
+
+    try {
+      await saveWhatsapp(context, { whatsapp: "+5511977777777" });
+      const first = await saveProduct(context, input("Primeiro evento"), undefined, key, options);
+
+      await saveProduct(context, input("Primeiro evento"), undefined, key, options);
+      await saveProduct(context, input("Produto editado"), first.id, undefined, options);
+      const second = await saveProduct(
+        context,
+        input("Segundo evento"),
+        undefined,
+        randomUUID(),
+        options
+      );
+
+      await archiveProduct(context, first.id, options);
+      await archiveProducts(context, { productIds: [second.id] }, options);
+
+      expect(lifecycle.calls).toEqual([
+        {
+          event: "product_created",
+          distinctId: context.userId,
+          input: {
+            storeId: draft.id,
+            productId: first.id,
+            creationMethod: "manual",
+            isFirstProduct: true,
+          },
+        },
+        {
+          event: "store_published",
+          distinctId: context.userId,
+          input: { storeId: draft.id, plan: "ESSENTIAL", productCount: 1 },
+        },
+        {
+          event: "product_created",
+          distinctId: context.userId,
+          input: {
+            storeId: draft.id,
+            productId: second.id,
+            creationMethod: "manual",
+            isFirstProduct: false,
+          },
+        },
+        {
+          event: "product_deleted",
+          distinctId: context.userId,
+          input: { storeId: draft.id, productCount: 1, operation: "single" },
+        },
+        {
+          event: "product_deleted",
+          distinctId: context.userId,
+          input: { storeId: draft.id, productCount: 1, operation: "bulk" },
+        },
+      ]);
+    } finally {
+      await db.store.delete({ where: { id: draft.id } });
+    }
   });
   test("slug normalizado único e publicação bloqueia alteração do endereço", async () => {
     const draft = await createStore({ name: "Loja temporária", slug: `Acentuação-${run}` });
