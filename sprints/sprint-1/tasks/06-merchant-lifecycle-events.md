@@ -4,6 +4,10 @@
 
 Registrar os marcos de conta, criação/publicação da loja e gestão de produtos com semântica confiável.
 
+## Estado
+
+Concluída em 27 de novembro de 2026.
+
 ## Contexto
 
 As operações de resultado devem ser capturadas no servidor após persistência. O onboarding atual
@@ -44,19 +48,19 @@ criados sem expô-los desnecessariamente na resposta pública.
 
 ## Critérios de aceite
 
-- [ ] cada evento ocorre somente após o marco correspondente;
-- [ ] `account_created` ocorre uma vez por conta criada com sucesso e respeita a política aprovada;
-- [ ] edição não emite `product_created`;
-- [ ] primeiro produto emite `product_created` e uma única `store_published`;
-- [ ] produtos posteriores não repetem `store_published`;
-- [ ] importação emite um `product_created` por produto, com `product_id` singular e sem lista de IDs
+- [x] cada evento ocorre somente após o marco correspondente;
+- [x] `account_created` ocorre uma vez por conta criada com sucesso e respeita a política aprovada;
+- [x] edição não emite `product_created`;
+- [x] primeiro produto emite `product_created` e uma única `store_published`;
+- [x] produtos posteriores não repetem `store_published`;
+- [x] importação emite um `product_created` por produto, com `product_id` singular e sem lista de IDs
   em uma propriedade agregada;
-- [ ] exclusão em lote não envia lista de IDs nem nomes;
-- [ ] retry com idempotency key não duplica eventos;
-- [ ] `store_created`, primeiro `product_created` e `store_published` preservam o `distinct_id` do
+- [x] exclusão em lote não envia lista de IDs nem nomes;
+- [x] retry com idempotency key não duplica eventos;
+- [x] `store_created`, primeiro `product_created` e `store_published` preservam o `distinct_id` do
   lojista responsável;
-- [ ] falha do PostHog não reverte criação, publicação ou exclusão;
-- [ ] evento de outra loja nunca recebe `store_id` do contexto errado.
+- [x] falha do PostHog não reverte criação, publicação ou exclusão;
+- [x] evento de outra loja nunca recebe `store_id` do contexto errado.
 
 ## Validação
 
@@ -71,3 +75,9 @@ criados sem expô-los desnecessariamente na resposta pública.
 Quando captura e transação não puderem ser atômicas, preferir pequena chance de perda a bloquear ou
 duplicar a operação. Registrar essa característica; um outbox só será considerado se dados reais
 mostrarem necessidade.
+
+Os eventos de resultado são disparados depois do commit e não participam da transação. Importações
+usam um único cliente PostHog para enviar um evento singular por produto. Retries idempotentes,
+edições e operações rejeitadas retornam antes da captura. Em produção, esses eventos de servidor
+continuam em noop conforme a decisão da tarefa 05; a instrumentação fica disponível para validação em
+staging e desenvolvimento até a política server-side avançar.

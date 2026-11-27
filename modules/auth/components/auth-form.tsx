@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/client/auth";
+import { analytics } from "@/modules/observability/client/analytics";
 
 type Mode = "login" | "signup" | "recover" | "reset" | "verify";
 type Fields = { name: string; email: string; password: string; confirmation: string };
@@ -116,6 +117,18 @@ export function AuthForm({
 
           return;
         }
+
+        if (result.data?.user.id) analytics.identify(result.data.user.id);
+
+        analytics.accountCreated({
+          signupPlan:
+            signupPlan === "essencial"
+              ? "ESSENTIAL"
+              : signupPlan === "profissional"
+                ? "PROFESSIONAL"
+                : "FREE",
+          source: "email_password",
+        });
 
         setSuccess(
           "Confira seu e-mail e abra o link de confirmação para continuar. Verifique também a pasta de spam."

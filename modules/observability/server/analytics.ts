@@ -47,6 +47,59 @@ type EventFactory<TInput> = (
 ) => ReturnType<(typeof analyticsEvents)[keyof typeof analyticsEvents]>;
 
 export function createServerAnalytics(options: ServerAnalyticsOptions) {
+  async function sendMany<TInput>(
+    identity: ServerAnalyticsIdentity,
+    factory: EventFactory<TInput>,
+    inputs: TInput[]
+  ): Promise<void> {
+    if (!inputs.length || !options.enabled || options.context.environment === "production") return;
+
+    const events = inputs.flatMap((input) => {
+      try {
+        const event = factory(input, options.context);
+
+        return event ? [event] : [];
+      } catch (error) {
+        if (process.env.NODE_ENV !== "production") throw error;
+
+        options.reportError(error, "invalid_event");
+
+        return [];
+      }
+    });
+
+    if (!events.length) return;
+
+    const client = options.createClient();
+
+    if (!client) return;
+
+    let providerError: unknown;
+
+    for (const event of events) {
+      try {
+        const storeId = "store_id" in event.properties ? event.properties.store_id : undefined;
+
+        await client.capture({
+          distinctId: identity.distinctId,
+          event: event.name,
+          ...(typeof storeId === "string" ? { groups: { store: storeId } } : {}),
+          properties: event.properties,
+        });
+      } catch (error) {
+        providerError ??= error;
+      }
+    }
+
+    try {
+      await client.shutdown();
+    } catch (error) {
+      providerError ??= error;
+    }
+
+    if (providerError) options.reportError(providerError, events[0]?.name ?? "unknown_event");
+  }
+
   async function send<TInput>(
     identity: ServerAnalyticsIdentity,
     factory: EventFactory<TInput>,
@@ -117,6 +170,9 @@ export function createServerAnalytics(options: ServerAnalyticsOptions) {
     },
     productCreated(identity: ServerAnalyticsIdentity, input: ProductCreatedInput) {
       return send(identity, analyticsEvents.productCreated, input);
+    },
+    productCreatedMany(identity: ServerAnalyticsIdentity, inputs: ProductCreatedInput[]) {
+      return sendMany(identity, analyticsEvents.productCreated, inputs);
     },
     productDeleted(identity: ServerAnalyticsIdentity, input: ProductDeletedInput) {
       return send(identity, analyticsEvents.productDeleted, input);

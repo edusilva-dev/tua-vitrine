@@ -6,7 +6,7 @@
 
 ## Estado do sprint
 
-- **Status:** em implementação; fundação, contrato de eventos e identidade concluídos.
+- **Status:** em implementação; tarefas 01–06 concluídas.
 - **Tema:** product analytics e UX analytics com PostHog.
 - **Produto:** Tua Vitrine.
 - **Públicos observados:** lojistas autenticados e visitantes anônimos das vitrines públicas.
@@ -486,8 +486,8 @@ Nenhuma dessas dependências autoriza inserir segredos no repositório.
 | 02 | [Criar contrato e wrapper de analytics](./tasks/02-analytics-contract-and-wrapper.md) | 01 | Concluída |
 | 03 | [Identificar o usuário autenticado](./tasks/03-user-identification.md) | 02 | Concluída |
 | 04 | [Identificar e agrupar por loja](./tasks/04-store-identification.md) | 02, 03 | Concluída |
-| 05 | [Implementar consentimento e política do servidor](./tasks/05-consent-and-server-privacy-policy.md) | 01–04 | Pendente |
-| 06 | [Instrumentar eventos do lojista](./tasks/06-merchant-lifecycle-events.md) | 02–05 | Pendente |
+| 05 | [Implementar consentimento e política do servidor](./tasks/05-consent-and-server-privacy-policy.md) | 01–04 | Concluída |
+| 06 | [Instrumentar eventos do lojista](./tasks/06-merchant-lifecycle-events.md) | 02–05 | Concluída |
 | 07 | [Instrumentar LP, vitrine, WhatsApp e billing](./tasks/07-storefront-whatsapp-and-billing-events.md) | 02–05 | Pendente |
 | 08 | [Habilitar replay e privacy masking](./tasks/08-session-replay-and-privacy-masking.md) | 01–05 | Pendente |
 | 09 | [Criar Activation Funnel](./tasks/09-activation-funnel.md) | 06, 07 | Pendente |
@@ -531,3 +531,6 @@ O sprint está pronto somente quando:
 | 2026-10-29 | IDs internos, sem PII direta | minimização e correlação estável |
 | 2026-10-29 | replay com máscara máxima e consentimento | rollout conservador para dados não essenciais |
 | 2026-11-25 | projeto único com `environment` obrigatório | plano atual limita a organização a um projeto |
+| 2026-11-26 | LP e vitrine usam coleta automática cookieless; painel exige escolha | medir superfícies públicas sem persistência e manter controle no painel |
+| 2026-11-26 | captura server-side permanece desativada em produção | a preferência do painel ainda existe somente no navegador |
+| 2026-11-27 | eventos de resultado são enviados após commit e fora da transação | falha analítica não pode reverter uma operação do lojista |

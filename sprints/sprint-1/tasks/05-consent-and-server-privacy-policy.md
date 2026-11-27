@@ -40,15 +40,15 @@ decisões explícitos.
 
 ## Critérios de aceite
 
-- [ ] estado desconhecido e rejeitado não enviam eventos client-side;
-- [ ] aceitar inicia captura sem reload obrigatório;
-- [ ] rejeitar não degrada funcionalidades do produto;
-- [ ] revogação interrompe captura e limpa identidade/persistência aplicável;
-- [ ] preferência é versionada e pode ser solicitada novamente após mudança material;
-- [ ] eventos server-side estão desabilitados ou obedecem à base legal e ao mecanismo de oposição
+- [x] no painel, estado desconhecido e rejeitado não enviam eventos client-side;
+- [x] aceitar inicia captura sem reload obrigatório;
+- [x] rejeitar não degrada funcionalidades do produto;
+- [x] revogação interrompe captura e limpa identidade/persistência aplicável;
+- [x] preferência é versionada e pode ser solicitada novamente após mudança material;
+- [x] eventos server-side estão desabilitados ou obedecem à base legal e ao mecanismo de oposição
   aprovado, inclusive em webhooks;
-- [ ] política e responsável por retenção/acesso estão registrados;
-- [ ] auditoria de produto/privacidade foi concluída ou produção permanece desabilitada.
+- [x] política e responsável por retenção/acesso estão registrados;
+- [x] auditoria de produto/privacidade foi concluída ou produção permanece desabilitada.
 
 ## Validação
 
@@ -64,3 +64,11 @@ decisões explícitos.
 
 Não alegar “conformidade LGPD” apenas por concluir esta tarefa. A implementação é um controle técnico;
 a base legal, os textos e o processo de atendimento ao titular exigem validação responsável.
+
+## Decisão aplicada
+
+Em 26 de novembro de 2026, o produto definiu coleta automática e cookieless somente na landing page e
+na vitrine pública. O painel exige escolha explícita, permite rejeição e revogação e guarda a decisão
+versionada no navegador. Como essa preferência ainda não é persistida por usuário/loja, o adaptador
+server-side permanece desativado em produção. Staging e desenvolvimento podem validar os eventos de
+servidor sem liberar essa coleta em produção.

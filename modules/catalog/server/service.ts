@@ -9,6 +9,10 @@ import { logger } from "@/lib/server/logger";
 import { assetUrl, getAssetStorageForReference } from "@/lib/server/storage-adapter";
 import { PLAN_CAPABILITIES } from "@/modules/billing/contracts";
 import { getEntitlements } from "@/modules/billing/server/entitlements";
+import {
+  type MerchantLifecycleOptions,
+  merchantLifecycleAnalytics,
+} from "@/modules/observability/server/merchant-lifecycle";
 import { normalizeSlug } from "@/modules/stores/contracts";
 import {
   type CategoryDTO,
@@ -215,7 +219,8 @@ export async function saveProduct(
   context: StoreContext,
   input: unknown,
   id?: string,
-  idempotencyKey?: string
+  idempotencyKey?: string,
+  lifecycle?: MerchantLifecycleOptions
 ): Promise<ProductDTO> {
   if (id) z.string().uuid().parse(id);
 
@@ -242,7 +247,7 @@ export async function saveProduct(
   }
 
   try {
-    return await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       const store = await tx.store.findUnique({ where: { id: context.storeId } });
 
       if (!store) throw new AppError(404, "NOT_FOUND", "Loja não encontrada.");
@@ -259,12 +264,11 @@ export async function saveProduct(
           `Seu plano permite até ${imagesPerProductLimit} ${imagesPerProductLimit === 1 ? "imagem" : "imagens"} por produto.`
         );
 
-      if (
-        !id &&
-        (await tx.product.count({
-          where: { storeId: context.storeId, archivedAt: null },
-        })) >= entitlements.productLimit
-      )
+      const currentProductCount = await tx.product.count({
+        where: { storeId: context.storeId, archivedAt: null },
+      });
+
+      if (!id && currentProductCount >= entitlements.productLimit)
         throw new AppError(
           403,
           "PRODUCT_LIMIT",
@@ -404,15 +408,16 @@ export async function saveProduct(
         }
       }
 
-      if (!store.onboardingCompletedAt)
-        await tx.store.update({
-          where: { id: store.id },
-          data: {
-            status: "ACTIVE",
-            onboardingCompletedAt: new Date(),
-            ...(store.signupPlan === "FREE" ? {} : { trialStartedAt: new Date() }),
-          },
-        });
+      const storePublication = !store.onboardingCompletedAt
+        ? await tx.store.updateMany({
+            where: { id: store.id, onboardingCompletedAt: null },
+            data: {
+              status: "ACTIVE",
+              onboardingCompletedAt: new Date(),
+              ...(store.signupPlan === "FREE" ? {} : { trialStartedAt: new Date() }),
+            },
+          })
+        : { count: 0 };
 
       if (idempotencyKey)
         await tx.idempotency.create({
@@ -424,10 +429,38 @@ export async function saveProduct(
           },
         });
 
-      return toProductDTO(
-        await tx.product.findUniqueOrThrow({ where: { id: product.id }, include: productInclude })
-      );
+      return {
+        product: toProductDTO(
+          await tx.product.findUniqueOrThrow({ where: { id: product.id }, include: productInclude })
+        ),
+        created: !id,
+        isFirstProduct: !id && storePublication.count === 1,
+        storePublished: storePublication.count === 1,
+        plan: store.signupPlan,
+        productCount: currentProductCount + (id ? 0 : 1),
+      };
     });
+
+    if (result.created && context.userId) {
+      const analytics = merchantLifecycleAnalytics(lifecycle);
+      const identity = { distinctId: context.userId };
+
+      await analytics.productCreated(identity, {
+        storeId: context.storeId,
+        productId: result.product.id,
+        creationMethod: "manual",
+        isFirstProduct: result.isFirstProduct,
+      });
+
+      if (result.storePublished)
+        await analytics.storePublished(identity, {
+          storeId: context.storeId,
+          plan: result.plan,
+          productCount: result.productCount,
+        });
+    }
+
+    return result.product;
   } catch (error) {
     if (
       idempotencyKey &&
@@ -445,13 +478,18 @@ export async function saveProduct(
   }
 }
 
-export async function archiveProduct(context: StoreContext, id: string): Promise<void> {
-  await archiveProducts(context, { productIds: [id] });
+export async function archiveProduct(
+  context: StoreContext,
+  id: string,
+  lifecycle?: MerchantLifecycleOptions
+): Promise<void> {
+  await archiveProducts(context, { productIds: [id] }, { ...lifecycle, operation: "single" });
 }
 
 export async function archiveProducts(
   context: StoreContext,
-  input: unknown
+  input: unknown,
+  options?: MerchantLifecycleOptions & { operation?: "single" | "bulk" }
 ): Promise<{ archived: number }> {
   const { productIds } = z
     .object({ productIds: z.array(z.string().uuid()).min(1).max(100) })
@@ -516,6 +554,16 @@ export async function archiveProducts(
       "Falha ao remover imagem de produto excluído do storage."
     );
   });
+
+  if (context.userId)
+    await merchantLifecycleAnalytics(options).productDeleted(
+      { distinctId: context.userId },
+      {
+        storeId: context.storeId,
+        productCount: result.archived,
+        operation: options?.operation ?? "bulk",
+      }
+    );
 
   return { archived: result.archived };
 }

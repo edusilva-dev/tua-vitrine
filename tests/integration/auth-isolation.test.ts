@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { resolveMemberStore } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { createStore, getStoreBySlug, saveIdentity } from "@/modules/stores/server/service";
+import { createMerchantLifecycleRecorder } from "../helpers/merchant-lifecycle";
 
 const database = new URL(process.env.DATABASE_URL ?? "http://invalid");
 
@@ -100,6 +101,43 @@ test("store and ownership are created atomically, and a missing user rolls back 
       where: { storeId_userId: { storeId: ownedStoreId, userId: firstUserId } },
     })
   ).toMatchObject({ role: "OWNER" });
+});
+
+test("a criação confirmada da loja preserva a identidade interna do lojista", async () => {
+  const userId = `analytics-${prefix}`;
+  const lifecycle = createMerchantLifecycleRecorder();
+
+  await db.user.create({
+    data: {
+      id: userId,
+      name: "Analytics",
+      email: `${userId}@example.test`,
+      emailVerified: true,
+    },
+  });
+
+  try {
+    const store = await createStore(
+      { name: "Loja com evento", slug: `event-${prefix}`, signupPlan: "PROFESSIONAL" },
+      userId,
+      { analytics: lifecycle.analytics }
+    );
+
+    stores.push(store.id);
+    expect(lifecycle.calls).toEqual([
+      {
+        event: "store_created",
+        distinctId: userId,
+        input: {
+          storeId: store.id,
+          plan: "PROFESSIONAL",
+          source: "onboarding",
+        },
+      },
+    ]);
+  } finally {
+    await db.user.deleteMany({ where: { id: userId } });
+  }
 });
 
 test("bloqueio impede o painel sem retirar a vitrine do ar", async () => {

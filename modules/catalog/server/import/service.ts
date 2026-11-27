@@ -4,6 +4,10 @@ import { Prisma } from "@/generated/prisma/client";
 import type { StoreContext } from "@/lib/server/context";
 import { db } from "@/lib/server/db";
 import { AppError } from "@/lib/server/http";
+import {
+  type MerchantLifecycleOptions,
+  merchantLifecycleAnalytics,
+} from "@/modules/observability/server/merchant-lifecycle";
 import { normalizeSlug } from "@/modules/stores/contracts";
 import { type ProductImportResultDTO, productImportConfirmSchema } from "../../contracts/import";
 
@@ -24,7 +28,8 @@ export async function importProducts(
   context: StoreContext,
   input: unknown,
   idempotencyKey: string,
-  allowance: ImportAllowance
+  allowance: ImportAllowance,
+  lifecycle?: MerchantLifecycleOptions
 ): Promise<ProductImportResultDTO> {
   if (!allowance.enabled)
     throw new AppError(
@@ -59,7 +64,7 @@ export async function importProducts(
   }
 
   try {
-    return await db.$transaction(
+    const outcome = await db.$transaction(
       async (tx) => {
         const store = await tx.store.findUnique({
           where: { id: context.storeId },
@@ -125,10 +130,31 @@ export async function importProducts(
           },
         });
 
-        return { importedCount: products.length, alreadyImported: false };
+        return {
+          result: { importedCount: products.length, alreadyImported: false },
+          productIds: products.map(({ id }) => id),
+          firstProductIndex: currentProducts === 0 ? 0 : -1,
+        };
       },
       { timeout: 20_000 }
     );
+
+    if (context.userId) {
+      const analytics = merchantLifecycleAnalytics(lifecycle);
+      const identity = { distinctId: context.userId };
+
+      await analytics.productCreatedMany(
+        identity,
+        outcome.productIds.map((productId, index) => ({
+          storeId: context.storeId,
+          productId,
+          creationMethod: "import",
+          isFirstProduct: index === outcome.firstProductIndex,
+        }))
+      );
+    }
+
+    return outcome.result;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const saved = await db.idempotency.findUnique({

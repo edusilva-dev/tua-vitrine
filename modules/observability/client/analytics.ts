@@ -74,12 +74,18 @@ export function createClientAnalytics(options: ClientAnalyticsOptions) {
     if (!options.hasConsent(event.properties.surface)) return;
 
     try {
-      const anonymousProperties = { ...event.properties } as Record<string, unknown>;
+      const properties = { ...event.properties } as Record<string, unknown>;
+      const publicSurface =
+        event.properties.surface === "landing" || event.properties.surface === "storefront";
 
-      delete anonymousProperties.product_id;
-      delete anonymousProperties.store_id;
+      if (publicSurface) {
+        delete properties.product_id;
+        delete properties.store_id;
+      } else if (typeof properties.store_id === "string") {
+        properties.$groups = { store: properties.store_id };
+      }
 
-      options.capture(event.name, anonymousProperties);
+      options.capture(event.name, properties);
     } catch {
       // Analytics is best-effort and must never interrupt the user flow.
     }
