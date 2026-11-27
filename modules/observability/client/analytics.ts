@@ -21,6 +21,7 @@ import {
   type SubscriptionStartedInput,
   type WhatsappClickedInput,
 } from "../contracts/events";
+import { readAnalyticsConsent } from "./consent";
 
 type ClientCapture = (name: string, properties: Record<string, unknown>) => unknown;
 
@@ -28,12 +29,12 @@ type ClientIdentity = {
   getDistinctId: () => string;
   getIdentifiedUserId: () => string | undefined;
   identify: (distinctId: string) => unknown;
-  reset: () => unknown;
+  reset: (preserveConsent?: boolean) => unknown;
 };
 
 type ClientAnalyticsOptions = {
   enabled: boolean;
-  hasConsent: () => boolean;
+  hasConsent: (surface: string) => boolean;
   capture: ClientCapture;
   context: AnalyticsRuntimeContext;
   group?: (type: "store", key: string, properties: Record<string, unknown>) => unknown;
@@ -46,17 +47,17 @@ type EventFactory<TInput> = (
 ) => ReturnType<(typeof analyticsEvents)[keyof typeof analyticsEvents]>;
 
 export function hasAnalyticsConsent(
-  environment: AnalyticsRuntimeContext["environment"],
-  hasOptedIn: () => boolean
+  surface: string,
+  consent: "unknown" | "accepted" | "rejected"
 ): boolean {
-  return environment !== "production" || hasOptedIn();
+  return surface === "landing" || surface === "storefront" || consent === "accepted";
 }
 
 export function createClientAnalytics(options: ClientAnalyticsOptions) {
   let currentStoreGroup: string | null = null;
 
   function send<TInput>(factory: EventFactory<TInput>, input: TInput): void {
-    if (!options.enabled || !options.hasConsent()) return;
+    if (!options.enabled) return;
 
     let event: ReturnType<EventFactory<TInput>>;
 
@@ -70,8 +71,15 @@ export function createClientAnalytics(options: ClientAnalyticsOptions) {
 
     if (!event) return;
 
+    if (!options.hasConsent(event.properties.surface)) return;
+
     try {
-      options.capture(event.name, event.properties);
+      const anonymousProperties = { ...event.properties } as Record<string, unknown>;
+
+      delete anonymousProperties.product_id;
+      delete anonymousProperties.store_id;
+
+      options.capture(event.name, anonymousProperties);
     } catch {
       // Analytics is best-effort and must never interrupt the user flow.
     }
@@ -79,7 +87,7 @@ export function createClientAnalytics(options: ClientAnalyticsOptions) {
 
   return {
     groupStore(input: AnalyticsStoreGroupInput) {
-      if (!options.enabled || !options.hasConsent() || !options.group) return;
+      if (!options.enabled || !options.hasConsent("admin") || !options.group) return;
 
       try {
         const group = createAnalyticsStoreGroup(input);
@@ -97,7 +105,8 @@ export function createClientAnalytics(options: ClientAnalyticsOptions) {
       }
     },
     identify(userId: string) {
-      if (!options.enabled || !options.hasConsent() || !options.identity || !userId.trim()) return;
+      if (!options.enabled || !options.hasConsent("admin") || !options.identity || !userId.trim())
+        return;
 
       try {
         if (options.identity.getDistinctId() === userId) return;
@@ -114,11 +123,11 @@ export function createClientAnalytics(options: ClientAnalyticsOptions) {
         // Identity is best-effort and must never interrupt authentication.
       }
     },
-    reset() {
+    reset(preserveConsent = true) {
       if (!options.enabled || !options.identity) return;
 
       try {
-        options.identity.reset();
+        options.identity.reset(preserveConsent);
         currentStoreGroup = null;
       } catch {
         // Logout must complete even when analytics is unavailable.
@@ -176,21 +185,16 @@ const enabled = Boolean(
 
 export const analytics = createClientAnalytics({
   enabled,
-  hasConsent: () =>
-    environment.success &&
-    hasAnalyticsConsent(environment.data, () => posthog.has_opted_in_capturing()),
-  capture: (name, properties) => posthog.capture(name, properties),
-  group: (type, key, properties) => posthog.group(type, key, properties),
-  identity: {
-    getDistinctId: () => posthog.get_distinct_id(),
-    getIdentifiedUserId: () => {
-      const userId = posthog.get_property("$user_id");
+  hasConsent: (surface) => {
+    if (hasAnalyticsConsent(surface, "unknown")) return true;
 
-      return typeof userId === "string" ? userId : undefined;
-    },
-    identify: (distinctId) => posthog.identify(distinctId),
-    reset: () => posthog.reset(),
+    try {
+      return hasAnalyticsConsent(surface, readAnalyticsConsent(window.localStorage));
+    } catch {
+      return false;
+    }
   },
+  capture: (name, properties) => posthog.capture(name, properties),
   context: {
     environment: environment.success ? environment.data : "development",
     release: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.trim() || null,

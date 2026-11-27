@@ -5,7 +5,6 @@ import {
   listProductOptionFilters,
   listProducts,
 } from "@/modules/catalog/server/service";
-import { AnalyticsIdentity } from "@/modules/observability/components/analytics-identity";
 import { getPublicPromotionCampaign } from "@/modules/promotions/server/service";
 import type { StoreDTO } from "@/modules/stores/contracts";
 import { Storefront } from "./components/storefront";
@@ -50,29 +49,18 @@ export async function StorefrontPage({
   ]);
 
   return (
-    <>
-      {!preview ? (
-        <AnalyticsIdentity
-          store={{
-            storeId: store.id,
-            plan,
-            status: store.status,
-            onboardingStep: store.onboardingStep,
-          }}
-        />
-      ) : null}
-      <Storefront
-        key={store.id}
-        store={store}
-        catalog={catalog}
-        categories={categories}
-        optionFilters={optionFilters}
-        filters={filters}
-        preview={preview}
-        showFreeBranding={showFreeBranding}
-        promotion={promotion}
-        promotionActive={promotionActive}
-      />
-    </>
+    <Storefront
+      key={store.id}
+      store={store}
+      catalog={catalog}
+      categories={categories}
+      optionFilters={optionFilters}
+      filters={filters}
+      plan={plan}
+      preview={preview}
+      showFreeBranding={showFreeBranding}
+      promotion={promotion}
+      promotionActive={promotionActive}
+    />
   );
 }

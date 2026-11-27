@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { money } from "@/lib/format";
+import type { BillingPlan } from "@/modules/billing/contracts";
 import type {
   CategoryDTO,
   ProductDTO,
@@ -41,6 +42,7 @@ import type {
 import { encodeVariantFilter } from "@/modules/catalog/contracts";
 import { productPrice } from "@/modules/catalog/pricing";
 import { StorefrontFeedbackDialog } from "@/modules/feedback/components/storefront-feedback-dialog";
+import { analytics } from "@/modules/observability/client/analytics";
 import type { PublicPromotionCampaignDTO } from "@/modules/promotions/contracts";
 import type { StoreDTO } from "@/modules/stores/contracts";
 import { type CartLine, lineKey } from "../selection";
@@ -62,6 +64,7 @@ export function Storefront({
   categories,
   optionFilters,
   filters,
+  plan,
   preview = false,
   showFreeBranding = false,
   promotion = null,
@@ -72,6 +75,7 @@ export function Storefront({
   categories: CategoryDTO[];
   optionFilters: ProductOptionFilterDTO[];
   filters: ProductFilters;
+  plan: BillingPlan;
   preview?: boolean;
   showFreeBranding?: boolean;
   promotion?: PublicPromotionCampaignDTO | null;
@@ -107,6 +111,16 @@ export function Storefront({
   useEffect(() => {
     setSearch(filters.q ?? "");
   }, [filters.q]);
+
+  useEffect(() => {
+    if (preview) return;
+
+    analytics.catalogViewed({
+      storeId: store.id,
+      plan,
+      source: promotionActive ? "campaign" : "direct",
+    });
+  }, [plan, preview, promotionActive, store.id]);
 
   useEffect(() => {
     if (search === (filters.q ?? "")) return;
@@ -223,6 +237,14 @@ export function Storefront({
   function openProduct(product: ProductDTO) {
     setSelected(product);
     void track("PRODUCT_VIEW", product.id);
+
+    if (!preview) {
+      analytics.productViewed({
+        storeId: store.id,
+        productId: product.id,
+        source: promotionActive ? "campaign" : "direct",
+      });
+    }
   }
 
   function addToCart(line: CartLine) {

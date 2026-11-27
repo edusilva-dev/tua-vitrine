@@ -1,7 +1,13 @@
 name: Quality
 on:
   push:
+    branches:
+      - main
+      - staging
   pull_request:
+concurrency:
+  group: quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   check:
     runs-on: ubuntu-latest

@@ -4,6 +4,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   experimental: {
     agentUpgrade: "security",
+    ...(process.env.E2E_AUTH_BYPASS === "1" ? { devMemoryThresholdRestart: false } : {}),
   },
   ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
   reactCompiler: true,

@@ -21,6 +21,20 @@ export default defineConfig({
   reporter: [["list"]],
   use: {
     baseURL: "http://localhost:3100",
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: "http://localhost:3100",
+          localStorage: [
+            {
+              name: "tuavitrine:analytics-consent",
+              value: JSON.stringify({ version: 1, state: "accepted" }),
+            },
+          ],
+        },
+      ],
+    },
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
@@ -37,6 +51,16 @@ export default defineConfig({
       APP_URL: "http://localhost:3100",
       BETTER_AUTH_SECRET: "test-only-secret-with-more-than-32-characters",
       E2E_AUTH_BYPASS: "1",
+      NEXT_PUBLIC_APP_ENV: "development",
+      NEXT_PUBLIC_POSTHOG_HOST: "",
+      NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "",
+      POSTHOG_HOST: "",
+      POSTHOG_PROJECT_TOKEN: "",
+      R2_ACCESS_KEY_ID: "",
+      R2_ACCOUNT_ID: "",
+      R2_BUCKET_NAME: "",
+      R2_PUBLIC_URL: "",
+      R2_SECRET_ACCESS_KEY: "",
       STORAGE_DIR: "./work/test-storage",
     },
     timeout: 120000,
